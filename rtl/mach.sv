@@ -29,13 +29,8 @@ wire            mem_bcystn;
 wire            mem_readyn;
 wand            mem_szrqn;
 
-wire [31:0]     rom_dbr_ctlr_di;
-wire            rom_dbr_readyn;
-wire            rom_dbr_szrqn;
-
-int             rom_ws, rom_dw;
 logic           rom_cen;
-logic [31:0]    rom_do;
+logic [15:0]    rom_do;
 
 logic           ram_cen;
 wire [31:0]     ram_do;
@@ -116,41 +111,24 @@ v810_mem dut_mem
 
 always @* begin
     if (~rom_cen)
-        mem_d_i = rom_dbr_ctlr_di;
+        mem_d_i = {16'b0, rom_do};
     else if (~ram_cen)
         mem_d_i = ram_do;
     else
         mem_d_i = '0;
 end
 
-assign mem_readyn = unk_cen & rom_dbr_readyn & ram_cen;
-assign mem_szrqn = ~unk_cen | rom_dbr_szrqn;
+assign mem_readyn = unk_cen & rom_cen & ram_cen;
+assign mem_szrqn = ~unk_cen | rom_cen;
 
-data_bus_resizer rom_dbr
-  (
-   .WS(rom_ws),
-   .DW(rom_dw),
-   .CLK(CLK),
-   .CE(CE),
-   .CTLR_DAn(mem_dan),
-   .CTLR_BEn(mem_ben),
-   .CTLR_READYn(rom_dbr_readyn),
-   .CTLR_SZRQn(rom_dbr_szrqn),
-   .CTLR_DI(rom_dbr_ctlr_di),
-   .CTLR_DO(),
-   .MEM_nCE(rom_cen),
-   .MEM_DI(),
-   .MEM_DO(rom_do)
-   );
-
-ram #(4, 32) rombios
+ram #(4, 16) rombios
   (
    .CLK(CLK),
    .nCE(rom_cen),
    .nWE('1),
    .nOE('0),
-   .nBE(mem_ben),
-   .A(mem_a[5:2]),
+   .nBE('1),
+   .A(mem_a[4:1]),
    .DI('Z),
    .DO(rom_do)
    );
@@ -170,12 +148,6 @@ ram #(4, 32) dmem
 assign ram_cen = ~(~mem_mrqn & ~mem_a[31]);
 assign rom_cen = ~(~mem_mrqn & (mem_a[31:20] == 12'hFFF));
 assign unk_cen = ~(ram_cen & rom_cen);
-
-initial #0 begin
-    rom_ws = 0;
-    rom_dw = 16;
-    //rombios.load_hex16("pcfx.rom.hex");
-end
 
 assign A = mem_a;
 

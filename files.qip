@@ -2,7 +2,6 @@ set_global_assignment -name SYSTEMVERILOG_FILE rtl/mycore.v
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/mach.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/v810/v810_exec.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/v810/v810_mem.sv
-set_global_assignment -name SYSTEMVERILOG_FILE rtl/v810/tb/data_bus_resizer.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/ram.sv
 set_global_assignment -name SDC_FILE Test_V810.sdc
 set_global_assignment -name SYSTEMVERILOG_FILE Test_V810.sv
