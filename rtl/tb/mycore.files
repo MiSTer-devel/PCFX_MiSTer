@@ -7,6 +7,9 @@ altddio_out.v
 ../mach.sv
 ../huc6261.sv
 
+../v810/v810_pkg.sv
 ../v810/v810_exec.sv
+../v810/v810_regfile.sv
+../v810/v810_sysreg.sv
 ../v810/v810_mem.sv
 ../v810/v810.sv
