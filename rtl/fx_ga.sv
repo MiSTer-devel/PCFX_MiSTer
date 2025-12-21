@@ -136,7 +136,7 @@ always @(posedge CLK) if (CE) begin
     end
 end
 
-always_comb begin
+always @* begin
     dout = '0;
     if (~FX_GA_CSn & ~RDn) begin
         case (A[11:4])

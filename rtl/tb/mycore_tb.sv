@@ -39,20 +39,7 @@ wire        SDRAM_nCAS;
 wire        SDRAM_nRAS;
 wire        SDRAM_nWE;
 
-as4c32m16sb sdram_mem
-    (
-     .DQ(SDRAM_DQ),
-     .A(SDRAM_A),
-     .DQML(SDRAM_DQML),
-     .DQMH(SDRAM_DQMH),
-     .BA(SDRAM_BA),
-     .nCS(SDRAM_nCS),
-     .nWE(SDRAM_nWE),
-     .nRAS(SDRAM_nRAS),
-     .nCAS(SDRAM_nCAS),
-     .CLK(SDRAM_CLK),
-     .CKE(SDRAM_CKE)
-     );
+sdram_xsds sdrb (.*);
 
 //////////////////////////////////////////////////////////////////////
 
@@ -202,10 +189,10 @@ logic [24:0] addr;
             if (!$feof(fin)) begin
                 if (swap_endian)
                     data = {data[7:0], data[15:8]};
-                sdram_mem.write(mycore.sdram.addr_to_bank(addr),
-                                mycore.sdram.addr_to_row(addr),
-                                mycore.sdram.addr_to_col(addr),
-                                data);
+                sdrb.u1a.write(mycore.sdram.addr_to_bank(addr),
+                               mycore.sdram.addr_to_row(addr),
+                               mycore.sdram.addr_to_col(addr),
+                               data);
                 addr += 2;
             end
         end

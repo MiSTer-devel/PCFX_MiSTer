@@ -30,8 +30,8 @@ module sdram
 	// interface to the MT48LC16M16 chip
 	inout      [15:0] SDRAM_DQ,   // 16 bit bidirectional data bus
 	output reg [12:0] SDRAM_A,    // 13 bit multiplexed address bus
-	output            SDRAM_DQML, // byte mask
-	output            SDRAM_DQMH, // byte mask
+	output            SDRAM_DQML, // byte mask (shared w/ A[11])
+	output            SDRAM_DQMH, // byte mask (shared w/ A[12])
 	output reg  [1:0] SDRAM_BA,   // two banks
 	output            SDRAM_nCS,  // a single chip select
 	output reg        SDRAM_nWE,  // write enable
@@ -52,7 +52,7 @@ module sdram
 
 	input      [24:0] waddr,      // 25 bit byte address
 	input      [31:0] din,			// data input from chipset/cpu
-    input       [3:0] be,         // byte enable (be[0] => din[7:0])
+	input	    [3:0] be,	      // byte enable (be[0] => din[7:0])
 	input             we,         // cpu/chipset write
 	output reg        we_rdy = 0,
 	input             we_req,     // cpu/chipset requests write
@@ -123,11 +123,11 @@ always @(posedge clk) begin
 
 	if (q == STATE_READY && ram_req) begin
 		if(wr) begin
-            we_ack <= we_req;
-            we_rdy <= 1;
-        end
+                        we_ack <= we_req;
+			we_rdy <= 1;
+		end
 		else
-            rd_rdy <= 1;
+			rd_rdy <= 1;
 	end
 
 	q <= q + 1'd1;
@@ -167,9 +167,26 @@ localparam CMD_PRECHARGE       = 3'b010;
 localparam CMD_AUTO_REFRESH    = 3'b001;
 localparam CMD_LOAD_MODE       = 3'b000;
 
-reg [31:0] dqout;
+reg [31:0] dqout, dqout_p;
 reg        dqoe;
-reg [3:0]  dqm;
+reg [3:0]  dqm, dqm_p;
+
+wire	   q_wrcyc = (q>=STATE_WRIT0 && q<=STATE_WRITN && wr && ram_req);
+
+always @* begin
+	dqout_p = dqout;
+	dqm_p = dqm;
+	if(q_wrcyc) begin
+		if (q==STATE_WRIT0) begin
+			dqout_p = data;
+			dqm_p = bm;
+		end
+		else begin
+			dqout_p = {16'b0, dqout[31:16]};
+			dqm_p = {2'b0, dqm[3:2]};
+		end
+	end
+end
 
 // SDRAM state machines
 always @(posedge clk) begin
@@ -188,52 +205,44 @@ always @(posedge clk) begin
 		                          default: {SDRAM_nRAS, SDRAM_nCAS, SDRAM_nWE} <= CMD_NOP;
 	endcase
 
-    dqoe <= 0;
-    if(q>=STATE_WRIT0 && q<=STATE_WRITN && wr && ram_req) begin
-        dqoe <= 1'b1;
-        if (q==STATE_WRIT0) begin
-            dqout <= data;
-            dqm <= bm;
-        end
-        else begin
-            dqout <= {16'b0, data[31:16]};
-            dqm <= {2'b0, bm[3:2]};
-        end
-    end
-    else
-        dqm <= '0;
+	dqoe <= q_wrcyc;
+	dqout <= dqout_p;
+	dqm <= dqm_p;
 
 	if(mode == MODE_NORMAL) begin
 		casex(q)
 			STATE_START: SDRAM_A <= addr_to_row(a);
 			STATE_CONT:  SDRAM_A <= {2'b00, 1'b1, addr_to_col(a)};
+            STATE_LAST:  SDRAM_A <= 0;
 		endcase;
+		if(q_wrcyc)
+			SDRAM_A[12:11] <= dqm_p[1:0];
 	end
 	else if(mode == MODE_LDM && q == STATE_START) SDRAM_A <= MODE;
 	else if(mode == MODE_PRE && q == STATE_START) SDRAM_A <= 13'b0010000000000;
 	else SDRAM_A <= 0;
 
 	if(q == STATE_START) SDRAM_BA <= (mode == MODE_NORMAL) ? addr_to_bank(a) : 2'b00;
-    if (~wr && ram_req) begin
-        if(q >= STATE_READ0 && q <= STATE_READN) data_reg <= {SDRAM_DQ, data_reg[31:16]};
-	    if(q == STATE_READY) dout <= data_reg;
-    end
+	if (~wr && ram_req) begin
+		if(q >= STATE_READ0 && q <= STATE_READN) data_reg <= {SDRAM_DQ, data_reg[31:16]};
+		if(q == STATE_READY) dout <= data_reg;
+	end
 end
 
 function [1:0] addr_to_bank(input [24:0] a);
-    addr_to_bank = a[24:23];
+	addr_to_bank = a[24:23];
 endfunction
 
 function [12:0] addr_to_row(input [24:0] a);
-    addr_to_row = a[21:9];
+	addr_to_row = a[21:9];
 endfunction
 
 function [9:0] addr_to_col(input [24:0] a);
-    addr_to_col = {1'b0, a[22], a[8:1]};
+	addr_to_col = {1'b0, a[22], a[8:1]};
 endfunction
 
 assign SDRAM_DQ = dqoe ? dqout[15:0] : 16'hZZZZ;
-assign {SDRAM_DQMH,SDRAM_DQML} = dqm[1:0];
+assign {SDRAM_DQMH,SDRAM_DQML} = SDRAM_A[12:11]; // shorted on the SDRAM board
 
 altddio_out
 #(

@@ -45,22 +45,22 @@
 [sst_expanded] 1
 [sst_vpaned_height] 159
 @22
-mycore_tb.sdram_mem.col[9:0]
-mycore_tb.sdram_mem.din[15:0]
+mycore_tb.sdrb.u1a.col[9:0]
+mycore_tb.sdrb.u1a.din[15:0]
 @28
-mycore_tb.sdram_mem.wr_dqm[1:0]
-mycore_tb.sdram_mem.DQMH
-mycore_tb.sdram_mem.DQML
+mycore_tb.sdrb.u1a.wr_dqm[1:0]
+mycore_tb.sdrb.u1a.DQMH
+mycore_tb.sdrb.u1a.DQML
 @22
-mycore_tb.sdram_mem.DQ[15:0]
-mycore_tb.sdram_mem.A[12:0]
+mycore_tb.sdrb.u1a.DQ[15:0]
+mycore_tb.sdrb.u1a.A[12:0]
 @28
 mycore_tb.mycore.sdram.we
 mycore_tb.mycore.sdram.we_rdy
 @420
-mycore_tb.sdram_mem.wr_cnt
+mycore_tb.sdrb.u1a.wr_cnt
 @22
-mycore_tb.sdram_mem.wr_din[15:0]
+mycore_tb.sdrb.u1a.wr_din[15:0]
 @28
 mycore_tb.mycore.sdram.rd
 mycore_tb.mycore.sdram.rd_rdy
