@@ -276,9 +276,9 @@ always @(posedge clk_sys) begin
 end
 
 always @(posedge clk_sys) begin
-    pix[23:16] <= a[31:24];
-    pix[15:8]  <= a[15:8];
-    pix[7:0]   <= a[7:0];
+    pix[23:16] <= {a[31], a[8:2]};
+    pix[15:8]  <= vdc0_vd[7:0];
+    pix[7:0]   <= vdc1_vd[7:0];
 end
 
 assign R = pix[23:16];
