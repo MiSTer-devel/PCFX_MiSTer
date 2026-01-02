@@ -2,7 +2,7 @@
 //
 // Implement enough of the chip to appease the BIOS.
 //
-// Copyright (c) 2025 David Hunter
+// Copyright (c) 2025-2026 David Hunter
 //
 // This program is GPL licensed. See COPYING for the full license.
 
@@ -56,7 +56,14 @@ module fx_ga
    // CPU interrupt interface
    output        CINT,
    output [3:0]  CINTVn,
-   output        CNMIn
+   output        CNMIn,
+
+   // K-port interface
+   output [1:0]  KP_LATCH,
+   output [1:0]  KP_CLK,
+   output [1:0]  KP_RW,
+   input [1:0]   KP_DIN,
+   output [1:0]  KP_DOUT
    );
 
 //////////////////////////////////////////////////////////////////////
@@ -105,25 +112,17 @@ end
 //////////////////////////////////////////////////////////////////////
 // Register interface
 
-logic [1:0]     ktrg, ktrg_set, ktrg_reset;
-logic [1:0]     kmod;
-logic [1:0]     kios;
-logic [1:0]     kend;
-logic [1:0]     kd_rd;
-
 logic [6:0]     isr;
 logic [6:0]     imr;
 logic [2:0]     ilr [7];
 
 logic [15:0]    dout;
 
+logic [15:0]    kpc0_do, kpc1_do;
+logic           kpc0_csn, kpc1_csn;
+
 always @(posedge CLK) if (CE) begin
-    ktrg_set <= '0;
-
     if (~RESn) begin
-        kmod <= '1;
-        kios <= '1;
-
         imr <= '1;
         ilr[0] <= 3'd7;
         ilr[1] <= 3'd6;
@@ -135,12 +134,6 @@ always @(posedge CLK) if (CE) begin
     end
     else if (~FX_GA_CSn & ~WRn) begin
         case (A[11:4])
-            8'h00: begin
-                {kios[0], kmod[0], ktrg_set[0]} <= DI[2:0];
-            end
-            8'h08: begin
-                {kios[1], kmod[1], ktrg_set[1]} <= DI[2:0];
-            end
             8'hE4: imr <= DI[6:0];
             8'hE8: {ilr[3], ilr[2], ilr[1], ilr[0]} <= DI[11:0];
             8'hEC: {ilr[6], ilr[5], ilr[4]} <= DI[8:0];
@@ -149,30 +142,21 @@ always @(posedge CLK) if (CE) begin
     end
 end
 
-always @(posedge CLK) if (CE) begin
-    kd_rd <= '0;
-
-    if (~FX_GA_CSn & ~RDn) begin
-        case (A[11:4])
-            8'h04: kd_rd[0] <= '1;
-            8'h0C: kd_rd[1] <= '1;
-            default: ;
-        endcase
-    end
-end
-
 always @* begin
     dout = '0;
     if (~FX_GA_CSn & ~RDn) begin
-        case (A[11:4])
-            8'h00: dout[3:0] = {kend[0], kios[0], kmod[0], ktrg[0]};
-            8'h08: dout[3:0] = {kend[1], kios[1], kmod[1], ktrg[1]};
-            8'hE0: dout[6:0] = isr;
-            8'hE4: dout[6:0] = imr;
-            8'hE8: dout[11:0] = {ilr[3], ilr[2], ilr[1], ilr[0]};
-            8'hEC: dout[8:0] = {ilr[6], ilr[5], ilr[4]};
-            default: ;
-        endcase
+        if (~kpc0_csn)
+            dout = kpc0_do;
+        else if (~kpc1_csn)
+            dout = kpc1_do;
+        else
+            case (A[11:4])
+                8'hE0: dout[6:0] = isr;
+                8'hE4: dout[6:0] = imr;
+                8'hE8: dout[11:0] = {ilr[3], ilr[2], ilr[1], ilr[0]};
+                8'hEC: dout[8:0] = {ilr[6], ilr[5], ilr[4]};
+                default: ;
+            endcase
     end
 end
 
@@ -186,29 +170,71 @@ assign DO = dout;
 //////////////////////////////////////////////////////////////////////
 // KPC: K-Port (Keypad) Control Unit
 
-assign ktrg_reset = ktrg_set;
+logic           kpc0_int, kpc1_int, kpc_int;
 
-always @(posedge CLK) if (CE) begin
-    if (~RESn) begin
-        ktrg <= '0;
-    end
-    else begin
-        ktrg <= (ktrg | ktrg_set) & ~ktrg_reset;
-        kend <= (kend | ktrg_reset) & ~kd_rd;
-    end
-end
+assign kpc0_csn = ~(~FX_GA_CSn & (A[11:7] == 5'h00)); // 000 .. 07F
+assign kpc1_csn = ~(~FX_GA_CSn & (A[11:7] == 5'h01)); // 080 .. 0FF
+
+fx_ga_kpc kpc0
+   (
+    .RESn(RESn),
+    .CLK(CLK),
+    .CE(CE),
+
+    .A6(A[6]),
+    .A1(A1_16),
+    .CSn(kpc0_csn),
+    .RDn(RDn),
+    .WRn(WRn),
+    .DI(DI),
+    .DO(kpc0_do),
+
+    .INT(kpc0_int),
+
+    .KP_LATCH(KP_LATCH[0]),
+    .KP_CLK(KP_CLK[0]),
+    .KP_RW(KP_RW[0]),
+    .KP_DIN(KP_DIN[0]),
+    .KP_DOUT(KP_DOUT[0])
+    );
+
+fx_ga_kpc kpc1
+   (
+    .RESn(RESn),
+    .CLK(CLK),
+    .CE(CE),
+
+    .A6(A[6]),
+    .A1(A1_16),
+    .CSn(kpc1_csn),
+    .RDn(RDn),
+    .WRn(WRn),
+    .DI(DI),
+    .DO(kpc1_do),
+
+    .INT(kpc1_int),
+
+    .KP_LATCH(KP_LATCH[1]),
+    .KP_CLK(KP_CLK[1]),
+    .KP_RW(KP_RW[1]),
+    .KP_DIN(KP_DIN[1]),
+    .KP_DOUT(KP_DOUT[1])
+    );
+
+assign kpc_int = kpc0_int | kpc1_int;
 
 //////////////////////////////////////////////////////////////////////
 // ITC: Interrupt Control Unit
 //
 // TODO:
 // - AERR Address Error
-// - Internal interrupt sources: INTKP (4), INTEX (5), INTTM (6)
+// - Internal interrupt sources: INTEX (5), INTTM (6)
 
 logic [6:0]     eisr;           // un-masked (enabled) ISR
 logic [2:0]     hail;           // highest active interrupt level
 
-assign isr[6:4] = '0;
+assign isr[6:5] = '0;
+assign isr[4] = kpc_int;
 assign isr[3:0] = DINT[3:0];
 
 assign eisr = isr & ~imr;
@@ -226,3 +252,5 @@ assign CINTVn = {1'b0, ~hail};
 assign CNMIn = '1;
 
 endmodule
+
+`include "fx_ga_kpc.sv"

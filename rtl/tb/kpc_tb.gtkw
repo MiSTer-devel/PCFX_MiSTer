@@ -1,0 +1,133 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Fri Jan  2 04:13:47 2026
+[*]
+[dumpfile] "/Users/dhunter/src/mister/Test_V810_MiSTer/rtl/tb/kpc_tb.vcd"
+[dumpfile_mtime] "Fri Jan  2 04:13:42 2026"
+[dumpfile_size] 994173
+[savefile] "/Users/dhunter/src/mister/Test_V810_MiSTer/rtl/tb/kpc_tb.gtkw"
+[timestart] 0
+[size] 1333 600
+[pos] -1 -1
+*-17.241985 109400 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+[markername] AA
+[markername] BB
+[markername] CC
+[markername] DD
+[markername] EE
+[markername] FF
+[markername] GG
+[markername] HH
+[markername] II
+[markername] JJ
+[markername] KK
+[markername] LL
+[markername] MM
+[markername] NN
+[markername] OO
+[markername] PP
+[markername] QQ
+[markername] RR
+[markername] SS
+[markername] TT
+[markername] UU
+[markername] VV
+[markername] WW
+[markername] XX
+[markername] YY
+[markername] ZZ
+[treeopen] kpc_tb.
+[sst_width] 255
+[signals_width] 191
+[sst_expanded] 1
+[sst_vpaned_height] 159
+@28
+kpc_tb.dut.CLK
+kpc_tb.dut.CE
+kpc_tb.dut.A6
+kpc_tb.dut.A1
+kpc_tb.dut.CSn
+kpc_tb.dut.RDn
+kpc_tb.dut.WRn
+@22
+kpc_tb.dut.DI[15:0]
+kpc_tb.dut.DO[15:0]
+@28
+kpc_tb.dut.INT
+@200
+-
+@28
+kpc_tb.dut.KP_LATCH
+kpc_tb.dut.KP_CLK
+kpc_tb.dut.KP_RW
+kpc_tb.dut.KP_DIN
+kpc_tb.dut.KP_DOUT
+@200
+-
+@28
+kpc_tb.kp_dout_latched
+@c00022
+kpc_tb.kp_data_sr[31:0]
+@28
+(0)kpc_tb.kp_data_sr[31:0]
+(1)kpc_tb.kp_data_sr[31:0]
+(2)kpc_tb.kp_data_sr[31:0]
+(3)kpc_tb.kp_data_sr[31:0]
+(4)kpc_tb.kp_data_sr[31:0]
+(5)kpc_tb.kp_data_sr[31:0]
+(6)kpc_tb.kp_data_sr[31:0]
+(7)kpc_tb.kp_data_sr[31:0]
+(8)kpc_tb.kp_data_sr[31:0]
+(9)kpc_tb.kp_data_sr[31:0]
+(10)kpc_tb.kp_data_sr[31:0]
+(11)kpc_tb.kp_data_sr[31:0]
+(12)kpc_tb.kp_data_sr[31:0]
+(13)kpc_tb.kp_data_sr[31:0]
+(14)kpc_tb.kp_data_sr[31:0]
+(15)kpc_tb.kp_data_sr[31:0]
+(16)kpc_tb.kp_data_sr[31:0]
+(17)kpc_tb.kp_data_sr[31:0]
+(18)kpc_tb.kp_data_sr[31:0]
+(19)kpc_tb.kp_data_sr[31:0]
+(20)kpc_tb.kp_data_sr[31:0]
+(21)kpc_tb.kp_data_sr[31:0]
+(22)kpc_tb.kp_data_sr[31:0]
+(23)kpc_tb.kp_data_sr[31:0]
+(24)kpc_tb.kp_data_sr[31:0]
+(25)kpc_tb.kp_data_sr[31:0]
+(26)kpc_tb.kp_data_sr[31:0]
+(27)kpc_tb.kp_data_sr[31:0]
+(28)kpc_tb.kp_data_sr[31:0]
+(29)kpc_tb.kp_data_sr[31:0]
+(30)kpc_tb.kp_data_sr[31:0]
+(31)kpc_tb.kp_data_sr[31:0]
+@1401200
+-group_end
+@200
+-
+@28
+kpc_tb.dut.ios
+kpc_tb.dut.trg
+kpc_tb.dut.trg_set
+kpc_tb.dut.trg_reset
+@29
+kpc_tb.dut.kend
+@28
+kpc_tb.dut.data_in
+@22
+kpc_tb.dut.data_sr[31:0]
+@28
+kpc_tb.dut.tick
+@24
+kpc_tb.dut.cycle[7:0]
+@28
+kpc_tb.dut.go
+kpc_tb.dut.run
+kpc_tb.dut.busy
+kpc_tb.dut.port_latch
+kpc_tb.dut.xfer
+kpc_tb.dut.data_latch
+kpc_tb.dut.shift
+kpc_tb.dut.done
+[pattern_trace] 1
+[pattern_trace] 0
