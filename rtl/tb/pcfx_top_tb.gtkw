@@ -1,0 +1,85 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Fri Nov 28 04:55:18 2025
+[*]
+[dumpfile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/pcfx_top_tb.vcd"
+[dumpfile_mtime] "Fri Nov 28 04:50:14 2025"
+[dumpfile_size] 2031594993
+[savefile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/pcfx_top_tb.gtkw"
+[timestart] 0
+[size] 1333 600
+[pos] -1 -1
+*-24.157753 66150120 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+[markername] AA
+[markername] BB
+[markername] CC
+[markername] DD
+[markername] EE
+[markername] FF
+[markername] GG
+[markername] HH
+[markername] II
+[markername] JJ
+[markername] KK
+[markername] LL
+[markername] MM
+[markername] NN
+[markername] OO
+[markername] PP
+[markername] QQ
+[markername] RR
+[markername] SS
+[markername] TT
+[markername] UU
+[markername] VV
+[markername] WW
+[markername] XX
+[markername] YY
+[markername] ZZ
+[treeopen] pcfx_top_tb.
+[treeopen] pcfx_top_tb.pcfx_top.
+[treeopen] pcfx_top_tb.pcfx_top.memif_sdram.
+[treeopen] pcfx_top_tb.sdram_mem.
+[sst_width] 255
+[signals_width] 203
+[sst_expanded] 1
+[sst_vpaned_height] 159
+@22
+pcfx_top_tb.sdrb.u1a.col[9:0]
+pcfx_top_tb.sdrb.u1a.din[15:0]
+@28
+pcfx_top_tb.sdrb.u1a.wr_dqm[1:0]
+pcfx_top_tb.sdrb.u1a.DQMH
+pcfx_top_tb.sdrb.u1a.DQML
+@22
+pcfx_top_tb.sdrb.u1a.DQ[15:0]
+pcfx_top_tb.sdrb.u1a.A[12:0]
+@28
+pcfx_top_tb.pcfx_top.sdram.we
+pcfx_top_tb.pcfx_top.sdram.we_rdy
+@420
+pcfx_top_tb.sdrb.u1a.wr_cnt
+@22
+pcfx_top_tb.sdrb.u1a.wr_din[15:0]
+@28
+pcfx_top_tb.pcfx_top.sdram.rd
+pcfx_top_tb.pcfx_top.sdram.rd_rdy
+@200
+-
+@22
+pcfx_top_tb.pcfx_top.mach.A[31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.D_I[31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.D_O[31:0]
+@28
+pcfx_top_tb.pcfx_top.mach.cpu.BCYSTn
+pcfx_top_tb.pcfx_top.memif_sdram.RAM_CEn
+pcfx_top_tb.pcfx_top.memif_sdram.SDRAM_WE_RDY
+pcfx_top_tb.pcfx_top.memif_sdram.ram_start_req
+pcfx_top_tb.pcfx_top.memif_sdram.ram_readyn
+pcfx_top_tb.pcfx_top.memif_sdram.ract
+@29
+pcfx_top_tb.pcfx_top.memif_sdram.wact
+@28
+pcfx_top_tb.pcfx_top.memif_sdram.mem_readyn
+[pattern_trace] 1
+[pattern_trace] 0

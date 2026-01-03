@@ -1,4 +1,4 @@
-// V810 Test Core
+// PC-FX core
 //
 // Copyright (c) 2025-2026 David Hunter
 //
@@ -6,16 +6,13 @@
 
 import core_pkg::hmi_t;
 
-module mycore
+module pcfx_top
 (
 	input         clk_sys,
     input         clk_ram,
 	input         reset,
     input         pll_locked,
 	
-	input         pal,
-	input         scandouble,
-
     input         ioctl_download,
     input [7:0]   ioctl_index,
     input         ioctl_wr,
@@ -241,75 +238,6 @@ assign romwr_ack = sdram_we_ack;
 //////////////////////////////////////////////////////////////////////
 // Video output
 
-`ifdef GEN_VID_TIMING
-
-reg   [9:0] hc;
-reg   [9:0] vc;
-reg   [7:0] fc;
-reg [23:0]  pix;
-
-always @(posedge clk_sys) begin
-	if(scandouble) ce_pix <= 1;
-		else ce_pix <= ~ce_pix;
-
-	if(reset) begin
-		hc <= 0;
-		vc <= 0;
-        fc <= 0;
-	end
-	else if(ce_pix) begin
-		if(hc == 637) begin
-			hc <= 0;
-			if(vc == (pal ? (scandouble ? 623 : 311) : (scandouble ? 523 : 261))) begin 
-				vc <= 0;
-				fc <= fc + 1'd1;
-			end else begin
-				vc <= vc + 1'd1;
-			end
-		end else begin
-			hc <= hc + 1'd1;
-		end
-	end
-end
-
-always @(posedge clk_sys) begin
-	if (hc == 529) HBlank <= 1;
-		else if (hc == 0) HBlank <= 0;
-
-	if (hc == 544) begin
-		HSync <= 1;
-
-		if(pal) begin
-			if(vc == (scandouble ? 609 : 304)) VSync <= 1;
-				else if (vc == (scandouble ? 617 : 308)) VSync <= 0;
-
-			if(vc == (scandouble ? 601 : 300)) VBlank <= 1;
-				else if (vc == 0) VBlank <= 0;
-		end
-		else begin
-			if(vc == (scandouble ? 490 : 245)) VSync <= 1;
-				else if (vc == (scandouble ? 496 : 248)) VSync <= 0;
-
-			if(vc == (scandouble ? 480 : 240)) VBlank <= 1;
-				else if (vc == 0) VBlank <= 0;
-		end
-	end
-	
-	if (hc == 590) HSync <= 0;
-end
-
-always @(posedge clk_sys) begin
-    pix[23:16] <= {a[31], a[8:2]};
-    pix[15:8]  <= vdc0_vd[7:0];
-    pix[7:0]   <= vdc1_vd[7:0];
-end
-
-assign R = pix[23:16];
-assign G = pix[15:8];
-assign B = pix[7:0];
-
-`else // GEN_VID_TIMING
-
 assign ce_pix = vid_pce;
 assign R = vid_u;
 assign G = vid_y;
@@ -318,7 +246,5 @@ assign HBlank = vid_hbl;
 assign VBlank = vid_vbl;
 assign HSync = ~vid_hsn;
 assign VSync = ~vid_vsn;
-
-`endif
 
 endmodule

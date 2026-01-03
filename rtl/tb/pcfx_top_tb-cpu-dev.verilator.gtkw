@@ -1,0 +1,313 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Sun Dec 21 22:58:56 2025
+[*]
+[dumpfile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/pcfx_top_tb.verilator.fst"
+[dumpfile_mtime] "Sun Dec 21 19:59:44 2025"
+[dumpfile_size] 11605576
+[savefile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/pcfx_top_tb-cpu-dev.verilator.gtkw"
+[timestart] 2518143832
+[size] 1333 600
+[pos] -1 -1
+*-8.522458 2518144260 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+[markername] AA
+[markername] BB
+[markername] CC
+[markername] DD
+[markername] EE
+[markername] FF
+[markername] GG
+[markername] HH
+[markername] II
+[markername] JJ
+[markername] KK
+[markername] LL
+[markername] MM
+[markername] NN
+[markername] OO
+[markername] PP
+[markername] QQ
+[markername] RR
+[markername] SS
+[markername] TT
+[markername] UU
+[markername] VV
+[markername] WW
+[markername] XX
+[markername] YY
+[markername] ZZ
+[treeopen] pcfx_top_tb.
+[treeopen] pcfx_top_tb.pcfx_top.
+[treeopen] pcfx_top_tb.pcfx_top.mach.
+[treeopen] pcfx_top_tb.pcfx_top.mach.cpu.
+[treeopen] pcfx_top_tb.pcfx_top.mach.cpu.eu.
+[treeopen] pcfx_top_tb.pcfx_top.mach.ga.
+[sst_width] 255
+[signals_width] 246
+[sst_expanded] 1
+[sst_vpaned_height] 159
+@800200
+-mem
+-wb
+@28
+pcfx_top_tb.pcfx_top.mach.cpu.mem.wb_full
+pcfx_top_tb.pcfx_top.mach.cpu.mem.wb_empty
+pcfx_top_tb.pcfx_top.mach.cpu.mem.wb_rptr
+pcfx_top_tb.pcfx_top.mach.cpu.mem.wb_wptr
+pcfx_top_tb.pcfx_top.mach.cpu.mem.wb_write
+pcfx_top_tb.pcfx_top.mach.cpu.mem.wb_read
+@1000200
+-wb
+@800200
+-bm
+@28
+pcfx_top_tb.pcfx_top.mach.cpu.mem.bm_sel_wb
+pcfx_top_tb.pcfx_top.mach.cpu.mem.bm_sel_eud
+pcfx_top_tb.pcfx_top.mach.cpu.mem.bm_sel_eui
+pcfx_top_tb.pcfx_top.mach.cpu.mem.bm_sel_wb_d
+pcfx_top_tb.pcfx_top.mach.cpu.mem.bm_sel_eud_d
+pcfx_top_tb.pcfx_top.mach.cpu.mem.bm_sel_eui_d
+pcfx_top_tb.pcfx_top.mach.cpu.mem.bm_sel_none_d
+@22
+pcfx_top_tb.pcfx_top.mach.cpu.mem.bm_ebi_a[31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.mem.bm_ebi_do[31:0]
+@28
+pcfx_top_tb.pcfx_top.mach.cpu.mem.bm_ebi_bc[1:0]
+@22
+pcfx_top_tb.pcfx_top.mach.cpu.mem.bm_ebi_be[3:0]
+@28
+pcfx_top_tb.pcfx_top.mach.cpu.mem.bm_ebi_wr
+pcfx_top_tb.pcfx_top.mach.cpu.mem.bm_ebi_mrq
+pcfx_top_tb.pcfx_top.mach.cpu.mem.bm_ebi_st[1:0]
+pcfx_top_tb.pcfx_top.mach.cpu.mem.bm_ebi_req
+pcfx_top_tb.pcfx_top.mach.cpu.mem.bm_ebi_ack
+@1000200
+-bm
+@24
+pcfx_top_tb.pcfx_top.mach.cpu.mem.ebst[2:0]
+@22
+pcfx_top_tb.pcfx_top.mach.cpu.mem.A[31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.mem.D_I[31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.mem.D_O[31:0]
+@28
+pcfx_top_tb.pcfx_top.mach.cpu.mem.BEn[3:0]
+pcfx_top_tb.pcfx_top.mach.cpu.mem.ST[1:0]
+pcfx_top_tb.pcfx_top.mach.cpu.mem.DAn
+pcfx_top_tb.pcfx_top.mach.cpu.mem.MRQn
+pcfx_top_tb.pcfx_top.mach.cpu.mem.RW
+pcfx_top_tb.pcfx_top.mach.cpu.mem.BCYSTn
+pcfx_top_tb.pcfx_top.mach.cpu.mem.READYn
+pcfx_top_tb.pcfx_top.mach.cpu.mem.SZRQn
+@1000200
+-mem
+@28
+pcfx_top_tb.pcfx_top.mach.cpu.RESn
+pcfx_top_tb.pcfx_top.mach.cpu.CLK
+@c00200
+-inex
+@28
+pcfx_top_tb.pcfx_top.mach.cpu.inex.INT
+@22
+pcfx_top_tb.pcfx_top.mach.cpu.inex.INTVn[3:0]
+@28
+pcfx_top_tb.pcfx_top.mach.cpu.inex.NMIn
+pcfx_top_tb.pcfx_top.mach.cpu.inex.EUF
+@22
+pcfx_top_tb.pcfx_top.mach.cpu.inex.EUCCB[15:0]
+pcfx_top_tb.pcfx_top.mach.cpu.inex.EUCCO[4:0]
+@28
+pcfx_top_tb.pcfx_top.mach.cpu.inex.ADTRF
+pcfx_top_tb.pcfx_top.mach.cpu.inex.IF
+pcfx_top_tb.pcfx_top.mach.cpu.inex.NP
+@22
+pcfx_top_tb.pcfx_top.mach.cpu.inex.CC[15:0]
+pcfx_top_tb.pcfx_top.mach.cpu.inex.HA[31:0]
+@28
+pcfx_top_tb.pcfx_top.mach.cpu.inex.ACK
+pcfx_top_tb.pcfx_top.mach.cpu.inex.resf
+pcfx_top_tb.pcfx_top.mach.cpu.inex.nmif
+pcfx_top_tb.pcfx_top.mach.cpu.inex.intf
+pcfx_top_tb.pcfx_top.mach.cpu.inex.adtrf
+pcfx_top_tb.pcfx_top.mach.cpu.inex.euf
+@22
+pcfx_top_tb.pcfx_top.mach.cpu.inex.cc[15:0]
+@1401200
+-inex
+@c00200
+-sysreg
+@22
+pcfx_top_tb.pcfx_top.mach.cpu.sr.eipc[31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.sr.eipsw[31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.sr.fepc[31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.sr.fepsw[31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.sr.ecr[31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.sr.psw[31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.sr.chcw[31:0]
+@28
+pcfx_top_tb.pcfx_top.mach.cpu.eu.halted
+@1401200
+-sysreg
+@800200
+-if
+@28
+pcfx_top_tb.pcfx_top.mach.cpu.eu.if_stall
+pcfx_top_tb.pcfx_top.mach.cpu.eu.if_flush
+pcfx_top_tb.pcfx_top.mach.cpu.eu.if_fetch_en
+pcfx_top_tb.pcfx_top.mach.cpu.eu.imi_en
+pcfx_top_tb.pcfx_top.mach.cpu.eu.imi_a_new
+@23
+pcfx_top_tb.pcfx_top.mach.cpu.eu.imi_a[31:0]
+@28
+pcfx_top_tb.pcfx_top.mach.cpu.eu.imi_incomplete
+pcfx_top_tb.pcfx_top.mach.cpu.eu.if_pc_inc
+pcfx_top_tb.pcfx_top.mach.cpu.eu.if_pc_inc4
+pcfx_top_tb.pcfx_top.mach.cpu.eu.if_pc_set
+pcfx_top_tb.pcfx_top.mach.cpu.eu.if_pdlo_ins32
+pcfx_top_tb.pcfx_top.mach.cpu.eu.if_pdhi_ins32
+pcfx_top_tb.pcfx_top.mach.cpu.eu.if_ir_swap
+pcfx_top_tb.pcfx_top.mach.cpu.eu.if_imi_a2
+pcfx_top_tb.pcfx_top.mach.cpu.eu.if_wrap
+pcfx_top_tb.pcfx_top.mach.cpu.eu.if_wrapped
+pcfx_top_tb.pcfx_top.mach.cpu.eu.if_ins32_fetch_hi
+@22
+pcfx_top_tb.pcfx_top.mach.cpu.eu.pc[31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.pcn[31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.pd[31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.ir[31:0]
+@28
+pcfx_top_tb.pcfx_top.mach.cpu.eu.ir_valid
+pcfx_top_tb.pcfx_top.mach.cpu.eu.if_exc
+pcfx_top_tb.pcfx_top.mach.cpu.eu.if_exc_done
+pcfx_top_tb.pcfx_top.mach.cpu.eu.resh
+@1000200
+-if
+@800200
+-id
+@28
+pcfx_top_tb.pcfx_top.mach.cpu.eu.id_stall
+pcfx_top_tb.pcfx_top.mach.cpu.eu.id_flush
+@22
+pcfx_top_tb.pcfx_top.mach.cpu.eu.ifid_pc[31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.ifid_ir[31:0]
+@28
+pcfx_top_tb.pcfx_top.mach.cpu.eu.ifid_exc
+@c00200
+-rmem
+@22
+pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[10][31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[11][31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[12][31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[13][31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[14][31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[15][31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[16][31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[17][31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[18][31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[19][31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[20][31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[21][31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[22][31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[23][31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[24][31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[25][31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[26][31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[27][31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[28][31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[29][31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[30][31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[31][31:0]
+@1401200
+-rmem
+@22
+pcfx_top_tb.pcfx_top.mach.cpu.eu.id_rf_ra1[4:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.id_rf_ra2[4:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.id_rf_rd1[31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.id_rf_rd2[31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.wb_rf_wa[4:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.wb_rf_wd[31:0]
+@28
+pcfx_top_tb.pcfx_top.mach.cpu.eu.wb_rf_we
+@1000200
+-id
+@24
+pcfx_top_tb.pcfx_top.mach.cpu.eu.id_ccnt[5:0]
+@800200
+-ex
+@28
+pcfx_top_tb.pcfx_top.mach.cpu.eu.ex_stall
+pcfx_top_tb.pcfx_top.mach.cpu.eu.ex_flush
+@22
+pcfx_top_tb.pcfx_top.mach.cpu.eu.idex_pc[31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.idex_ir[31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.idex_rf_rd1[31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.idex_rf_rd2[31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.idex_rf_wa[4:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.idex_ctl[43:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.alu_in1[31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.alu_in2[31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.alu_op[3:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.alu_out[31:0]
+@28
+pcfx_top_tb.pcfx_top.mach.cpu.eu.alu_fl[3:0]
+@22
+pcfx_top_tb.pcfx_top.mach.cpu.eu.bcond_match
+@28
+pcfx_top_tb.pcfx_top.mach.cpu.eu.branch_taken
+@22
+pcfx_top_tb.pcfx_top.mach.cpu.eu.ex_sr_rd[31:0]
+@28
+pcfx_top_tb.pcfx_top.mach.cpu.eu.ex_euf
+@22
+pcfx_top_tb.pcfx_top.mach.cpu.eu.ex_euccb[15:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.ex_eucco[4:0]
+@1000200
+-ex
+@800200
+-ma
+@28
+pcfx_top_tb.pcfx_top.mach.cpu.eu.ma_flush
+@22
+pcfx_top_tb.pcfx_top.mach.cpu.eu.exma_rf_wa[4:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.exma_rf_rd2[31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.exma_alu_out[31:0]
+@28
+pcfx_top_tb.pcfx_top.mach.cpu.eu.exma_alu_fl[3:0]
+@22
+pcfx_top_tb.pcfx_top.mach.cpu.eu.exma_sr_rd[31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.exma_ctl[20:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.ma_di[31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.ma_do[31:0]
+@28
+pcfx_top_tb.pcfx_top.mach.cpu.eu.ma_incomplete
+@1000200
+-ma
+@800200
+-wb
+@22
+pcfx_top_tb.pcfx_top.mach.cpu.eu.mawb_alu_out[31:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.mawb_mem_rd[31:0]
+@28
+pcfx_top_tb.pcfx_top.mach.cpu.eu.mawb_mem_bsel[1:0]
+@22
+pcfx_top_tb.pcfx_top.mach.cpu.eu.mawb_rf_wa[4:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.mawb_ctl[4:0]
+pcfx_top_tb.pcfx_top.mach.cpu.eu.wb_ldmem[31:0]
+@1000200
+-wb
+@800200
+-hazard
+@28
+pcfx_top_tb.pcfx_top.mach.cpu.eu.haz_data_ex
+pcfx_top_tb.pcfx_top.mach.cpu.eu.haz_data_ma
+pcfx_top_tb.pcfx_top.mach.cpu.eu.haz_data
+pcfx_top_tb.pcfx_top.mach.cpu.eu.haz_flag_ex
+pcfx_top_tb.pcfx_top.mach.cpu.eu.haz_sys1_ex
+pcfx_top_tb.pcfx_top.mach.cpu.eu.haz_sys1_ma
+pcfx_top_tb.pcfx_top.mach.cpu.eu.haz_sys2_ex
+pcfx_top_tb.pcfx_top.mach.cpu.eu.haz_sys2_ma
+pcfx_top_tb.pcfx_top.mach.cpu.eu.haz_sys
+pcfx_top_tb.pcfx_top.mach.cpu.eu.haz_flag
+@1000200
+-hazard
+[pattern_trace] 1
+[pattern_trace] 0

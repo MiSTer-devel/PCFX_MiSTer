@@ -1,5 +1,5 @@
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/core_pkg.sv
-set_global_assignment -name SYSTEMVERILOG_FILE rtl/mycore.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/pcfx_top.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/fifo/fifo1.v
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/v810/v810_pkg.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/v810/v810_inex.sv
@@ -22,5 +22,5 @@ set_global_assignment -name SYSTEMVERILOG_FILE rtl/fx_ga.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/scsi.v
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/fake_cd.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/hmi2kp.sv
-set_global_assignment -name SDC_FILE Test_V810.sdc
-set_global_assignment -name SYSTEMVERILOG_FILE Test_V810.sv
+set_global_assignment -name SDC_FILE PCFX.sdc
+set_global_assignment -name SYSTEMVERILOG_FILE PCFX.sv

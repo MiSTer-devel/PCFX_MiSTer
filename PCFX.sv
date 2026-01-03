@@ -1,7 +1,7 @@
 //============================================================================
-//  V810 Test Core
+//  NEC PC-FX
 //
-//  Copyright (c) 2025 David Hunter
+//  Copyright (c) 2025-2026 David Hunter
 //
 //  This program is free software; you can redistribute it and/or modify it
 //  under the terms of the GNU General Public License as published by the Free
@@ -210,21 +210,18 @@ assign VIDEO_ARY = (!ar) ? 12'd3 : 12'd0;
 
 `include "build_id.v" 
 localparam CONF_STR = {
-	"Test_V810;;",
+	"PCFX;;",
 	"-;",
 	"O[122:121],Aspect ratio,Original,Full Screen,[ARC1],[ARC2];",
-	"O[2],TV Mode,NTSC,PAL;",
 	"-;",
-    "F1,ROM,Load BIOS;",
+    "F1,ROM,Load custom BIOS;",
 	"-;",
 	"T[0],Reset;",
 	"R[0],Reset and close OSD;",
 	"J1,Button I,Button II,Select,Run,Button III,Button IV,Button V,Button VI;",
 	"jn,A,B,Select,Start,X,Y,L,R;",
 	"jp,A,B,Select,Start,L,R,Y,X;",
-	"v,1;", // [optional] config version 0-99. 
-	        // If CONF_STR options are changed in incompatible way, then change version number too,
-			  // so all options will get default values on first start.
+	"v,0;",
 	"V,v",`BUILD_DATE 
 };
 
@@ -311,15 +308,12 @@ wire VBlank;
 wire VSync;
 wire ce_pix;
 
-mycore mycore
+pcfx_top pcfx_top
 (
 	.clk_sys(clk_sys),
     .clk_ram(clk_ram),
 	.reset(reset | rombios_download),
 	.pll_locked(pll_locked),
-
-	.pal(status[2]),
-	.scandouble(forced_scandoubler),
 
 	.ioctl_download(ioctl_download),
 	.ioctl_index(ioctl_index),

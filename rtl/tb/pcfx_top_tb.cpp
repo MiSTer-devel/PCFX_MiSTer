@@ -2,7 +2,7 @@
 // DESCRIPTION: main() calling loop, created with Verilator --main
 
 #include "verilated.h"
-#include "Vmycore_tb.h"
+#include "Vpcfx_top_tb.h"
 
 //======================
 
@@ -14,7 +14,7 @@ int main(int argc, char** argv, char**) {
     contextp->commandArgs(argc, argv);
 
     // Construct the Verilated model, from Vtop.h generated from Verilating
-    const std::unique_ptr<Vmycore_tb> topp{new Vmycore_tb{contextp.get(), ""}};
+    const std::unique_ptr<Vpcfx_top_tb> topp{new Vpcfx_top_tb{contextp.get(), ""}};
 
     // Simulate until $finish
     while (VL_LIKELY(!contextp->gotFinish())) {
@@ -39,5 +39,5 @@ int main(int argc, char** argv, char**) {
 }
 
 // Local Variables:
-// compile-command: "verilator --cc --exe mycore_tb.cpp --build -j 0 --timing --assert --trace-fst --trace-threads 1 -Wno-TIMESCALEMOD --top-module mycore_tb --relative-includes -F mycore.files mycore_tb.sv"
+// compile-command: "verilator --cc --exe pcfx_top_tb.cpp --build -j 0 --timing --assert --trace-fst --trace-threads 1 -Wno-TIMESCALEMOD --top-module pcfx_top_tb --relative-includes -F pcfx_top.files pcfx_top_tb.sv"
 // End:

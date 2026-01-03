@@ -2,10 +2,10 @@
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
 [*] Fri Jan  2 04:13:47 2026
 [*]
-[dumpfile] "/Users/dhunter/src/mister/Test_V810_MiSTer/rtl/tb/kpc_tb.vcd"
+[dumpfile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/kpc_tb.vcd"
 [dumpfile_mtime] "Fri Jan  2 04:13:42 2026"
 [dumpfile_size] 994173
-[savefile] "/Users/dhunter/src/mister/Test_V810_MiSTer/rtl/tb/kpc_tb.gtkw"
+[savefile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/kpc_tb.gtkw"
 [timestart] 0
 [size] 1333 600
 [pos] -1 -1

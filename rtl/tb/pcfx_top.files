@@ -5,7 +5,7 @@ dpram.sv
 
 ../core_pkg.sv
 
-../mycore.sv
+../pcfx_top.sv
 ../memif_sdram.sv
 ../sdram.v
 

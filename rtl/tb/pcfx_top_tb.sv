@@ -11,7 +11,7 @@
 
 import core_pkg::hmi_t;
 
-module mycore_tb;
+module pcfx_top_tb;
 
 logic		reset;
 logic       clk_sys, clk_ram;
@@ -20,10 +20,10 @@ initial begin
     $timeformat(-6, 0, " us", 1);
 
 `ifndef VERILATOR
-    $dumpfile("mycore_tb.vcd");
+    $dumpfile("pcfx_top_tb.vcd");
     $dumpvars();
 `else
-    $dumpfile("mycore_tb.verilator.fst");
+    $dumpfile("pcfx_top_tb.verilator.fst");
     #(418e3) $dumpvars();
 `endif
 end
@@ -60,15 +60,12 @@ wire        hbl, vbl;
 wire        vs;
 wire [7:0]  r, g, b;
 
-mycore mycore
+pcfx_top pcfx_top
 (
 	.clk_sys(clk_sys),
     .clk_ram(clk_ram),
 	.reset(reset),
     .pll_locked('1),
-
-	.pal('0),
-	.scandouble('0),
 
 	.ioctl_download(ioctl_download),
 	.ioctl_index(ioctl_index),
@@ -197,9 +194,9 @@ logic [24:0] addr;
             if (!$feof(fin)) begin
                 if (swap_endian)
                     data = {data[7:0], data[15:8]};
-                sdrb.u1a.write(mycore.sdram.addr_to_bank(addr),
-                               mycore.sdram.addr_to_row(addr),
-                               mycore.sdram.addr_to_col(addr),
+                sdrb.u1a.write(pcfx_top.sdram.addr_to_bank(addr),
+                               pcfx_top.sdram.addr_to_row(addr),
+                               pcfx_top.sdram.addr_to_col(addr),
                                data);
                 addr += 2;
             end
@@ -274,9 +271,9 @@ initial #0 begin
 end
 
 initial #(500e3) begin
-    //$writememh("vram0.hex", mycore.mach.vram0.mem);
-    //$writememh("vram1.hex", mycore.mach.vram1.mem);
-    //$writememh("vce_cp.hex", mycore.mach.vce.cpram.mem);
+    //$writememh("vram0.hex", pcfx_top.mach.vram0.mem);
+    //$writememh("vram1.hex", pcfx_top.mach.vram1.mem);
+    //$writememh("vce_cp.hex", pcfx_top.mach.vce.cpram.mem);
 
     $finish;
 end
@@ -291,5 +288,5 @@ endmodule
 
 
 // Local Variables:
-// compile-command: "iverilog -g2012 -grelative-include -s mycore_tb -o mycore_tb.vvp -f mycore.files mycore_tb.sv && ./mycore_tb.vvp"
+// compile-command: "iverilog -g2012 -grelative-include -s pcfx_top_tb -o pcfx_top_tb.vvp -f pcfx_top.files pcfx_top_tb.sv && ./pcfx_top_tb.vvp"
 // End:
