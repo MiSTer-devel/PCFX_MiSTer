@@ -465,14 +465,7 @@ assign RAM_BEn = cpu_ben;
 //////////////////////////////////////////////////////////////////////
 // SCSI interface
 
-initial scsi_data = '0;
-
-always @(posedge CLK) begin
-    if (mmc_scsi_doe)
-        scsi_data <= mmc_scsi_do;
-    else
-        scsi_data <= scsi_cd_do;
-end
+assign scsi_data = mmc_scsi_doe ? mmc_scsi_do : scsi_cd_do;
 
 fake_cd fake_cd
     (

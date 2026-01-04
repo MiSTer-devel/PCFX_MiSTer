@@ -258,7 +258,7 @@ assign scsi_cur_bus_stat = {~SCSI_RSTn, ~SCSI_BSYn, ~SCSI_REQn, ~SCSI_MSGn,
                             ~SCSI_CDn, ~SCSI_IOn, ~SCSI_SELn, 1'b0};
 
 assign SCSI_DO = scsi_dout;
-assign SCSI_DOE = scsi_assert_data;
+assign SCSI_DOE = SCSI_IOn & scsi_assert_data;
 assign SCSI_ATNn = ~scsi_assert_atn;
 assign SCSI_ACKn = ~(scsi_assert_ack | scsi_assert_ack_dma);
 assign SCSI_RSTn = ~scsi_assert_rst;
