@@ -20,10 +20,14 @@ dpram.sv
 
 ../fifo/fifo1.v
 
+../v810/tb/v810_tagram.sv
+../v810/tb/v810_dataram.sv
+
 ../v810/v810_pkg.sv
 ../v810/v810_inex.sv
 ../v810/v810_exec.sv
 ../v810/v810_regfile.sv
 ../v810/v810_sysreg.sv
+../v810/v810_icache.sv
 ../v810/v810_mem.sv
 ../v810/v810.sv

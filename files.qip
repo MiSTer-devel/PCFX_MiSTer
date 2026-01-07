@@ -6,6 +6,9 @@ set_global_assignment -name SYSTEMVERILOG_FILE rtl/v810/v810_inex.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/v810/v810_exec.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/v810/v810_regfile.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/v810/v810_sysreg.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/v810/v810_tagram.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/v810/v810_dataram.sv
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/v810/v810_icache.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/v810/v810_mem.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/v810/v810.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/mach.sv

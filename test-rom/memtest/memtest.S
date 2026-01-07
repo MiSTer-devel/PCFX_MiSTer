@@ -26,6 +26,13 @@ rwsize  equ 4
     org 0FFF00000h
 
 entry:
+    ;; Initialize and enable instruction cache (I$)
+    mov #1, r1
+    movhi #1, r1, r1
+    ldsr r1, #24                ; Set CHCW.CEN=0, .CEC=256, .ICC=1
+    mov #2, r1
+    ldsr r1, #24                ; Set CHCW.ICE
+
     mov #-1, r16                ; r16 = initial test value
     mov r0, r8                  ; r8 = RAM start
     movhi #20h, r0, r9          ; r9 = RAM end + 1
