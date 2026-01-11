@@ -517,7 +517,7 @@ always @(posedge CLK) if (1 && CE) begin
                  (cpu_rw ? cpu_d_i[15:0] : cpu_d_o[15:0]));
 end
 
-always @cpu_int
+always @(cpu_int)
     $display("!! cpu_int=%x", cpu_int);
 
 endmodule
