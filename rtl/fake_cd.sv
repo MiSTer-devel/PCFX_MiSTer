@@ -44,7 +44,9 @@ always @(posedge CLK) begin
         if (req_sense) begin
             case (req_st)
                 'd0: CD_DATA <= 8'h70;
-                'd2: CD_DATA <= 8'h00; // NO SENSE
+                'd2: CD_DATA <= 8'h02; // Sense key: NOT READY
+                'd7: CD_DATA <= 8'h0A; // Additional sense length
+                'd12:CD_DATA <= 8'h0B; // Additional sense code: ABORTED COMMAND
                 default: CD_DATA <= 8'h00;
             endcase
             if (req_st == 'd18) begin

@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
-[*] Sat Jan  3 03:17:03 2026
+[*] Sun Jan  4 05:13:07 2026
 [*]
 [dumpfile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/pcfx_top_tb.verilator.fst"
-[dumpfile_mtime] "Sat Jan  3 03:16:45 2026"
-[dumpfile_size] 14787865
+[dumpfile_mtime] "Sun Jan  4 05:08:23 2026"
+[dumpfile_size] 26093463
 [savefile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/pcfx_top_tb.verilator.gtkw"
-[timestart] 430996200
+[timestart] 0
 [size] 1334 601
 [pos] -1 -1
-*-15.199163 431012260 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+*-26.078840 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 [markername] AA
 [markername] BB
 [markername] CC
@@ -56,6 +56,9 @@ pcfx_top_tb.pcfx_top.mach.mem16_a[31:0]
 @28
 pcfx_top_tb.pcfx_top.mach.ram_cen
 pcfx_top_tb.pcfx_top.mach.rom_cen
+@29
+pcfx_top_tb.pcfx_top.mach.sram_cen
+@28
 pcfx_top_tb.pcfx_top.mach.io_cen
 pcfx_top_tb.pcfx_top.mach.ga_rdn
 pcfx_top_tb.pcfx_top.mach.ga_wrn

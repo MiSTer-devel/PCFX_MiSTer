@@ -29,6 +29,13 @@ module mach
    output [3:0]  RAM_BEn,
    input         RAM_READYn,
 
+   output [14:0] SRAM_A,
+   output [7:0]  SRAM_DI,
+   input [7:0]   SRAM_DO,
+   output        SRAM_CEn,
+   output        SRAM_WEn,
+   input         SRAM_READYn,
+
    input         hmi_t HMI,
 
    output [31:0] A,
@@ -65,6 +72,10 @@ logic           rom_readyn;
 logic           ram_cen;
 wire [31:0]     ram_do;
 logic           ram_readyn;
+
+logic           sram_cen;
+wire [7:0]      sram_do;
+logic           sram_readyn;
 
 logic           a1_16;
 logic [31:0]    mem16_a;
@@ -181,6 +192,7 @@ fx_ga ga
      .A1_16(a1_16),
      .ROM_CEn(rom_cen),
      .RAM_CEn(ram_cen),
+     .SRAM_CEn(sram_cen),
      .IO_CEn(io_cen),
 
      .FX_GA_CSn(ga_csn),
@@ -420,6 +432,8 @@ always @* begin
         cpu_d_i = {16'b0, rom_do};
     else if (~ram_cen)
         cpu_d_i = ram_do;
+    else if (~sram_cen)
+        cpu_d_i = {24'b0, sram_do};
     else if (~io_cen)
         cpu_d_i = {16'b0, io_do};
     else
@@ -446,9 +460,13 @@ assign rom_readyn = rom_cen | ROM_READYn;
 
 assign ram_do = RAM_DO;
 assign ram_readyn = ram_cen | RAM_READYn;
-assign CPU_BCYSTn = cpu_bcystn;
+
+assign sram_do = SRAM_DO;
+assign sram_readyn = sram_cen | SRAM_READYn;
 
 assign mem16_a = {cpu_a[31:2], a1_16, 1'b0};
+
+assign CPU_BCYSTn = cpu_bcystn;
 
 //////////////////////////////////////////////////////////////////////
 // Core memory interface
@@ -462,17 +480,15 @@ assign RAM_DI = cpu_d_o;
 assign RAM_WEn = cpu_rw;
 assign RAM_BEn = cpu_ben;
 
+assign SRAM_CEn = sram_cen;
+assign SRAM_A = cpu_a[15:1];
+assign SRAM_DI = cpu_d_o[7:0];
+assign SRAM_WEn = cpu_rw;
+
 //////////////////////////////////////////////////////////////////////
 // SCSI interface
 
-initial scsi_data = '0;
-
-always @(posedge CLK) begin
-    if (mmc_scsi_doe)
-        scsi_data <= mmc_scsi_do;
-    else
-        scsi_data <= scsi_cd_do;
-end
+assign scsi_data = mmc_scsi_doe ? mmc_scsi_do : scsi_cd_do;
 
 fake_cd fake_cd
     (
@@ -517,7 +533,7 @@ always @(posedge CLK) if (1 && CE) begin
                  (cpu_rw ? cpu_d_i[15:0] : cpu_d_o[15:0]));
 end
 
-always @(cpu_int)
-    $display("!! cpu_int=%x", cpu_int);
+always @(sram_cen)
+    $display("!! %t: sram_cen=%x", $realtime, sram_cen);
 
 endmodule
