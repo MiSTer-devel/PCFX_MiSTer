@@ -29,6 +29,7 @@ module fx_ga
    output        A1_16,
    output        ROM_CEn,
    output        RAM_CEn,
+   output        SRAM_CEn,
    output        IO_CEn,
 
    output        FX_GA_CSn,
@@ -82,11 +83,12 @@ assign SZRQn = ~unk_cen | (ROM_CEn & IO_CEn);
 // IO, i.e., if one or both of BEn[3:2] are asserted.
 assign A1_16 = A[1] | (~&BEn[3:2] & &BEn[1:0]);
 
-assign ROM_CEn = ~(~MRQn & (A[31:28] == 4'hF));
-assign RAM_CEn = ~(~MRQn & (A[31:24] == 8'h00));
-assign IO_CEn = ~((MRQn | (A[31:28] == 4'h8)) & (~BCYSTn | ~DAn)
-                  & (ST == 2'b10));
-assign unk_cen = ~(RAM_CEn & ROM_CEn & IO_CEn);
+assign ROM_CEn  = ~(~MRQn & (A[31:28] == 4'hF));      // F000_0000 .. FFFF_FFFF
+assign RAM_CEn  = ~(~MRQn & (A[31:24] == 8'h00));     // 0000_0000 .. 00FF_FFFF
+assign SRAM_CEn = ~(~MRQn & (A[31:27] == 5'b1110_0)); // E000_0000 .. E7FF_FFFF
+assign IO_CEn   = ~((MRQn | (A[31:28] == 4'h8)) & (~BCYSTn | ~DAn)
+                    & (ST == 2'b10));
+assign unk_cen = ~(RAM_CEn & ROM_CEn & SRAM_CEn & IO_CEn);
 
 assign FX_GA_CSn = ~(~IO_CEn & (A[30:12] == 19'h00000)) |
                    ~(PSG_CSn & VPU_CSn & VCE_CSn & VDC0_CSn &

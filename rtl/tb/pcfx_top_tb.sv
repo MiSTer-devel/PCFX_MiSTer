@@ -24,7 +24,7 @@ initial begin
     $dumpvars();
 `else
     $dumpfile("pcfx_top_tb.verilator.fst");
-    #(418e3) $dumpvars();
+    #(0e3) $dumpvars();
 `endif
 end
 
@@ -206,7 +206,7 @@ logic [24:0] addr;
 endtask
 
 task load_rombios;
-    load_file(25'h0, fn_rombios, swap_rombios);
+    load_file(pcfx_top.memif_sdram.ROM_BASE_A, fn_rombios, swap_rombios);
 endtask
 
 `endif
@@ -229,7 +229,7 @@ always @(negedge vs) begin
     $system({"python3 render2png.py ", fname, {".hex "}, fname, ".png; rm ", fname, ".hex"});
 `endif
   end
-  $display("%t: Frame %03d", $time, frame);
+  $display("%t: Frame %03d  A=%x", $time, frame, pcfx_top.mach.cpu_a);
   $sformat(fname, "frames/render-%03d", frame);
   pice = 0;
   if ((frame % 1) == 0) begin
@@ -265,12 +265,14 @@ initial #0 begin
     load_rombios();
     $display("ROMs loaded.");
 
-    //load_file({4'h8, 21'h0}, "ram.bin", '0);
+    //load_file(pcfx_top.memif_sdram.RAM_BASE_A, "ram.bin", '0);
 
     reset = 0;
 end
 
-initial #(500e3) begin
+initial begin
+    #(418e3) ;
+    //repeat (15) #(1000e3) ;
     //$writememh("vram0.hex", pcfx_top.mach.vram0.mem);
     //$writememh("vram1.hex", pcfx_top.mach.vram1.mem);
     //$writememh("vce_cp.hex", pcfx_top.mach.vce.cpram.mem);
@@ -278,10 +280,23 @@ initial #(500e3) begin
     $finish;
 end
 
-initial if (0) begin
-  #(430e3);
-  $display("Pressing JP1.Left...");
-  hmi.jp1.l = '1;
+initial if (1) begin
+    #(430e3);
+
+    $display("Pressing JP1.Left...");
+    hmi.jp1.l = '1;
+    #(2600e3) hmi.jp1.l = '0;
+    #(40e3);
+
+    $display("Pressing JP1.Up...");
+    hmi.jp1.u = '1;
+    #(40e3) hmi.jp1.u = '0;
+    #(80e3);
+
+    $display("Pressing JP1.Run...");
+    hmi.jp1.run = '1;
+    #(40e3) hmi.jp1.run = '0;
+    #(80e3);
 end
 
 endmodule

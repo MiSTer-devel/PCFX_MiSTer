@@ -109,6 +109,12 @@ wire        ram_wen;
 wire [3:0]  ram_ben;
 wire        ram_readyn;
 
+wire [14:0] sram_a;
+wire [7:0]  sram_di, sram_do;
+wire        sram_cen;
+wire        sram_wen;
+wire        sram_readyn;
+
 wire [24:0] memif_sdram_waddr;
 wire [31:0] memif_sdram_din;
 
@@ -146,6 +152,13 @@ mach mach
    .RAM_BEn(ram_ben),
    .RAM_READYn(ram_readyn),
 
+   .SRAM_A(sram_a),
+   .SRAM_DI(sram_di),
+   .SRAM_DO(sram_do),
+   .SRAM_CEn(sram_cen),
+   .SRAM_WEn(sram_wen),
+   .SRAM_READYn(sram_readyn),
+
    .HMI(HMI),
 
    .A(a),
@@ -179,6 +192,13 @@ memif_sdram memif_sdram
    .RAM_WEn(ram_wen),
    .RAM_BEn(ram_ben),
    .RAM_READYn(ram_readyn),
+
+   .SRAM_A(sram_a),
+   .SRAM_DI(sram_di),
+   .SRAM_DO(sram_do),
+   .SRAM_CEn(sram_cen),
+   .SRAM_WEn(sram_wen),
+   .SRAM_READYn(sram_readyn),
 
    .SDRAM_CLK(clk_ram),
    .SDRAM_CLKREF(sdram_clkref),
