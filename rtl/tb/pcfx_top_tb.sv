@@ -232,7 +232,7 @@ always @(negedge vs) begin
   $display("%t: Frame %03d  A=%x", $time, frame, pcfx_top.mach.cpu_a);
   $sformat(fname, "frames/render-%03d", frame);
   pice = 0;
-  if ((frame % 1) == 0) begin
+  if (frame >= 237) begin
     fpic = $fopen({fname, ".hex"}, "w");
   end
   frame = frame + 1;

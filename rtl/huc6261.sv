@@ -57,10 +57,24 @@ localparam [8:0] DISP_LINES_E = 9'd242;
 localparam [8:0] TOP_BL_LINES = TOP_BL_LINES_E;
 localparam [8:0] DISP_LINES = DISP_LINES_E;
 
+typedef struct packed {
+    logic bg71;
+    logic [3:0] bmg;
+    logic sp;
+    logic bp;
+    logic sp256;
+    logic bp256;
+    logic [1:0] rsv4;
+    logic dc7;
+    logic ex;
+    logic [1:0] dcc;
+} cr_t;
+
 logic [4:0]     ar;
 logic [11:0]    h_cnt;
 logic [8:0]     v_cnt;
 
+cr_t            cr, cr_next;
 logic [8:0]     cpa;
 logic [15:0]    cpdin, cpdout;
 logic           cpd_wr, cpd_wr_d;
@@ -78,6 +92,7 @@ always @(posedge CLK) if (CE) begin
     cpd_wr_d <= cpd_wr;
 
     if (~RESn) begin
+        cr_next <= '0;
         ar <= '0;
         cpa <= '0;
         vdc_sp_cpao <= '0;
@@ -94,6 +109,8 @@ always @(posedge CLK) if (CE) begin
                 end
                 1'b1: begin
                     case (ar)
+                        5'd00:
+                            cr_next <= DI[14:0];
                         5'd01:
                             cpa <= DI[8:0];
                         5'd02: begin
@@ -134,6 +151,8 @@ assign DO = (~CSn & ~RDn) ? dout : '0;
 //////////////////////////////////////////////////////////////////////
 // Video counter
 
+logic           multires, multires_p;
+
 wire h_wrap = h_cnt == (LINE_CLOCKS - 1'd1);
 wire v_wrap = v_cnt == (TOTAL_LINES - 1'd1);
 
@@ -155,6 +174,29 @@ always @(posedge CLK) begin
     end
 end
 
+// Some registers update only every line or frame.
+always @(posedge CLK) begin
+    if (~RESn) begin
+        cr <= '0;
+        multires_p <= '0;
+        multires <= '0;
+    end
+    else begin
+        if (h_wrap) begin
+            cr <= cr_next;
+        end
+
+        if ((v_cnt >= TOP_BL_LINES) & (v_cnt < (TOP_BL_LINES + DISP_LINES)) &
+            (cr.dc7 != cr_next.dc7))
+            multires_p <= '1;
+
+        if (v_cnt == TOP_BL_LINES + DISP_LINES) begin
+            multires <= multires_p;
+            multires_p <= '0;
+        end
+    end
+end
+
 //////////////////////////////////////////////////////////////////////
 // Pixel clock generator
 
@@ -171,12 +213,16 @@ always @(posedge CLK) begin
     else begin
         clken_cnt <= clken_cnt + 1'd1;
 
-        if (((clken_cnt == 3'd7) & (h_cnt < (LINE_CLOCKS - 12'd2 - 12'd1)))
+        if ((((multires & (clken_cnt == 3'd3))
+              | (cr.dc7 == 1'b0 & ((clken_cnt == 3'd7))))
+             & (h_cnt < (LINE_CLOCKS - 12'(2+1))))
+            | (cr.dc7 == 1'b1 & (clken_cnt == 3'd5))
             | h_wrap) begin
             clken_cnt <= '0;
             clken <= '1;
         end
-        if (clken_cnt == 3'd3)
+        if (((cr.dc7 == 1'b0) & (clken_cnt == 3'd3))
+            | ((cr.dc7 == 1'b1) & (clken_cnt == 3'd2)))
             clken_ne <= '1;
     end
 end
@@ -237,15 +283,18 @@ dpram #(.addr_width(9), .data_width(16)) cpram
 //////////////////////////////////////////////////////////////////////
 // Sync generators
 
-localparam [11:0] HSYNC_START_POS = 11'd8 - 1'd1;
-localparam [11:0] HSYNC_END_POS = 11'd8 + 11'd464 - 1'd1;
-
+logic [11:0]    hsync_start_pos, hsync_end_pos;
 logic           hbl_ff, vbl_ff;
+
+always @* begin
+    hsync_start_pos = (cr.dc7 ? (LINE_CLOCKS - 12'd6) : 12'd8) - 1'd1;
+    hsync_end_pos = (cr.dc7 ? (12'd468 - 12'd6) : (12'd8 + 12'd464)) - 1'd1;
+end
 
 // These syncs are for the VDCs.
 always @(posedge CLK) begin
-    HSYNC_NEGEDGE <= (h_cnt == HSYNC_START_POS);
-    HSYNC_POSEDGE <= (h_cnt == HSYNC_END_POS);
+    HSYNC_NEGEDGE <= (h_cnt == hsync_start_pos);
+    HSYNC_POSEDGE <= (h_cnt == hsync_end_pos);
     VSYNC_NEGEDGE <= ((v_cnt == VS_LINES - 1'd1) & h_wrap);
     VSYNC_POSEDGE <= (v_wrap & h_wrap);
 end

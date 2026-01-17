@@ -39,5 +39,5 @@ int main(int argc, char** argv, char**) {
 }
 
 // Local Variables:
-// compile-command: "verilator --cc --exe pcfx_top_tb.cpp --build -j 0 --timing --assert --trace-fst --trace-threads 1 -Wno-TIMESCALEMOD --top-module pcfx_top_tb --relative-includes -F pcfx_top.files pcfx_top_tb.sv"
+// compile-command: "verilator --cc --exe pcfx_top_tb.cpp --build -j 0 --timing --assert -O3 --x-assign fast --x-initial fast --trace-fst --trace-threads 1 -Wno-TIMESCALEMOD --top-module pcfx_top_tb --relative-includes -F pcfx_top.files pcfx_top_tb.sv"
 // End:
