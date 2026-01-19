@@ -7,6 +7,7 @@
 `timescale 1us / 1ns
 
 //`define USE_IOCTL_FOR_LOAD 1
+`define LOAD_SRAMS 1
 `define SAVE_FRAMES 1
 
 import core_pkg::hmi_t;
@@ -228,12 +229,12 @@ endtask
 
 //////////////////////////////////////////////////////////////////////
 
-logic           img_mounted = 0;
+logic [1:0]     img_mounted = 0;
 logic           img_readonly = 0;
 logic [63:0]    img_size = 0;
-logic [31:0]    sd_lba = 0;
-logic           sd_rd, sd_wr;
-logic           sd_ack = 0;
+logic [31:0]    sd_lba;
+logic [1:0]     sd_rd, sd_wr;
+logic [1:0]     sd_ack = 0;
 logic [7:0]     sd_buff_addr = 0;
 logic [15:0]    sd_buff_dout = 0;
 logic [15:0]    sd_buff_din;
@@ -241,40 +242,41 @@ logic           sd_buff_wr = 0;
 logic           bk_ena;
 logic           bk_load = 0;
 
-string          sd_fn;
-logic           sd_rd_act = 0;
-logic           sd_wr_act = 0;
-event           mount_sd;
+int             sd_vd;
+int             sd_fin [2];
+longint         sd_size [2];
+logic [1:0]     sd_rd_act = 0; // one-hot
+logic [1:0]     sd_wr_act = 0; // one-hot
+event           mount_sd, start_load_bk;
 
 assign sd_ack = sd_rd_act | sd_wr_act;
 
 always @(posedge clk_sys) begin
-integer	fin;
+integer vd;
 integer code;
 logic [15:0] data;
 
-    if (~sd_rd_act & sd_rd) begin
-        sd_rd_act <= 1;
+    if (~|sd_rd_act & |sd_rd) begin
+        vd = $clog2(sd_rd);
+        sd_rd_act[vd] <= 1;
         sd_buff_addr <= 0;
-        fin = $fopen(sd_fn, "r");
-        assert(fin != 0) else $error("Unable to open file %s", sd_fn);
-        code = $fseek(fin, sd_lba * 512, 0);
+        code = $fseek(sd_fin[vd], sd_lba * 512, 0);
         assert(code == 0) else $error("Unable to seek");
     end
-    else if (sd_rd_act) begin
+    else if (|sd_rd_act) begin
+        vd = $clog2(sd_rd_act);
         if (~sd_buff_wr) begin
-            if ($feof(fin))
+            if ($feof(sd_fin[vd]))
                 data <= '0;
             else
-                $fread(data, fin, 0, 2);
+                $fread(data, sd_fin[vd], 0, 2);
             sd_buff_dout <= {data[7:0], data[15:8]}; // $fread is big-endian
             sd_buff_wr <= 1;
         end
         else begin
             sd_buff_wr <= 0;
             if (&sd_buff_addr) begin
-                $fclose(fin);
-                sd_rd_act <= 0;
+                sd_rd_act[vd] <= 0;
             end
             sd_buff_addr <= sd_buff_addr + 1'd1;
         end
@@ -283,17 +285,43 @@ end
 
 always @mount_sd begin
     @(posedge clk_sys) ;
-    img_mounted <= '1;
-    img_size <= 32768;
+    img_mounted[sd_vd] <= '1;
+    img_size <= sd_size[sd_vd];
+end
+
+always @start_load_bk begin
     @(posedge clk_sys) bk_load <= '1;
     while (~pcfx_top.bk_loading)
         @(posedge clk_sys) ;
     @(posedge clk_sys) bk_load <= '0;
 end
 
-task load_sram;
-    sd_fn = "sram.bin";
-    -> mount_sd;
+task mount_sd_file(string fn, int vd);
+integer	fin;
+integer code;
+    fin = $fopen(fn, "r");
+    if (fin == 0) 
+        $warning("Unable to open file %s", fn);
+    else begin
+        sd_fin[vd] = fin;
+        code = $fseek(fin, 0, 2);
+        sd_size[vd] = $ftell(fin);
+        sd_vd = vd;
+        -> mount_sd;
+        repeat (2) @(posedge clk_sys) ; // wait for mount completion
+    end
+endtask
+
+task mount_sram;
+    mount_sd_file("sram.bin", 0);
+endtask
+
+task mount_bmp;
+    mount_sd_file("bmp.bin", 1);
+endtask
+
+task load_bk;
+    -> start_load_bk;
     while (~bk_load)
         @(posedge clk_sys) ;
     @(posedge clk_sys) ;
@@ -360,9 +388,14 @@ initial #0 begin
     reset = 0;
     $display("Reset released.");
 
-    load_sram();
-    //load_bmp();
-    $display("RAMs loaded.");
+`ifdef LOAD_SRAMS
+    mount_sram();
+    mount_bmp();
+    if (bk_ena) begin
+        load_bk();
+        $display("RAMs loaded.");
+    end
+`endif
 end
 
 initial begin

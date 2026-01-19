@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
-[*] Mon Jan 19 09:45:59 2026
+[*] Mon Jan 19 21:03:10 2026
 [*]
 [dumpfile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/pcfx_top_tb.verilator.fst"
-[dumpfile_mtime] "Mon Jan 19 09:45:21 2026"
-[dumpfile_size] 444526
+[dumpfile_mtime] "Mon Jan 19 20:52:25 2026"
+[dumpfile_size] 96854739
 [savefile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/pcfx_top_tb.verilator.gtkw"
-[timestart] 0
+[timestart] 3558787000
 [size] 1334 601
 [pos] -1 -1
-*-20.559731 72100 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+*-19.199135 3559770060 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 [markername] AA
 [markername] BB
 [markername] CC
@@ -47,13 +47,13 @@
 @800200
 -pcfx_top
 @28
+pcfx_top_tb.pcfx_top.img_mounted[1:0]
 pcfx_top_tb.pcfx_top.bk_load
+pcfx_top_tb.pcfx_top.sd_vd
 @22
 pcfx_top_tb.pcfx_top.sd_lba[31:0]
-@28
-pcfx_top_tb.pcfx_top.sd_rd
-pcfx_top_tb.pcfx_top.sd_ack
-@22
+pcfx_top_tb.pcfx_top.sd_rd[1:0]
+pcfx_top_tb.pcfx_top.sd_ack[1:0]
 pcfx_top_tb.pcfx_top.sd_buff_addr[7:0]
 pcfx_top_tb.pcfx_top.sd_buff_dout[15:0]
 @28
@@ -67,7 +67,6 @@ pcfx_top_tb.pcfx_top.bk_sdrd_copy_ack
 @22
 pcfx_top_tb.pcfx_top.bk_sdrd_a[24:0]
 pcfx_top_tb.pcfx_top.bk_sdrd_d[15:0]
-@23
 pcfx_top_tb.pcfx_top.sdbuf_a[7:0]
 @1000200
 -pcfx_top
@@ -78,10 +77,18 @@ pcfx_top_tb.pcfx_top.sdram.rd
 pcfx_top_tb.pcfx_top.sdram.rd_rdy
 pcfx_top_tb.pcfx_top.sdram.we
 pcfx_top_tb.pcfx_top.sdram.we_rdy
+pcfx_top_tb.pcfx_top.sdram.ls_we_req
+pcfx_top_tb.pcfx_top.sdram.ls_we_ack
 @1000200
 -sdram
 @800200
 -memif_sdram
+@28
+pcfx_top_tb.pcfx_top.memif_sdram.SRAM_CEn
+pcfx_top_tb.pcfx_top.memif_sdram.SRAM_WEn
+pcfx_top_tb.pcfx_top.memif_sdram.BMP_CEn
+@29
+pcfx_top_tb.pcfx_top.memif_sdram.BMP_WEn
 @28
 pcfx_top_tb.pcfx_top.memif_sdram.mem_start_req
 pcfx_top_tb.pcfx_top.memif_sdram.mem_pend_req
@@ -91,8 +98,7 @@ pcfx_top_tb.pcfx_top.memif_sdram.mem_rdy
 @1000200
 -memif_sdram
 @28
-pcfx_top_tb.pcfx_top.sdram.ls_we_req
-pcfx_top_tb.pcfx_top.sdram.ls_we_ack
+pcfx_top_tb.pcfx_top.mach.ERROR
 @22
 pcfx_top_tb.pcfx_top.mach.cpu_a[31:0]
 pcfx_top_tb.pcfx_top.mach.cpu_d_i[31:0]
@@ -107,11 +113,10 @@ pcfx_top_tb.pcfx_top.mach.mem16_a[31:0]
 pcfx_top_tb.pcfx_top.mach.ram_cen
 pcfx_top_tb.pcfx_top.mach.rom_cen
 pcfx_top_tb.pcfx_top.mach.sram_cen
+pcfx_top_tb.pcfx_top.mach.bmp_cen
 pcfx_top_tb.pcfx_top.mach.io_cen
 pcfx_top_tb.pcfx_top.mach.ga_rdn
 pcfx_top_tb.pcfx_top.mach.ga_wrn
-pcfx_top_tb.pcfx_top.memif_sdram.SRAM_CEn
-pcfx_top_tb.pcfx_top.memif_sdram.SRAM_WEn
 @22
 pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[11][31:0]
 pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[12][31:0]

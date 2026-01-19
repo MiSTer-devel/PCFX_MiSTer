@@ -31,6 +31,13 @@ module memif_sdram
     input         SRAM_WEn,
     output        SRAM_READYn,
 
+    input [22:0]  BMP_A,
+    input [7:0]   BMP_DI,
+    output [7:0]  BMP_DO,
+    input         BMP_CEn,
+    input         BMP_WEn,
+    output        BMP_READYn,
+
     input         SDRAM_CLK,
     output        SDRAM_CLKREF,
     output [24:0] SDRAM_WADDR,
@@ -70,6 +77,10 @@ logic [7:0]     sram_do;
 logic           sram_start_req;
 logic           sram_readyn = '1;
 
+logic [7:0]     bmp_do;
+logic           bmp_start_req;
+logic           bmp_readyn = '1;
+
 logic           mem_start_req;
 logic           mem_pend_req = '0;
 logic           mem_we;
@@ -90,9 +101,10 @@ logic           sdram_we_d = '0;
 assign rom_start_req = ~CPU_BCYSTn & ~ROM_CEn;
 assign ram_start_req = ~CPU_BCYSTn & ~RAM_CEn;
 assign sram_start_req = ~CPU_BCYSTn & ~SRAM_CEn;
-assign mem_start_req = rom_start_req | ram_start_req | sram_start_req;
+assign bmp_start_req = ~CPU_BCYSTn & ~BMP_CEn;
+assign mem_start_req = rom_start_req | ram_start_req | sram_start_req | bmp_start_req;
 
-assign mem_readyn = rom_readyn & ram_readyn & sram_readyn;
+assign mem_readyn = rom_readyn & ram_readyn & sram_readyn & bmp_readyn;
 
 always @(posedge SDRAM_CLK) begin
     mem_pend_req <= (mem_pend_req | mem_start_req) & ~(ract | wact);
@@ -124,6 +136,7 @@ always @(posedge CPU_CLK) if (CPU_CE) begin
     rom_readyn <= ROM_CEn | ~mem_rdy;
     ram_readyn <= RAM_CEn | ~mem_rdy;
     sram_readyn <= SRAM_CEn | ~mem_rdy;
+    bmp_readyn <= BMP_CEn | ~mem_rdy;
 end
 
 // SDRAM_DOUT is in the SDRAM_CLK domain. Latching into the CPU_CLK
@@ -132,6 +145,7 @@ always @(posedge CPU_CLK) if (CPU_CE) begin
     rom_do <= SDRAM_DOUT[15:0];
     ram_do <= SDRAM_DOUT[31:0];
     sram_do <= SDRAM_DOUT[(8 * SRAM_A[0])+:8];
+    bmp_do <= SDRAM_DOUT[(8 * BMP_A[0])+:8];
 end
 
 assign ROM_DO = rom_do;
@@ -142,6 +156,9 @@ assign RAM_READYn = ram_readyn;
 
 assign SRAM_DO = sram_do;
 assign SRAM_READYn = sram_readyn;
+
+assign BMP_DO = bmp_do;
+assign BMP_READYn = bmp_readyn;
 
 always @* begin
     mem_we = '0;
@@ -165,6 +182,13 @@ always @* begin
         sdram_din = {4{SRAM_DI}};
         sdram_be = {2'b00, SRAM_A[0], ~SRAM_A[0]};
         sdram_raddr = SRAM_BASE_A + 25'(SRAM_A);
+        sdram_waddr = sdram_raddr;
+    end
+    else if (~BMP_CEn) begin
+        mem_we = ~BMP_WEn;
+        sdram_din = {4{BMP_DI}};
+        sdram_be = {2'b00, BMP_A[0], ~BMP_A[0]};
+        sdram_raddr = BMP_BASE_A + 25'(BMP_A);
         sdram_waddr = sdram_raddr;
     end
 end

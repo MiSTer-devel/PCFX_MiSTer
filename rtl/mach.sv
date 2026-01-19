@@ -36,6 +36,13 @@ module mach
    output        SRAM_WEn,
    input         SRAM_READYn,
 
+   output [22:0] BMP_A,
+   output [7:0]  BMP_DI,
+   input [7:0]   BMP_DO,
+   output        BMP_CEn,
+   output        BMP_WEn,
+   input         BMP_READYn,
+
    input         hmi_t HMI,
 
    output [31:0] A,
@@ -77,6 +84,10 @@ logic           ram_readyn;
 logic           sram_cen;
 wire [7:0]      sram_do;
 logic           sram_readyn;
+
+logic           bmp_cen;
+wire [7:0]      bmp_do;
+logic           bmp_readyn;
 
 logic           a1_16;
 logic [31:0]    mem16_a;
@@ -195,6 +206,7 @@ fx_ga ga
      .ROM_CEn(rom_cen),
      .RAM_CEn(ram_cen),
      .SRAM_CEn(sram_cen),
+     .BMP_CEn(bmp_cen),
      .IO_CEn(io_cen),
 
      .FX_GA_CSn(ga_csn),
@@ -208,6 +220,7 @@ fx_ga ga
      .ROM_READYn(rom_readyn),
      .RAM_READYn(ram_readyn),
      .SRAM_READYn(sram_readyn),
+     .BMP_READYn(bmp_readyn),
 
      .WRn(ga_wrn),
      .RDn(ga_rdn),
@@ -438,6 +451,8 @@ always @* begin
         cpu_d_i = ram_do;
     else if (~sram_cen)
         cpu_d_i = {24'b0, sram_do};
+    else if (~bmp_cen)
+        cpu_d_i = {24'b0, bmp_do};
     else if (~io_cen)
         cpu_d_i = {16'b0, io_do};
     else
@@ -468,6 +483,9 @@ assign ram_readyn = ram_cen | RAM_READYn;
 assign sram_do = SRAM_DO;
 assign sram_readyn = sram_cen | SRAM_READYn;
 
+assign bmp_do = BMP_DO;
+assign bmp_readyn = bmp_cen | BMP_READYn;
+
 assign mem16_a = {cpu_a[31:2], a1_16, 1'b0};
 
 assign CPU_BCYSTn = cpu_bcystn;
@@ -489,12 +507,10 @@ assign SRAM_A = mem16_a[15:1];
 assign SRAM_DI = cpu_d_o[7:0];
 assign SRAM_WEn = sram_cen | cpu_rw;
 
-/* -----\/----- EXCLUDED -----\/-----
-assign EXTSRAM_CEn = extsram_cen;
-assign EXTSRAM_A = mem16_a[15:1];
-assign EXTSRAM_DI = cpu_d_o[7:0];
-assign EXTSRAM_WEn = extsram_cen | cpu_rw;
- -----/\----- EXCLUDED -----/\----- */
+assign BMP_CEn = bmp_cen;
+assign BMP_A = mem16_a[23:1];
+assign BMP_DI = cpu_d_o[7:0];
+assign BMP_WEn = bmp_cen | cpu_rw;
 
 //////////////////////////////////////////////////////////////////////
 // SCSI interface

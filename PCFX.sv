@@ -220,7 +220,8 @@ localparam CONF_STR = {
 	"-;",
 	"O[22:21],Aspect ratio,Original,Full Screen,[ARC1],[ARC2];",
 	"-;",
-    "S0,ROMBIN,Mount backup RAM;",
+    "S0,SAVBIN,Mount int. backup RAM;",
+    "S1,FXBBIN,Mount FX-BMP backup RAM;",
     "D0R7,Load backup RAM;",
     "D0R8,Save backup RAM;",
 	"-;",
@@ -240,13 +241,13 @@ wire   [1:0] buttons;
 wire [127:0] status;
 wire [31:0]  joystick_0, joystick_1;
 wire  [10:0] ps2_key;
-wire        img_mounted;
+wire   [1:0] img_mounted;
 wire        img_readonly;
 wire [63:0] img_size;
 wire [31:0] sd_lba;
-wire        sd_rd;
-wire        sd_wr;
-wire        sd_ack;
+wire  [1:0] sd_rd;
+wire  [1:0] sd_wr;
+wire  [1:0] sd_ack;
 wire  [7:0] sd_buff_addr;
 wire [15:0] sd_buff_dout;
 wire [15:0] sd_buff_din;
@@ -258,7 +259,7 @@ wire [24:0] ioctl_addr;
 wire [15:0] ioctl_dout;
 wire        ioctl_wait;
 
-hps_io #(.CONF_STR(CONF_STR), .WIDE(1)) hps_io
+hps_io #(.CONF_STR(CONF_STR), .WIDE(1), .VDNUM(2)) hps_io
 (
 	.clk_sys(clk_sys),
 	.HPS_BUS(HPS_BUS),
@@ -279,14 +280,14 @@ hps_io #(.CONF_STR(CONF_STR), .WIDE(1)) hps_io
 	.img_readonly(img_readonly),
 	.img_size(img_size),
 
-	.sd_lba('{sd_lba}),
+	.sd_lba('{sd_lba, sd_lba}),
 	.sd_rd(sd_rd),
 	.sd_wr(sd_wr),
 	.sd_ack(sd_ack),
 
 	.sd_buff_addr(sd_buff_addr),
 	.sd_buff_dout(sd_buff_dout),
-	.sd_buff_din('{sd_buff_din}),
+	.sd_buff_din('{sd_buff_din, sd_buff_din}),
 	.sd_buff_wr(sd_buff_wr),
 
 	.ioctl_download(ioctl_download),
@@ -361,7 +362,7 @@ pcfx_top pcfx_top
 
 	.sd_buff_addr(sd_buff_addr),
 	.sd_buff_dout(sd_buff_dout),
-	.sd_buff_din('{sd_buff_din}),
+	.sd_buff_din(sd_buff_din),
 	.sd_buff_wr(sd_buff_wr),
 
 	.ioctl_download(ioctl_download),

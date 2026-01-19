@@ -30,6 +30,7 @@ module fx_ga
    output        ROM_CEn,
    output        RAM_CEn,
    output        SRAM_CEn,
+   output        BMP_CEn,
    output        IO_CEn,
 
    output        FX_GA_CSn,
@@ -44,6 +45,7 @@ module fx_ga
    input         ROM_READYn,
    input         RAM_READYn,
    input         SRAM_READYn,
+   input         BMP_READYn,
 
    // Device control
    output        WRn,
@@ -75,8 +77,8 @@ module fx_ga
 logic           unk_cen;
 logic           io_readyn;
 
-assign READYn = unk_cen & ROM_READYn & RAM_READYn & SRAM_READYn & io_readyn;
-assign SZRQn = ~unk_cen | (ROM_CEn & IO_CEn & SRAM_CEn);
+assign READYn = unk_cen & ROM_READYn & RAM_READYn & SRAM_READYn & BMP_READYn & io_readyn;
+assign SZRQn = ~unk_cen | (ROM_CEn & IO_CEn & SRAM_CEn & BMP_CEn);
 
 //////////////////////////////////////////////////////////////////////
 // Address decoder
@@ -88,9 +90,10 @@ assign A1_16 = A[1] | (~&BEn[3:2] & &BEn[1:0]);
 assign ROM_CEn  = ~(~MRQn & (A[31:28] == 4'hF));      // F000_0000 .. FFFF_FFFF
 assign RAM_CEn  = ~(~MRQn & (A[31:24] == 8'h00));     // 0000_0000 .. 00FF_FFFF
 assign SRAM_CEn = ~(~MRQn & (A[31:27] == 5'b1110_0)); // E000_0000 .. E7FF_FFFF
+assign BMP_CEn  = ~(~MRQn & (A[31:27] == 5'b1110_1)); // E800_0000 .. EFFF_FFFF
 assign IO_CEn   = ~((MRQn | (A[31:28] == 4'h8)) & (~BCYSTn | ~DAn)
                     & (ST == 2'b10));
-assign unk_cen = ~(RAM_CEn & ROM_CEn & SRAM_CEn & IO_CEn);
+assign unk_cen = ~(RAM_CEn & ROM_CEn & SRAM_CEn & BMP_CEn & IO_CEn);
 
 assign FX_GA_CSn = ~(~IO_CEn & (A[30:12] == 19'h00000)) |
                    ~(PSG_CSn & VPU_CSn & VCE_CSn & VDC0_CSn &

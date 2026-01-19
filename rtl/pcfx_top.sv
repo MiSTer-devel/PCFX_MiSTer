@@ -13,14 +13,14 @@ module pcfx_top
 	input             reset,
     input             pll_locked,
 	
-    input             img_mounted,
+    input [1:0]       img_mounted,
     input             img_readonly,
     input [63:0]      img_size,
 
     output reg [31:0] sd_lba,
-    output reg        sd_rd = 0,
-    output reg        sd_wr = 0,
-    input             sd_ack,
+    output reg [1:0]  sd_rd = 0,
+    output reg [1:0]  sd_wr = 0,
+    input [1:0]       sd_ack,
 
     input [7:0]       sd_buff_addr,
     input [15:0]      sd_buff_dout,
@@ -138,6 +138,12 @@ wire        sram_cen;
 wire        sram_wen;
 wire        sram_readyn;
 
+wire [22:0] bmp_a;
+wire [7:0]  bmp_di, bmp_do;
+wire        bmp_cen;
+wire        bmp_wen;
+wire        bmp_readyn;
+
 wire clk_cpu = clk_sys;
 wire reset_int = reset | ioctl_download;
 
@@ -180,6 +186,13 @@ mach mach
    .SRAM_WEn(sram_wen),
    .SRAM_READYn(sram_readyn),
 
+   .BMP_A(bmp_a),
+   .BMP_DI(bmp_di),
+   .BMP_DO(bmp_do),
+   .BMP_CEn(bmp_cen),
+   .BMP_WEn(bmp_wen),
+   .BMP_READYn(bmp_readyn),
+
    .HMI(HMI),
 
    .A(a),
@@ -221,6 +234,13 @@ memif_sdram memif_sdram
    .SRAM_CEn(sram_cen),
    .SRAM_WEn(sram_wen),
    .SRAM_READYn(sram_readyn),
+
+   .BMP_A(bmp_a),
+   .BMP_DI(bmp_di),
+   .BMP_DO(bmp_do),
+   .BMP_CEn(bmp_cen),
+   .BMP_WEn(bmp_wen),
+   .BMP_READYn(bmp_readyn),
 
    .SDRAM_CLK(clk_ram),
    .SDRAM_CLKREF(sdram_clkref),
@@ -289,38 +309,64 @@ end
 
 typedef enum [3:0] {
     BKST_IDLE = '0,
+    BKST_SELECT_VD,
     BKST_START_SD_RD,
     BKST_SD_RD,
     BKST_START_SDRAM_WR,
     BKST_SDRAM_WR,
-    BKST_NEXT_LBA
+    BKST_NEXT_LBA,
+    BKST_NEXT_VD
 } bkst_t;
+
+logic [1:0]     img_mounted_d, img_mounted_add, img_mounted_rem;
+logic [63:0]    img_sizes [2];
 
 bkst_t          bk_state = BKST_IDLE;
 logic           bk_loading = 0;
+logic           sd_vd; // volume select
 
 logic           sd_ack_d;
 
-always @(posedge clk_sys) begin
-    sd_ack_d <= sd_ack;
+assign img_mounted_add = img_mounted & ~img_mounted_d;
+assign img_mounted_rem = ~img_mounted & img_mounted_d;
 
-    if (~sd_ack_d & sd_ack)
+always @(posedge clk_sys) begin
+    img_mounted_d <= img_mounted;
+
+    if (|img_mounted_add)
+        img_sizes[img_mounted_add[1]] <= img_size;
+    if (|img_mounted_rem)
+        img_sizes[img_mounted_rem[1]] <= '0;
+end
+
+always @(posedge clk_sys) begin
+    sd_ack_d <= |sd_ack;
+
+    if (~sd_ack_d & |sd_ack)
         {sd_rd, sd_wr} <= '0;
 
     case (bk_state)
         BKST_IDLE: begin
             if (bk_load) begin
-                bk_state <= BKST_START_SD_RD;
                 bk_loading <= 1;
-                sd_lba <= 0;
+                sd_vd <= 0;
+                bk_state <= BKST_SELECT_VD;
             end
         end
+        BKST_SELECT_VD: begin
+            if (img_mounted[sd_vd]) begin
+                bk_state <= BKST_START_SD_RD;
+                sd_lba <= 0;
+            end
+            else
+                bk_state <= BKST_NEXT_VD;
+        end
         BKST_START_SD_RD: begin
-            sd_rd <= 1;
+            sd_rd[sd_vd] <= 1;
             bk_state <= BKST_SD_RD;
         end
         BKST_SD_RD: begin
-            if (sd_ack_d & ~sd_ack) begin
+            if (sd_ack_d & ~|sd_ack) begin
                 bk_state <= BKST_START_SDRAM_WR;
             end
         end
@@ -334,9 +380,8 @@ always @(posedge clk_sys) begin
             end
         end
         BKST_NEXT_LBA: begin
-            if (&sd_lba[5:0]) begin
-                bk_state <= BKST_IDLE;
-                bk_loading <= 0;
+            if (sd_lba + 1'd1 == img_sizes[sd_vd][9+:32]) begin
+                bk_state <= BKST_NEXT_VD;
                 sd_lba <= 0;
             end
             else begin
@@ -344,11 +389,20 @@ always @(posedge clk_sys) begin
                 bk_state <= BKST_START_SD_RD;
             end
         end
+        BKST_NEXT_VD: begin
+            sd_vd <= ~sd_vd;
+            if (sd_vd) begin // last volume
+                bk_state <= BKST_IDLE;
+                bk_loading <= 0;
+            end
+            else
+                bk_state <= BKST_SELECT_VD;
+        end
         default: ;
     endcase
 end
 
-assign bk_ena = img_mounted;
+assign bk_ena = |img_mounted;
 
 //////////////////////////////////////////////////////////////////////
 // SD card transfer buffer
@@ -356,7 +410,7 @@ assign bk_ena = img_mounted;
 logic           bk_sdrd_copy_req = 0;
 logic           bk_sdrd_copy_ack = 0;
 logic           bk_sdrd_copying = 0;
-logic [24:0]    bk_sdrd_a;
+logic [24:0]    bk_sdrd_base_a, bk_sdrd_a;
 logic [15:0]    bk_sdrd_d;
 logic           bk_sdrd_req = 0;
 logic           bk_sdrd_ack;
@@ -366,10 +420,12 @@ logic [15:0]    sdbuf_din;
 logic           sdbuf_wren = 0;
 logic           sdbuf_rden = 0;
 
+assign bk_sdrd_base_a = sd_vd ? memif_sdram.BMP_BASE_A : memif_sdram.SRAM_BASE_A;
+
 always @(posedge clk_sys) begin
     if (~bk_sdrd_copying & (bk_sdrd_copy_req != bk_sdrd_copy_ack)) begin
         bk_sdrd_copying <= 1;
-        bk_sdrd_a <= memif_sdram.SRAM_BASE_A + 25'({sd_lba, 9'b0});
+        bk_sdrd_a <= bk_sdrd_base_a + 25'({sd_lba, 9'b0});
         sdbuf_wren <= ~bk_loading;
         sdbuf_rden <= bk_loading;
     end
