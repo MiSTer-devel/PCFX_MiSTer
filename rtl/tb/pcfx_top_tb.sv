@@ -67,12 +67,30 @@ pcfx_top pcfx_top
 	.reset(reset),
     .pll_locked('1),
 
+	.img_mounted(img_mounted),
+	.img_readonly(img_readonly),
+	.img_size(img_size),
+
+	.sd_lba(sd_lba),
+	.sd_rd(sd_rd),
+	.sd_wr(sd_wr),
+	.sd_ack(sd_ack),
+
+	.sd_buff_addr(sd_buff_addr),
+	.sd_buff_dout(sd_buff_dout),
+	.sd_buff_din(sd_buff_din),
+	.sd_buff_wr(sd_buff_wr),
+
 	.ioctl_download(ioctl_download),
 	.ioctl_index(ioctl_index),
 	.ioctl_wr(ioctl_wr),
 	.ioctl_addr(ioctl_addr),
 	.ioctl_dout(ioctl_dout),
 	.ioctl_wait(ioctl_wait),
+
+    .bk_ena(bk_ena),
+    .bk_load(bk_load),
+    .bk_save('0),
 
     .HMI(hmi),
 
@@ -121,12 +139,10 @@ end
 //////////////////////////////////////////////////////////////////////
 
 string fn_rombios = "rombios.bin";
-bit    swap_rombios = 1;
 
 `ifdef USE_IOCTL_FOR_LOAD
 
 bit         ioctl_active = 0;
-bit         ioctl_swap;
 integer     ioctl_fin;
 bit         ioctl_wrote = 0;
 
@@ -150,8 +166,7 @@ logic [15:0] data;
     else begin
         code = $fread(data, ioctl_fin, 0, 2);
         if (!$feof(ioctl_fin)) begin
-            if (ioctl_swap)
-                data = {data[7:0], data[15:8]};
+            data = {data[7:0], data[15:8]}; // $fread is big-endian
             ioctl_dout <= data;
             ioctl_wr <= '1;
         end
@@ -165,11 +180,10 @@ logic [15:0] data;
     end
 end
 
-task ioctl_go(input string fn, bit swap_endian);
+task ioctl_go(input string fn);
     ioctl_fin = $fopen(fn, "r");
     assert(ioctl_fin != 0) else $finish;
     ioctl_active = '1;
-    ioctl_swap = swap_endian;
     while (ioctl_active)
         @(posedge clk_sys) ;
     $fclose(ioctl_fin);
@@ -177,25 +191,24 @@ endtask
 
 task load_rombios;
     ioctl_index = {2'd0, 6'd0};
-    ioctl_go(fn_rombios, swap_rombios);
+    ioctl_go(fn_rombios);
 endtask
 
 `else // ifndef USE_IOCTL_FOR_LOAD
 
-task load_file(input [24:0] base, input string fn, bit swap_endian);
+task load_file(input [24:0] base, input string fn);
 integer	fin;
 integer code;
 logic [15:0] data;
 logic [24:0] addr;
     begin
         fin = $fopen(fn, "r");
-        assert(fin != 0) else $finish;
+        assert(fin != 0) else $error("Unable to open file %s", fn);
         addr = base;
         while (!$feof(fin)) begin :load_loop
             code = $fread(data, fin, 0, 2);
             if (!$feof(fin)) begin
-                if (swap_endian)
-                    data = {data[7:0], data[15:8]};
+                data = {data[7:0], data[15:8]}; // $fread is big-endian
                 sdrb.u1a.write(pcfx_top.sdram.addr_to_bank(addr),
                                pcfx_top.sdram.addr_to_row(addr),
                                pcfx_top.sdram.addr_to_col(addr),
@@ -208,10 +221,85 @@ logic [24:0] addr;
 endtask
 
 task load_rombios;
-    load_file(pcfx_top.memif_sdram.ROM_BASE_A, fn_rombios, swap_rombios);
+    load_file(pcfx_top.memif_sdram.ROM_BASE_A, fn_rombios);
 endtask
 
 `endif
+
+//////////////////////////////////////////////////////////////////////
+
+logic           img_mounted = 0;
+logic           img_readonly = 0;
+logic [63:0]    img_size = 0;
+logic [31:0]    sd_lba = 0;
+logic           sd_rd, sd_wr;
+logic           sd_ack = 0;
+logic [7:0]     sd_buff_addr = 0;
+logic [15:0]    sd_buff_dout = 0;
+logic [15:0]    sd_buff_din;
+logic           sd_buff_wr = 0;
+logic           bk_ena;
+logic           bk_load = 0;
+
+string          sd_fn;
+logic           sd_rd_act = 0;
+logic           sd_wr_act = 0;
+event           mount_sd;
+
+assign sd_ack = sd_rd_act | sd_wr_act;
+
+always @(posedge clk_sys) begin
+integer	fin;
+integer code;
+logic [15:0] data;
+
+    if (~sd_rd_act & sd_rd) begin
+        sd_rd_act <= 1;
+        sd_buff_addr <= 0;
+        fin = $fopen(sd_fn, "r");
+        assert(fin != 0) else $error("Unable to open file %s", sd_fn);
+        code = $fseek(fin, sd_lba * 512, 0);
+        assert(code == 0) else $error("Unable to seek");
+    end
+    else if (sd_rd_act) begin
+        if (~sd_buff_wr) begin
+            if ($feof(fin))
+                data <= '0;
+            else
+                $fread(data, fin, 0, 2);
+            sd_buff_dout <= {data[7:0], data[15:8]}; // $fread is big-endian
+            sd_buff_wr <= 1;
+        end
+        else begin
+            sd_buff_wr <= 0;
+            if (&sd_buff_addr) begin
+                $fclose(fin);
+                sd_rd_act <= 0;
+            end
+            sd_buff_addr <= sd_buff_addr + 1'd1;
+        end
+    end
+end
+
+always @mount_sd begin
+    @(posedge clk_sys) ;
+    img_mounted <= '1;
+    img_size <= 32768;
+    @(posedge clk_sys) bk_load <= '1;
+    while (~pcfx_top.bk_loading)
+        @(posedge clk_sys) ;
+    @(posedge clk_sys) bk_load <= '0;
+end
+
+task load_sram;
+    sd_fn = "sram.bin";
+    -> mount_sd;
+    while (~bk_load)
+        @(posedge clk_sys) ;
+    @(posedge clk_sys) ;
+    while (pcfx_top.bk_loading)
+        @(posedge clk_sys) ;
+endtask
 
 //////////////////////////////////////////////////////////////////////
 
@@ -265,16 +353,23 @@ initial #0 begin
     #10 ; // wait for sdram init.
 
     load_rombios();
-    $display("ROMs loaded.");
+    $display("ROM loaded.");
 
     //load_file(pcfx_top.memif_sdram.RAM_BASE_A, "ram.bin", '0);
 
     reset = 0;
+    $display("Reset released.");
+
+    load_sram();
+    //load_bmp();
+    $display("RAMs loaded.");
 end
 
 initial begin
     repeat (4) #(1000e3) ;
     //#(500e3) ;
+
+    //$writememh("sdram.hex", sdrb.u1a.mem);
     //$writememh("vram0.hex", pcfx_top.mach.vram0.mem);
     //$writememh("vram1.hex", pcfx_top.mach.vram1.mem);
     //$writememh("vce_cp.hex", pcfx_top.mach.vce.cpram.mem);

@@ -203,18 +203,28 @@ assign BUTTONS = 0;
 
 //////////////////////////////////////////////////////////////////
 
-wire [1:0] ar = status[122:121];
+wire [1:0] ar = status[22:21];
 
 assign VIDEO_ARX = (!ar) ? 12'd4 : (ar - 1'd1);
 assign VIDEO_ARY = (!ar) ? 12'd3 : 12'd0;
+
+// Status Bit Map:
+// 0         1         2         3          4         5         6
+// 01234567890123456789012345678901 23456789012345678901234567890123
+// 0123456789ABCDEFGHIJKLMNOPQRSTUV 0123456789ABCDEFGHIJKLMNOPQRSTUV
+// X      XX            XX
 
 `include "build_id.v" 
 localparam CONF_STR = {
 	"PCFX;;",
 	"-;",
-	"O[122:121],Aspect ratio,Original,Full Screen,[ARC1],[ARC2];",
+	"O[22:21],Aspect ratio,Original,Full Screen,[ARC1],[ARC2];",
 	"-;",
-    "F1,ROM,Load custom BIOS;",
+    "S0,ROMBIN,Mount backup RAM;",
+    "D0R7,Load backup RAM;",
+    "D0R8,Save backup RAM;",
+	"-;",
+    "F1,ROMBIN,Load custom BIOS;",
 	"-;",
 	"T[0],Reset;",
 	"R[0],Reset and close OSD;",
@@ -230,6 +240,17 @@ wire   [1:0] buttons;
 wire [127:0] status;
 wire [31:0]  joystick_0, joystick_1;
 wire  [10:0] ps2_key;
+wire        img_mounted;
+wire        img_readonly;
+wire [63:0] img_size;
+wire [31:0] sd_lba;
+wire        sd_rd;
+wire        sd_wr;
+wire        sd_ack;
+wire  [7:0] sd_buff_addr;
+wire [15:0] sd_buff_dout;
+wire [15:0] sd_buff_din;
+wire        sd_buff_wr;
 wire        ioctl_download;
 wire  [7:0] ioctl_index;
 wire        ioctl_wr;
@@ -248,11 +269,25 @@ hps_io #(.CONF_STR(CONF_STR), .WIDE(1)) hps_io
 	.gamma_bus(),
 
 	.status(status),
-	.status_menumask({status[5]}),
+	.status_menumask({bk_ena}),
 	
 	.joystick_0(joystick_0),
 	.joystick_1(joystick_1),
 	.ps2_key(ps2_key),
+
+	.img_mounted(img_mounted),
+	.img_readonly(img_readonly),
+	.img_size(img_size),
+
+	.sd_lba('{sd_lba}),
+	.sd_rd(sd_rd),
+	.sd_wr(sd_wr),
+	.sd_ack(sd_ack),
+
+	.sd_buff_addr(sd_buff_addr),
+	.sd_buff_dout(sd_buff_dout),
+	.sd_buff_din('{sd_buff_din}),
+	.sd_buff_wr(sd_buff_wr),
 
 	.ioctl_download(ioctl_download),
 	.ioctl_index(ioctl_index),
@@ -263,8 +298,6 @@ hps_io #(.CONF_STR(CONF_STR), .WIDE(1)) hps_io
 
 	.EXT_BUS()
 );
-
-wire rombios_download   = ioctl_download & (ioctl_index[5:0] <= 6'h01);
 
 ///////////////////////   CLOCKS   ///////////////////////////////
 
@@ -302,6 +335,7 @@ always @joystick_1
 
 //////////////////////////////////////////////////////////////////////
 
+wire bk_ena;
 wire error;
 wire HBlank;
 wire HSync;
@@ -313,8 +347,22 @@ pcfx_top pcfx_top
 (
 	.clk_sys(clk_sys),
     .clk_ram(clk_ram),
-	.reset(reset | rombios_download),
+	.reset(reset),
 	.pll_locked(pll_locked),
+
+	.img_mounted(img_mounted),
+	.img_readonly(img_readonly),
+	.img_size(img_size),
+
+	.sd_lba(sd_lba),
+	.sd_rd(sd_rd),
+	.sd_wr(sd_wr),
+	.sd_ack(sd_ack),
+
+	.sd_buff_addr(sd_buff_addr),
+	.sd_buff_dout(sd_buff_dout),
+	.sd_buff_din('{sd_buff_din}),
+	.sd_buff_wr(sd_buff_wr),
 
 	.ioctl_download(ioctl_download),
 	.ioctl_index(ioctl_index),
@@ -322,6 +370,10 @@ pcfx_top pcfx_top
 	.ioctl_addr(ioctl_addr),
 	.ioctl_dout(ioctl_dout),
 	.ioctl_wait(ioctl_wait),
+
+    .bk_ena(bk_ena),
+    .bk_load(status[7]),
+    .bk_save(status[8]),
 
     .HMI(hmi),
 

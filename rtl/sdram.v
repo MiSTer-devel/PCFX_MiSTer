@@ -55,8 +55,12 @@ module sdram
 	input	    [3:0] be,	      // byte enable (be[0] => din[7:0])
 	input             we,         // cpu/chipset write
 	output reg        we_rdy = 0,
-	input             we_req,     // cpu/chipset requests write
-	output reg        we_ack = 0
+
+    // ROM / RAM loader/saver interface
+	input      [24:0] ls_waddr,     // 25-bit byte address
+	input      [31:0] ls_din,       // data input from chipset/cpu
+	input             ls_we_req,    // loader requests write
+	output reg        ls_we_ack = 0
 );
 
 assign SDRAM_nCS = 0;
@@ -88,6 +92,7 @@ reg [24:0] a;
 reg  [1:0] bank;
 reg [31:0] data;
 reg        wr;
+reg        ls_act=0;
 reg  [3:0] bm=0;
 reg        ram_req=0;
 
@@ -102,14 +107,23 @@ always @(posedge clk) begin
 		we_rdy <= 1;
 		ram_req <= 0;
 		wr <= 0;
+        ls_act <= 0;
 
-		if(we_ack != we_req || we) begin
+		if(ls_we_ack != ls_we_req) begin
+			ram_req <= 1;
+			wr <= 1;
+            ls_act <= 1;
+			a <= ls_waddr;
+			data <= ls_din;
+			bm <= 0;
+        end
+		else if(we) begin
 			ram_req <= 1;
 			wr <= 1;
             we_rdy <= 0;
 			a <= waddr;
 			data <= din;
-			bm <= we ? ~be : 0;
+			bm <= ~be;
 		end
 		else
 		if(rd) begin
@@ -123,8 +137,10 @@ always @(posedge clk) begin
 
 	if (q == STATE_READY && ram_req) begin
 		if(wr) begin
-                        we_ack <= we_req;
-			we_rdy <= 1;
+            if (ls_act)
+                ls_we_ack <= ls_we_req;
+            else
+			    we_rdy <= 1;
 		end
 		else
 			rd_rdy <= 1;
