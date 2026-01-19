@@ -8,6 +8,7 @@
 
 //`define USE_IOCTL_FOR_LOAD 1
 `define LOAD_SRAMS 1
+//`define SAVE_SRAMS 1
 `define SAVE_FRAMES 1
 
 import core_pkg::hmi_t;
@@ -91,7 +92,7 @@ pcfx_top pcfx_top
 
     .bk_ena(bk_ena),
     .bk_load(bk_load),
-    .bk_save('0),
+    .bk_save(bk_save),
 
     .HMI(hmi),
 
@@ -182,7 +183,7 @@ logic [15:0] data;
 end
 
 task ioctl_go(input string fn);
-    ioctl_fin = $fopen(fn, "r");
+    ioctl_fin = $fopen(fn, "rb");
     assert(ioctl_fin != 0) else $finish;
     ioctl_active = '1;
     while (ioctl_active)
@@ -203,7 +204,7 @@ integer code;
 logic [15:0] data;
 logic [24:0] addr;
     begin
-        fin = $fopen(fn, "r");
+        fin = $fopen(fn, "rb");
         assert(fin != 0) else $error("Unable to open file %s", fn);
         addr = base;
         while (!$feof(fin)) begin :load_loop
@@ -239,15 +240,18 @@ logic [7:0]     sd_buff_addr = 0;
 logic [15:0]    sd_buff_dout = 0;
 logic [15:0]    sd_buff_din;
 logic           sd_buff_wr = 0;
+logic           sd_buff_rd = 0;
 logic           bk_ena;
 logic           bk_load = 0;
+logic           bk_save = 0;
 
 int             sd_vd;
-int             sd_fin [2];
+int             sd_fin [2] = '{0, 0};
+int             sd_fout [2] = '{0, 0};
 longint         sd_size [2];
 logic [1:0]     sd_rd_act = 0; // one-hot
 logic [1:0]     sd_wr_act = 0; // one-hot
-event           mount_sd, start_load_bk;
+event           mount_sd, start_load_bk, start_save_bk;
 
 assign sd_ack = sd_rd_act | sd_wr_act;
 
@@ -263,11 +267,18 @@ logic [15:0] data;
         code = $fseek(sd_fin[vd], sd_lba * 512, 0);
         assert(code == 0) else $error("Unable to seek");
     end
+    else if (~|sd_wr_act & |sd_wr) begin
+        vd = $clog2(sd_wr);
+        sd_wr_act[vd] <= 1;
+        sd_buff_addr <= 0;
+        code = $fseek(sd_fout[vd], sd_lba * 512, 0);
+        assert(code == 0) else $error("Unable to seek");
+    end
     else if (|sd_rd_act) begin
         vd = $clog2(sd_rd_act);
         if (~sd_buff_wr) begin
             if ($feof(sd_fin[vd]))
-                data <= '0;
+                data = '0;
             else
                 $fread(data, sd_fin[vd], 0, 2);
             sd_buff_dout <= {data[7:0], data[15:8]}; // $fread is big-endian
@@ -280,6 +291,17 @@ logic [15:0] data;
             end
             sd_buff_addr <= sd_buff_addr + 1'd1;
         end
+    end
+    else if (|sd_wr_act) begin
+        vd = $clog2(sd_wr_act);
+        if (sd_buff_rd) begin
+            $fwrite(sd_fout[vd], "%c%c", sd_buff_din[7:0], sd_buff_din[15:8]);
+            if (&sd_buff_addr) begin
+                sd_wr_act[vd] <= 0;
+            end
+            sd_buff_addr <= sd_buff_addr + 1'd1;
+        end
+        sd_buff_rd <= ~sd_buff_rd;
     end
 end
 
@@ -296,14 +318,28 @@ always @start_load_bk begin
     @(posedge clk_sys) bk_load <= '0;
 end
 
+always @start_save_bk begin
+    @(posedge clk_sys) bk_save <= '1;
+    while (~pcfx_top.bk_saving)
+        @(posedge clk_sys) ;
+    @(posedge clk_sys) bk_save <= '0;
+end
+
 task mount_sd_file(string fn, int vd);
-integer	fin;
+string fnin, fnout;
+integer	fin, fout;
 integer code;
-    fin = $fopen(fn, "r");
-    if (fin == 0) 
-        $warning("Unable to open file %s", fn);
+    fnin = {fn, ".bin"};
+    fnout = {fn, ".out.bin"};
+    fin = $fopen(fnin, "rb");
+    fout = $fopen(fnout, "wb");
+    if (fin == 0)
+        $warning("Unable to open file %s", fnin);
+    else if (fout == 0)
+        $warning("Unable to open file %s for write", fnout);
     else begin
         sd_fin[vd] = fin;
+        sd_fout[vd] = fout;
         code = $fseek(fin, 0, 2);
         sd_size[vd] = $ftell(fin);
         sd_vd = vd;
@@ -313,11 +349,11 @@ integer code;
 endtask
 
 task mount_sram;
-    mount_sd_file("sram.bin", 0);
+    mount_sd_file("sram", 0);
 endtask
 
 task mount_bmp;
-    mount_sd_file("bmp.bin", 1);
+    mount_sd_file("bmp", 1);
 endtask
 
 task load_bk;
@@ -326,6 +362,15 @@ task load_bk;
         @(posedge clk_sys) ;
     @(posedge clk_sys) ;
     while (pcfx_top.bk_loading)
+        @(posedge clk_sys) ;
+endtask
+
+task save_bk;
+    -> start_save_bk;
+    while (~bk_save)
+        @(posedge clk_sys) ;
+    @(posedge clk_sys) ;
+    while (pcfx_top.bk_saving)
         @(posedge clk_sys) ;
 endtask
 
@@ -401,6 +446,13 @@ end
 initial begin
     repeat (4) #(1000e3) ;
     //#(500e3) ;
+
+`ifdef SAVE_SRAMS
+    if (bk_ena) begin
+        save_bk();
+        $display("RAMs saved.");
+    end
+`endif
 
     //$writememh("sdram.hex", sdrb.u1a.mem);
     //$writememh("vram0.hex", pcfx_top.mach.vram0.mem);

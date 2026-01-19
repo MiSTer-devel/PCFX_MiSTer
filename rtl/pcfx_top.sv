@@ -66,17 +66,26 @@ module pcfx_top
 	output [7:0]      B
 );
 
+reg [24:0]      romwr_a;
+reg [31:0]      romwr_d;
+reg             romwr_req = 0;
+logic [24:0]    bk_sdrd_a;
+logic [15:0]    bk_sdrd_din, bk_sdrd_dout;
+logic           bk_sdrd_we_req = 0, bk_sdrd_rd_req = 0;
+logic           bk_sdrd_we_ack, bk_sdrd_rd_ack;
+
 //////////////////////////////////////////////////////////////////////
 // SDRAM controller
 
 wire        sdram_clkref;
-wire [24:0] sdram_raddr, sdram_waddr, sdram_ls_waddr;
-wire [31:0] sdram_din, sdram_dout, sdram_ls_din;
+wire [24:0] sdram_raddr, sdram_waddr, sdram_ls_addr;
+wire [31:0] sdram_din, sdram_dout, sdram_ls_din, sdram_ls_dout;
 wire        sdram_rd, sdram_rd_rdy;
 wire [3:0]  sdram_be;
 wire        sdram_we;
 wire        sdram_we_rdy;
 wire        sdram_ls_we_req, sdram_ls_we_ack;
+wire        sdram_ls_rd_req, sdram_ls_rd_ack;
 
 sdram sdram
 (
@@ -97,11 +106,23 @@ sdram sdram
 	.rd_rdy(sdram_rd_rdy),
 	.dout(sdram_dout),
 
-    .ls_waddr(sdram_ls_waddr),
+    .ls_addr(sdram_ls_addr),
     .ls_din(sdram_ls_din),
 	.ls_we_req(sdram_ls_we_req),
-	.ls_we_ack(sdram_ls_we_ack)
+	.ls_we_ack(sdram_ls_we_ack),
+    .ls_dout(sdram_ls_dout),
+	.ls_rd_req(sdram_ls_rd_req),
+	.ls_rd_ack(sdram_ls_rd_ack)
 );
+
+assign sdram_ls_addr = ioctl_download ? romwr_a : bk_sdrd_a;
+assign sdram_ls_din = ioctl_download ? romwr_d : {16'b0, bk_sdrd_dout};
+assign sdram_ls_we_req = romwr_req ^ bk_sdrd_we_req;
+assign bk_sdrd_din = sdram_ls_dout[15:0];
+assign sdram_ls_rd_req = bk_sdrd_rd_req;
+assign romwr_ack = sdram_ls_we_ack ^ bk_sdrd_we_req;
+assign bk_sdrd_we_ack = sdram_ls_we_ack ^ romwr_req;
+assign bk_sdrd_rd_ack = sdram_ls_rd_ack;
 
 //////////////////////////////////////////////////////////////////////
 // Computer assembly
@@ -255,20 +276,13 @@ memif_sdram memif_sdram
    .SDRAM_DOUT(sdram_dout)
    );
 
-assign sdram_ls_waddr = ioctl_download ? romwr_a : bk_sdrd_a;
-assign sdram_ls_din = ioctl_download ? romwr_d : {16'b0, bk_sdrd_d};
-assign sdram_ls_we_req = romwr_req ^ bk_sdrd_req;
-assign romwr_ack = sdram_ls_we_ack ^ bk_sdrd_req;
-assign bk_sdrd_ack = sdram_ls_we_ack ^ romwr_req;
-
 //////////////////////////////////////////////////////////////////////
 // ROM loader
 
+`include "memif_sdram_part.svh"
+
 reg         romwr_active = 0;
-reg [24:0]  romwr_a;
 reg         romwr_a1;
-reg [31:0]  romwr_d;
-reg         romwr_req = 0;
 wire        romwr_ack;
 
 always @(posedge clk_sys) begin
@@ -283,9 +297,9 @@ always @(posedge clk_sys) begin
         romwr_active <= 1;
         romwr_a1 <= 0;
         case (ioctl_index[5:0])
-            6'd0, 6'd1: romwr_a <= memif_sdram.ROM_BASE_A;
-//          6'd2:       romwr_a <= memif_sdram.SRAM_BASE_A;
-//          6'd3:       romwr_a <= memif_sdram.BMP_BASE_A;
+            6'd0, 6'd1: romwr_a <= ROM_BASE_A;
+//          6'd2:       romwr_a <= SRAM_BASE_A;
+//          6'd3:       romwr_a <= BMP_BASE_A;
             default: romwr_active <= 0;
         endcase
 	end
@@ -307,13 +321,17 @@ end
 //////////////////////////////////////////////////////////////////////
 // Backup RAM transfer
 
-typedef enum [3:0] {
+typedef enum bit [3:0] {
     BKST_IDLE = '0,
     BKST_SELECT_VD,
     BKST_START_SD_RD,
     BKST_SD_RD,
+    BKST_START_SD_WR,
+    BKST_SD_WR,
     BKST_START_SDRAM_WR,
     BKST_SDRAM_WR,
+    BKST_START_SDRAM_RD,
+    BKST_SDRAM_RD,
     BKST_NEXT_LBA,
     BKST_NEXT_VD
 } bkst_t;
@@ -323,6 +341,7 @@ logic [63:0]    img_sizes [2];
 
 bkst_t          bk_state = BKST_IDLE;
 logic           bk_loading = 0;
+logic           bk_saving = 0;
 logic           sd_vd; // volume select
 
 logic           sd_ack_d;
@@ -352,14 +371,18 @@ always @(posedge clk_sys) begin
                 sd_vd <= 0;
                 bk_state <= BKST_SELECT_VD;
             end
+            else if (bk_save) begin
+                bk_saving <= 1;
+                sd_vd <= 0;
+                bk_state <= BKST_SELECT_VD;
+            end
         end
         BKST_SELECT_VD: begin
-            if (img_mounted[sd_vd]) begin
-                bk_state <= BKST_START_SD_RD;
-                sd_lba <= 0;
-            end
+            if (img_mounted[sd_vd])
+                bk_state <= bk_loading ? BKST_START_SD_RD : BKST_START_SDRAM_RD;
             else
                 bk_state <= BKST_NEXT_VD;
+            sd_lba <= 0;
         end
         BKST_START_SD_RD: begin
             sd_rd[sd_vd] <= 1;
@@ -368,6 +391,15 @@ always @(posedge clk_sys) begin
         BKST_SD_RD: begin
             if (sd_ack_d & ~|sd_ack) begin
                 bk_state <= BKST_START_SDRAM_WR;
+            end
+        end
+        BKST_START_SD_WR: begin
+            sd_wr[sd_vd] <= 1;
+            bk_state <= BKST_SD_WR;
+        end
+        BKST_SD_WR: begin
+            if (sd_ack_d & ~|sd_ack) begin
+                bk_state <= BKST_NEXT_LBA;
             end
         end
         BKST_START_SDRAM_WR: begin
@@ -379,6 +411,14 @@ always @(posedge clk_sys) begin
                 bk_state <= BKST_NEXT_LBA;
             end
         end
+        BKST_START_SDRAM_RD: begin
+            bk_sdrd_copy_req <= ~bk_sdrd_copy_req;
+            bk_state <= BKST_SDRAM_RD;
+        end
+        BKST_SDRAM_RD: begin
+            if (bk_sdrd_copy_req == bk_sdrd_copy_ack)
+                bk_state <= bk_loading ? BKST_START_SDRAM_WR : BKST_START_SD_WR;
+        end
         BKST_NEXT_LBA: begin
             if (sd_lba + 1'd1 == img_sizes[sd_vd][9+:32]) begin
                 bk_state <= BKST_NEXT_VD;
@@ -386,7 +426,7 @@ always @(posedge clk_sys) begin
             end
             else begin
                 sd_lba <= sd_lba + 1'd1;
-                bk_state <= BKST_START_SD_RD;
+                bk_state <= bk_loading ? BKST_START_SD_RD : BKST_START_SDRAM_RD;
             end
         end
         BKST_NEXT_VD: begin
@@ -394,6 +434,7 @@ always @(posedge clk_sys) begin
             if (sd_vd) begin // last volume
                 bk_state <= BKST_IDLE;
                 bk_loading <= 0;
+                bk_saving <= 0;
             end
             else
                 bk_state <= BKST_SELECT_VD;
@@ -410,40 +451,45 @@ assign bk_ena = |img_mounted;
 logic           bk_sdrd_copy_req = 0;
 logic           bk_sdrd_copy_ack = 0;
 logic           bk_sdrd_copying = 0;
-logic [24:0]    bk_sdrd_base_a, bk_sdrd_a;
-logic [15:0]    bk_sdrd_d;
-logic           bk_sdrd_req = 0;
-logic           bk_sdrd_ack;
+logic [24:0]    bk_sdrd_base_a;
 
 logic [7:0]     sdbuf_a;
-logic [15:0]    sdbuf_din;
 logic           sdbuf_wren = 0;
 logic           sdbuf_rden = 0;
 
-assign bk_sdrd_base_a = sd_vd ? memif_sdram.BMP_BASE_A : memif_sdram.SRAM_BASE_A;
+assign bk_sdrd_base_a = sd_vd ? BMP_BASE_A : SRAM_BASE_A;
 
 always @(posedge clk_sys) begin
     if (~bk_sdrd_copying & (bk_sdrd_copy_req != bk_sdrd_copy_ack)) begin
         bk_sdrd_copying <= 1;
         bk_sdrd_a <= bk_sdrd_base_a + 25'({sd_lba, 9'b0});
-        sdbuf_wren <= ~bk_loading;
-        sdbuf_rden <= bk_loading;
+        if (bk_loading)
+            sdbuf_rden <= 1;
+        else
+            bk_sdrd_rd_req <= ~bk_sdrd_rd_req;
     end
     else if (bk_sdrd_copying) begin
-        if (bk_loading) begin
-            if (sdbuf_rden) begin
-                sdbuf_rden <= 0;
-                bk_sdrd_req <= ~bk_sdrd_req;
+        if (bk_loading & sdbuf_rden) begin
+            sdbuf_rden <= 0;
+            bk_sdrd_we_req <= ~bk_sdrd_we_req;
+        end
+        else if (bk_saving & ~sdbuf_wren & (bk_sdrd_rd_req == bk_sdrd_rd_ack)) begin
+            sdbuf_wren <= 1;
+        end
+        else if ((bk_loading & (bk_sdrd_we_req == bk_sdrd_we_ack)) |
+                 (bk_saving & sdbuf_wren)) begin
+            sdbuf_wren <= 0;
+            if (&sdbuf_a) begin
+                bk_sdrd_copying <= 0;
+                bk_sdrd_copy_ack <= bk_sdrd_copy_req;
             end
-            else if (bk_sdrd_req == bk_sdrd_ack) begin
-                if (&sdbuf_a) begin
-                    bk_sdrd_copying <= 0;
-                    bk_sdrd_copy_ack <= bk_sdrd_copy_req;
-                end
+            else begin
+                if (bk_loading)
+                    sdbuf_rden <= 1;
                 else
-                    sdbuf_rden <= bk_loading;
-                bk_sdrd_a <= bk_sdrd_a + 25'd2;
+                    bk_sdrd_rd_req <= ~bk_sdrd_rd_req;
             end
+            bk_sdrd_a <= bk_sdrd_a + 25'd2;
         end
     end
 end
@@ -461,10 +507,10 @@ dpram #(.addr_width(8), .data_width(16)) sdbuf
     .cs_a(1'b1),
 
     .address_b(sdbuf_a),
-    .data_b(sdbuf_din),
+    .data_b(bk_sdrd_din),
     .enable_b(1'b1),
     .wren_b(sdbuf_wren),
-    .q_b(bk_sdrd_d),
+    .q_b(bk_sdrd_dout),
     .cs_b(1'b1)
     );
 

@@ -57,10 +57,13 @@ module sdram
 	output reg        we_rdy = 0,
 
     // ROM / RAM loader/saver interface
-	input      [24:0] ls_waddr,     // 25-bit byte address
-	input      [31:0] ls_din,       // data input from chipset/cpu
+	input      [24:0] ls_addr,      // 25-bit byte address
+	input      [31:0] ls_din,       // data input from loader
 	input             ls_we_req,    // loader requests write
-	output reg        ls_we_ack = 0
+	output reg        ls_we_ack = 0,
+	output reg [31:0] ls_dout,      // data output to saver
+	input             ls_rd_req,    // saver requests read
+	output reg        ls_rd_ack = 0
 );
 
 assign SDRAM_nCS = 0;
@@ -113,8 +116,15 @@ always @(posedge clk) begin
 			ram_req <= 1;
 			wr <= 1;
             ls_act <= 1;
-			a <= ls_waddr;
+			a <= ls_addr;
 			data <= ls_din;
+			bm <= 0;
+        end
+		else if(ls_rd_ack != ls_rd_req) begin
+			ram_req <= 1;
+			wr <= 0;
+            ls_act <= 1;
+			a <= ls_addr;
 			bm <= 0;
         end
 		else if(we) begin
@@ -142,8 +152,12 @@ always @(posedge clk) begin
             else
 			    we_rdy <= 1;
 		end
-		else
-			rd_rdy <= 1;
+		else begin
+            if (ls_act)
+                ls_rd_ack <= ls_rd_req;
+            else
+			    rd_rdy <= 1;
+        end
 	end
 
 	q <= q + 1'd1;
@@ -241,7 +255,12 @@ always @(posedge clk) begin
 	if(q == STATE_START) SDRAM_BA <= (mode == MODE_NORMAL) ? addr_to_bank(a) : 2'b00;
 	if (~wr && ram_req) begin
 		if(q >= STATE_READ0 && q <= STATE_READN) data_reg <= {SDRAM_DQ, data_reg[31:16]};
-		if(q == STATE_READY) dout <= data_reg;
+		if(q == STATE_READY) begin
+            if (ls_act)
+                ls_dout <= data_reg;
+            else
+                dout <= data_reg;
+        end
 	end
 end
 
