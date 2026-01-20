@@ -270,7 +270,7 @@ hps_io #(.CONF_STR(CONF_STR), .WIDE(1), .VDNUM(2)) hps_io
 	.gamma_bus(),
 
 	.status(status),
-	.status_menumask({bk_ena}),
+	.status_menumask({~bk_ena}),
 	
 	.joystick_0(joystick_0),
 	.joystick_1(joystick_1),

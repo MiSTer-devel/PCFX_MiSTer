@@ -336,8 +336,8 @@ typedef enum bit [3:0] {
     BKST_NEXT_VD
 } bkst_t;
 
-logic [1:0]     img_mounted_d, img_mounted_add, img_mounted_rem;
-logic [63:0]    img_sizes [2];
+logic [1:0]     bk_mounted;
+logic [31:0]    bk_sd_blk_cnt [2];
 
 bkst_t          bk_state = BKST_IDLE;
 logic           bk_loading = 0;
@@ -346,17 +346,14 @@ logic           sd_vd; // volume select
 
 logic           sd_ack_d;
 
-assign img_mounted_add = img_mounted & ~img_mounted_d;
-assign img_mounted_rem = ~img_mounted & img_mounted_d;
-
 always @(posedge clk_sys) begin
-    img_mounted_d <= img_mounted;
-
-    if (|img_mounted_add)
-        img_sizes[img_mounted_add[1]] <= img_size;
-    if (|img_mounted_rem)
-        img_sizes[img_mounted_rem[1]] <= '0;
+    if (img_mounted) begin
+        bk_mounted[img_mounted[1]] <= |img_size;
+        bk_sd_blk_cnt[img_mounted[1]] <= img_size[9+:32];
+    end
 end
+
+assign bk_ena = |bk_mounted;
 
 always @(posedge clk_sys) begin
     sd_ack_d <= |sd_ack;
@@ -378,7 +375,7 @@ always @(posedge clk_sys) begin
             end
         end
         BKST_SELECT_VD: begin
-            if (img_mounted[sd_vd])
+            if (bk_mounted[sd_vd])
                 bk_state <= bk_loading ? BKST_START_SD_RD : BKST_START_SDRAM_RD;
             else
                 bk_state <= BKST_NEXT_VD;
@@ -420,7 +417,7 @@ always @(posedge clk_sys) begin
                 bk_state <= bk_loading ? BKST_START_SDRAM_WR : BKST_START_SD_WR;
         end
         BKST_NEXT_LBA: begin
-            if (sd_lba + 1'd1 == img_sizes[sd_vd][9+:32]) begin
+            if (sd_lba + 1'd1 == bk_sd_blk_cnt[sd_vd]) begin
                 bk_state <= BKST_NEXT_VD;
                 sd_lba <= 0;
             end
@@ -442,8 +439,6 @@ always @(posedge clk_sys) begin
         default: ;
     endcase
 end
-
-assign bk_ena = |img_mounted;
 
 //////////////////////////////////////////////////////////////////////
 // SD card transfer buffer

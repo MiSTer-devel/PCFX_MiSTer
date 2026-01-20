@@ -306,9 +306,11 @@ logic [15:0] data;
 end
 
 always @mount_sd begin
+    img_size <= sd_size[sd_vd];
     @(posedge clk_sys) ;
     img_mounted[sd_vd] <= '1;
-    img_size <= sd_size[sd_vd];
+    @(posedge clk_sys) ;
+    img_mounted <= '0;
 end
 
 always @start_load_bk begin
