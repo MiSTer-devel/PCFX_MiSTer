@@ -8,6 +8,7 @@ dpram.sv
 ../pcfx_top.sv
 ../memif_sdram.sv
 ../sdram.v
+../fx_bmp.sv
 
 ../mach.sv
 ../huc6261.sv

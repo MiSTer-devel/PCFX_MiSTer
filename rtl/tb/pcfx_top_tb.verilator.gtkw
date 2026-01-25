@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
-[*] Mon Jan 19 23:30:13 2026
+[*] Sun Jan 25 01:51:43 2026
 [*]
 [dumpfile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/pcfx_top_tb.verilator.fst"
-[dumpfile_mtime] "Mon Jan 19 23:29:06 2026"
-[dumpfile_size] 9107446
+[dumpfile_mtime] "Sun Jan 25 01:48:02 2026"
+[dumpfile_size] 18901994
 [savefile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/pcfx_top_tb.verilator.gtkw"
-[timestart] 1230000
+[timestart] 0
 [size] 1334 601
 [pos] -1 -1
-*-24.251604 50041100 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+*-25.045605 50097180 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 [markername] AA
 [markername] BB
 [markername] CC
@@ -37,7 +37,6 @@
 [markername] YY
 [markername] ZZ
 [treeopen] pcfx_top_tb.
-[treeopen] pcfx_top_tb.pcfx_top.
 [treeopen] pcfx_top_tb.pcfx_top.mach.cpu.
 [treeopen] pcfx_top_tb.pcfx_top.mach.vdc1.SAT.
 [sst_width] 255
@@ -48,6 +47,7 @@
 -pcfx_top
 @28
 pcfx_top_tb.pcfx_top.img_mounted[1:0]
+pcfx_top_tb.pcfx_top.bk_mounted[1:0]
 pcfx_top_tb.pcfx_top.bk_load
 pcfx_top_tb.pcfx_top.bk_save
 pcfx_top_tb.pcfx_top.sd_vd
@@ -62,7 +62,6 @@ pcfx_top_tb.pcfx_top.sd_buff_addr[7:0]
 pcfx_top_tb.pcfx_top.sd_buff_dout[15:0]
 @28
 pcfx_top_tb.pcfx_top.bk_loading
-@29
 pcfx_top_tb.pcfx_top.bk_saving
 @100000028
 pcfx_top_tb.pcfx_top.bk_state[3:0]
@@ -107,6 +106,26 @@ pcfx_top_tb.pcfx_top.memif_sdram.wact
 pcfx_top_tb.pcfx_top.memif_sdram.mem_rdy
 @1000200
 -memif_sdram
+@800200
+-fx_bmp
+@28
+pcfx_top_tb.pcfx_top.bmp.CFG_EN
+@24
+pcfx_top_tb.pcfx_top.bmp.CFG_SIZE[2:0]
+@29
+pcfx_top_tb.pcfx_top.bmp.MCP_CSn
+@22
+pcfx_top_tb.pcfx_top.bmp.MCP_A[26:1]
+@28
+pcfx_top_tb.pcfx_top.bmp.MCP_READYn
+@22
+pcfx_top_tb.pcfx_top.bmp.MCP_DO[7:0]
+@28
+pcfx_top_tb.pcfx_top.bmp.bat_sel
+pcfx_top_tb.pcfx_top.bmp.RAM_CEn
+pcfx_top_tb.pcfx_top.bmp.RAM_READYn
+@1000200
+-fx_bmp
 @28
 pcfx_top_tb.pcfx_top.mach.ERROR
 @22
@@ -123,7 +142,7 @@ pcfx_top_tb.pcfx_top.mach.mem16_a[31:0]
 pcfx_top_tb.pcfx_top.mach.ram_cen
 pcfx_top_tb.pcfx_top.mach.rom_cen
 pcfx_top_tb.pcfx_top.mach.sram_cen
-pcfx_top_tb.pcfx_top.mach.bmp_cen
+pcfx_top_tb.pcfx_top.mach.mcp_csn
 pcfx_top_tb.pcfx_top.mach.io_cen
 pcfx_top_tb.pcfx_top.mach.ga_rdn
 pcfx_top_tb.pcfx_top.mach.ga_wrn

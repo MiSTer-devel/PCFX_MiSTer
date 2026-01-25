@@ -159,6 +159,15 @@ wire        sram_cen;
 wire        sram_wen;
 wire        sram_readyn;
 
+wire [26:1] mcp_a;
+wire [7:0]  mcp_di, mcp_do;
+wire        mcp_csn;
+wire        mcp_rdn;
+wire        mcp_wrn;
+wire        mcp_readyn;
+
+wire        bmp_cfg_en;
+logic [2:0] bmp_cfg_size;
 wire [22:0] bmp_a;
 wire [7:0]  bmp_di, bmp_do;
 wire        bmp_cen;
@@ -207,12 +216,13 @@ mach mach
    .SRAM_WEn(sram_wen),
    .SRAM_READYn(sram_readyn),
 
-   .BMP_A(bmp_a),
-   .BMP_DI(bmp_di),
-   .BMP_DO(bmp_do),
-   .BMP_CEn(bmp_cen),
-   .BMP_WEn(bmp_wen),
-   .BMP_READYn(bmp_readyn),
+   .MCP_A(mcp_a),
+   .MCP_DI(mcp_di),
+   .MCP_DO(mcp_do),
+   .MCP_CSn(mcp_csn),
+   .MCP_RDn(mcp_rdn),
+   .MCP_WRn(mcp_wrn),
+   .MCP_READYn(mcp_readyn),
 
    .HMI(HMI),
 
@@ -276,6 +286,27 @@ memif_sdram memif_sdram
    .SDRAM_DOUT(sdram_dout)
    );
 
+fx_bmp bmp
+  (
+   .CFG_EN(bmp_cfg_en),
+   .CFG_SIZE(bmp_cfg_size),
+
+   .MCP_A(mcp_a),
+   .MCP_DI(mcp_di),
+   .MCP_DO(mcp_do),
+   .MCP_CSn(mcp_csn),
+   .MCP_RDn(mcp_rdn),
+   .MCP_WRn(mcp_wrn),
+   .MCP_READYn(mcp_readyn),
+
+   .RAM_A(bmp_a),
+   .RAM_DI(bmp_di),
+   .RAM_DO(bmp_do),
+   .RAM_CEn(bmp_cen),
+   .RAM_WEn(bmp_wen),
+   .RAM_READYn(bmp_readyn)
+   );
+
 //////////////////////////////////////////////////////////////////////
 // ROM loader
 
@@ -319,6 +350,26 @@ always @(posedge clk_sys) begin
 end
 
 //////////////////////////////////////////////////////////////////////
+// FX-BMP -> Memory Cord Port
+
+wire [31:0] bmp_sd_blk_cnt = bk_sd_blk_cnt[1];
+
+assign bmp_cfg_en = bk_mounted[1];
+
+// Configure the BMP size to match the mounted image size.
+always @* begin
+    casez ({|bmp_sd_blk_cnt[31:14], bmp_sd_blk_cnt[13:8]})
+        7'b1??_????:    bmp_cfg_size = 3'd6; // 8MB
+        7'b01?_????:    bmp_cfg_size = 3'd5; // 4MB
+        7'b001_????:    bmp_cfg_size = 3'd4; // 2MB
+        7'b000_1???:    bmp_cfg_size = 3'd3; // 1MB
+        7'b000_01??:    bmp_cfg_size = 3'd2; // 512KB
+        7'b000_001?:    bmp_cfg_size = 3'd1; // 256KB
+        default:        bmp_cfg_size = 3'd0; // 128KB
+    endcase
+end
+
+//////////////////////////////////////////////////////////////////////
 // Backup RAM transfer
 
 typedef enum bit [3:0] {
@@ -347,7 +398,7 @@ logic           sd_vd; // volume select
 logic           sd_ack_d;
 
 always @(posedge clk_sys) begin
-    if (img_mounted) begin
+    if (img_mounted != 0) begin
         bk_mounted[img_mounted[1]] <= |img_size;
         bk_sd_blk_cnt[img_mounted[1]] <= img_size[9+:32];
     end

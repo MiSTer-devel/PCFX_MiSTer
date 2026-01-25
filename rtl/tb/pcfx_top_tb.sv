@@ -346,7 +346,7 @@ integer code;
         sd_size[vd] = $ftell(fin);
         sd_vd = vd;
         -> mount_sd;
-        repeat (2) @(posedge clk_sys) ; // wait for mount completion
+        repeat (3) @(posedge clk_sys) ; // wait for mount completion
     end
 endtask
 
@@ -397,7 +397,7 @@ always @(negedge vs) begin
   $display("%t: Frame %03d  A=%x", $time, frame, pcfx_top.mach.cpu_a);
   $sformat(fname, "frames/render-%03d", frame);
   pice = 0;
-  if (frame >= 237) begin
+  if (frame >= 220) begin
     fpic = $fopen({fname, ".hex"}, "w");
   end
   frame = frame + 1;
@@ -424,6 +424,8 @@ end
 
 //////////////////////////////////////////////////////////////////////
 
+event running;
+
 initial #0 begin
     #10 ; // wait for sdram init.
 
@@ -443,9 +445,12 @@ initial #0 begin
         $display("RAMs loaded.");
     end
 `endif
+
+    -> running;
 end
 
 initial begin
+    @(running) ;
     repeat (4) #(1000e3) ;
     //#(500e3) ;
 
@@ -465,6 +470,7 @@ initial begin
 end
 
 initial if (1) begin
+    @(running) ;
     #(216e3);
 
     repeat (4) begin

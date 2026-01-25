@@ -14,6 +14,7 @@ set_global_assignment -name SYSTEMVERILOG_FILE rtl/v810/v810.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/mach.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/ram.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/sdram.v
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/fx_bmp.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/dpram.sv
 # set_global_assignment -name VHDL_FILE rtl/dpram.vhd
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/memif_sdram.sv
