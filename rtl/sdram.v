@@ -69,7 +69,6 @@ module sdram
 assign SDRAM_nCS = 0;
 assign SDRAM_CKE = 1;
 
-// no burst configured
 localparam RASCAS_DELAY   = 3'd2;   // tRCD=20ns -> 3 cycles@128MHz
 localparam BURST_LENGTH   = 3'b001; // 000=1, 001=2, 010=4, 011=8
 localparam ACCESS_TYPE    = 1'b0;   // 0=sequential, 1=interleaved
@@ -135,8 +134,7 @@ always @(posedge clk) begin
 			data <= din;
 			bm <= ~be;
 		end
-		else
-		if(rd) begin
+		else if(rd) begin
 			rd_rdy <= 0;
 			ram_req <= 1;
 			wr <= 0;

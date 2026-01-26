@@ -29,7 +29,7 @@ module fx_bmp
     );
 
 // Control size by masking (zeroing) RAM address bits above 128KB.
-wire [22:0]     ram_a_mask;
+logic [22:0]    ram_a_mask;
 
 always @* begin
     ram_a_mask[16:0] = '1;

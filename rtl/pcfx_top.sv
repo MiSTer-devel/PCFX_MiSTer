@@ -70,7 +70,7 @@ reg [24:0]      romwr_a;
 reg [31:0]      romwr_d;
 reg             romwr_req = 0;
 logic [24:0]    bk_sdrd_a;
-logic [15:0]    bk_sdrd_din, bk_sdrd_dout;
+logic [31:0]    bk_sdrd_din, bk_sdrd_dout;
 logic           bk_sdrd_we_req = 0, bk_sdrd_rd_req = 0;
 logic           bk_sdrd_we_ack, bk_sdrd_rd_ack;
 
@@ -116,9 +116,9 @@ sdram sdram
 );
 
 assign sdram_ls_addr = ioctl_download ? romwr_a : bk_sdrd_a;
-assign sdram_ls_din = ioctl_download ? romwr_d : {16'b0, bk_sdrd_dout};
+assign sdram_ls_din = ioctl_download ? romwr_d : bk_sdrd_dout;
 assign sdram_ls_we_req = romwr_req ^ bk_sdrd_we_req;
-assign bk_sdrd_din = sdram_ls_dout[15:0];
+assign bk_sdrd_din = sdram_ls_dout;
 assign sdram_ls_rd_req = bk_sdrd_rd_req;
 assign romwr_ack = sdram_ls_we_ack ^ bk_sdrd_we_req;
 assign bk_sdrd_we_ack = sdram_ls_we_ack ^ romwr_req;
@@ -500,6 +500,8 @@ logic           bk_sdrd_copying = 0;
 logic [24:0]    bk_sdrd_base_a;
 
 logic [7:0]     sdbuf_a;
+logic           sdbuf_a0, sdbuf_a0_d;
+logic [15:0]    sdbuf_din, sdbuf_dout, sdbuf_dout_d;
 logic           sdbuf_wren = 0;
 logic           sdbuf_rden = 0;
 
@@ -509,6 +511,7 @@ always @(posedge clk_sys) begin
     if (~bk_sdrd_copying & (bk_sdrd_copy_req != bk_sdrd_copy_ack)) begin
         bk_sdrd_copying <= 1;
         bk_sdrd_a <= bk_sdrd_base_a + 25'({sd_lba, 9'b0});
+        sdbuf_a0 <= '0;
         if (bk_loading)
             sdbuf_rden <= 1;
         else
@@ -516,31 +519,46 @@ always @(posedge clk_sys) begin
     end
     else if (bk_sdrd_copying) begin
         if (bk_loading & sdbuf_rden) begin
-            sdbuf_rden <= 0;
-            bk_sdrd_we_req <= ~bk_sdrd_we_req;
+            if (sdbuf_a0) begin
+                sdbuf_rden <= 0;
+                bk_sdrd_we_req <= ~bk_sdrd_we_req;
+            end
+            else
+                sdbuf_a0 <= ~sdbuf_a0;
         end
         else if (bk_saving & ~sdbuf_wren & (bk_sdrd_rd_req == bk_sdrd_rd_ack)) begin
             sdbuf_wren <= 1;
         end
         else if ((bk_loading & (bk_sdrd_we_req == bk_sdrd_we_ack)) |
                  (bk_saving & sdbuf_wren)) begin
-            sdbuf_wren <= 0;
-            if (&sdbuf_a) begin
-                bk_sdrd_copying <= 0;
-                bk_sdrd_copy_ack <= bk_sdrd_copy_req;
+            if (sdbuf_a0) begin
+                sdbuf_wren <= 0;
+                if (&sdbuf_a) begin
+                    bk_sdrd_copying <= 0;
+                    bk_sdrd_copy_ack <= bk_sdrd_copy_req;
+                end
+                else begin
+                    if (bk_loading)
+                        sdbuf_rden <= 1;
+                    else
+                        bk_sdrd_rd_req <= ~bk_sdrd_rd_req;
+                end
+                bk_sdrd_a <= bk_sdrd_a + 25'd4;
             end
-            else begin
-                if (bk_loading)
-                    sdbuf_rden <= 1;
-                else
-                    bk_sdrd_rd_req <= ~bk_sdrd_rd_req;
-            end
-            bk_sdrd_a <= bk_sdrd_a + 25'd2;
+            sdbuf_a0 <= ~sdbuf_a0;
         end
     end
 end
 
-assign sdbuf_a = bk_sdrd_a[8:1];
+always @(posedge clk_sys) begin
+    sdbuf_a0_d <= sdbuf_a0;
+    if (sdbuf_rden & ~sdbuf_a0_d)
+        sdbuf_dout_d <= sdbuf_dout;
+end
+
+assign sdbuf_a = {bk_sdrd_a[8:2], sdbuf_a0};
+assign sdbuf_din = sdbuf_a0 ? bk_sdrd_din[31:16] : bk_sdrd_din[15:0];
+assign bk_sdrd_dout = {sdbuf_dout, sdbuf_dout_d};
 
 dpram #(.addr_width(8), .data_width(16)) sdbuf
    (
@@ -553,10 +571,10 @@ dpram #(.addr_width(8), .data_width(16)) sdbuf
     .cs_a(1'b1),
 
     .address_b(sdbuf_a),
-    .data_b(bk_sdrd_din),
+    .data_b(sdbuf_din),
     .enable_b(1'b1),
     .wren_b(sdbuf_wren),
-    .q_b(bk_sdrd_dout),
+    .q_b(sdbuf_dout),
     .cs_b(1'b1)
     );
 

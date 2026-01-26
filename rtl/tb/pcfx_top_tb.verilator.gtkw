@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
-[*] Mon Jan 26 00:33:47 2026
+[*] Mon Jan 26 01:56:04 2026
 [*]
 [dumpfile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/pcfx_top_tb.verilator.fst"
-[dumpfile_mtime] "Sun Jan 25 21:12:40 2026"
-[dumpfile_size] 8918885
+[dumpfile_mtime] "Mon Jan 26 01:54:33 2026"
+[dumpfile_size] 402435
 [savefile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/pcfx_top_tb.verilator.gtkw"
-[timestart] 81020684
+[timestart] 1991039
 [size] 1334 601
 [pos] -1 -1
-*-8.072479 81021210 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+*-6.959739 1991220 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 [markername] AA
 [markername] BB
 [markername] CC
@@ -39,7 +39,6 @@
 [treeopen] pcfx_top_tb.
 [treeopen] pcfx_top_tb.pcfx_top.mach.cpu.
 [treeopen] pcfx_top_tb.pcfx_top.mach.vdc1.SAT.
-[treeopen] pcfx_top_tb.sdrb.
 [sst_width] 255
 [signals_width] 280
 [sst_expanded] 1
@@ -71,10 +70,14 @@ pcfx_top_tb.pcfx_top.bk_sdrd_copy_req
 pcfx_top_tb.pcfx_top.bk_sdrd_copying
 pcfx_top_tb.pcfx_top.bk_sdrd_copy_ack
 @22
+pcfx_top_tb.pcfx_top.bk_sdrd_din[31:0]
+@23
+pcfx_top_tb.pcfx_top.bk_sdrd_dout[31:0]
+@22
 pcfx_top_tb.pcfx_top.bk_sdrd_a[24:0]
-pcfx_top_tb.pcfx_top.bk_sdrd_dout[15:0]
-pcfx_top_tb.pcfx_top.bk_sdrd_din[15:0]
 pcfx_top_tb.pcfx_top.sdbuf_a[7:0]
+pcfx_top_tb.pcfx_top.sdbuf_din[15:0]
+pcfx_top_tb.pcfx_top.sdbuf_dout[15:0]
 @28
 pcfx_top_tb.pcfx_top.sdbuf_rden
 pcfx_top_tb.pcfx_top.sdbuf_wren
@@ -101,9 +104,8 @@ pcfx_top_tb.pcfx_top.sdram.data[31:0]
 -sdram
 @800200
 -u1a
-@29
-pcfx_top_tb.sdrb.u1a.nRAS
 @28
+pcfx_top_tb.sdrb.u1a.nRAS
 pcfx_top_tb.sdrb.u1a.nCAS
 pcfx_top_tb.sdrb.u1a.nWE
 pcfx_top_tb.sdrb.u1a.BA[1:0]

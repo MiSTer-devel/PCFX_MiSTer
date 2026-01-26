@@ -249,7 +249,7 @@ logic           img_readonly = 0;
 logic [63:0]    img_size = 0;
 logic [31:0]    sd_lba;
 logic [1:0]     sd_rd, sd_wr;
-logic [1:0]     sd_ack = 0;
+logic [1:0]     sd_ack;
 logic [7:0]     sd_buff_addr = 0;
 logic [15:0]    sd_buff_dout = 0;
 logic [15:0]    sd_buff_din;
