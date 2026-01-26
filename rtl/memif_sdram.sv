@@ -190,7 +190,7 @@ always @* begin
     end
 end
 
-assign SDRAM_CLKREF = mem_start_req;
+assign SDRAM_CLKREF = 0;//mem_start_req;
 assign SDRAM_WADDR = sdram_waddr;
 assign SDRAM_DIN = sdram_din;
 assign SDRAM_BE = sdram_be;
