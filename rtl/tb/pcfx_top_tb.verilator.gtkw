@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
-[*] Sun Jan 25 01:51:43 2026
+[*] Mon Jan 26 00:33:47 2026
 [*]
 [dumpfile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/pcfx_top_tb.verilator.fst"
-[dumpfile_mtime] "Sun Jan 25 01:48:02 2026"
-[dumpfile_size] 18901994
+[dumpfile_mtime] "Sun Jan 25 21:12:40 2026"
+[dumpfile_size] 8918885
 [savefile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/pcfx_top_tb.verilator.gtkw"
-[timestart] 0
+[timestart] 81020684
 [size] 1334 601
 [pos] -1 -1
-*-25.045605 50097180 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+*-8.072479 81021210 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 [markername] AA
 [markername] BB
 [markername] CC
@@ -39,8 +39,9 @@
 [treeopen] pcfx_top_tb.
 [treeopen] pcfx_top_tb.pcfx_top.mach.cpu.
 [treeopen] pcfx_top_tb.pcfx_top.mach.vdc1.SAT.
+[treeopen] pcfx_top_tb.sdrb.
 [sst_width] 255
-[signals_width] 410
+[signals_width] 280
 [sst_expanded] 1
 [sst_vpaned_height] 159
 @800200
@@ -90,9 +91,33 @@ pcfx_top_tb.pcfx_top.sdram.ls_we_req
 pcfx_top_tb.pcfx_top.sdram.ls_we_ack
 pcfx_top_tb.pcfx_top.sdram.ls_rd_req
 pcfx_top_tb.pcfx_top.sdram.ls_rd_ack
+pcfx_top_tb.pcfx_top.sdram.ram_req
+pcfx_top_tb.pcfx_top.sdram.wr
+@22
+pcfx_top_tb.pcfx_top.sdram.q[3:0]
+pcfx_top_tb.pcfx_top.sdram.a[24:0]
+pcfx_top_tb.pcfx_top.sdram.data[31:0]
 @1000200
 -sdram
 @800200
+-u1a
+@29
+pcfx_top_tb.sdrb.u1a.nRAS
+@28
+pcfx_top_tb.sdrb.u1a.nCAS
+pcfx_top_tb.sdrb.u1a.nWE
+pcfx_top_tb.sdrb.u1a.BA[1:0]
+@22
+pcfx_top_tb.sdrb.u1a.A[12:0]
+pcfx_top_tb.sdrb.u1a.DQ[15:0]
+@28
+pcfx_top_tb.sdrb.u1a.DQMH
+pcfx_top_tb.sdrb.u1a.DQML
+@22
+pcfx_top_tb.sdrb.u1a.cmd[3:0]
+@1000200
+-u1a
+@c00200
 -memif_sdram
 @28
 pcfx_top_tb.pcfx_top.memif_sdram.SRAM_CEn
@@ -104,15 +129,15 @@ pcfx_top_tb.pcfx_top.memif_sdram.mem_pend_req
 pcfx_top_tb.pcfx_top.memif_sdram.ract
 pcfx_top_tb.pcfx_top.memif_sdram.wact
 pcfx_top_tb.pcfx_top.memif_sdram.mem_rdy
-@1000200
+@1401200
 -memif_sdram
-@800200
+@c00200
 -fx_bmp
 @28
 pcfx_top_tb.pcfx_top.bmp.CFG_EN
 @24
 pcfx_top_tb.pcfx_top.bmp.CFG_SIZE[2:0]
-@29
+@28
 pcfx_top_tb.pcfx_top.bmp.MCP_CSn
 @22
 pcfx_top_tb.pcfx_top.bmp.MCP_A[26:1]
@@ -124,7 +149,7 @@ pcfx_top_tb.pcfx_top.bmp.MCP_DO[7:0]
 pcfx_top_tb.pcfx_top.bmp.bat_sel
 pcfx_top_tb.pcfx_top.bmp.RAM_CEn
 pcfx_top_tb.pcfx_top.bmp.RAM_READYn
-@1000200
+@1401200
 -fx_bmp
 @28
 pcfx_top_tb.pcfx_top.mach.ERROR

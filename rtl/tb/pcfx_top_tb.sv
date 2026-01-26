@@ -9,6 +9,7 @@
 //`define USE_IOCTL_FOR_LOAD 1
 `define LOAD_SRAMS 1
 //`define SAVE_SRAMS 1
+`define VERIFY_SRAM_LOAD 1
 `define SAVE_FRAMES 1
 
 import core_pkg::hmi_t;
@@ -140,6 +141,22 @@ end
 
 //////////////////////////////////////////////////////////////////////
 
+task sdram_read(input [24:0] addr, output [15:0] d);
+    sdrb.u1a.read(pcfx_top.sdram.addr_to_bank(addr),
+                  pcfx_top.sdram.addr_to_row(addr),
+                  pcfx_top.sdram.addr_to_col(addr),
+                  d);
+endtask
+
+task sdram_write(input [24:0] addr, input [15:0] d);
+    sdrb.u1a.write(pcfx_top.sdram.addr_to_bank(addr),
+                   pcfx_top.sdram.addr_to_row(addr),
+                   pcfx_top.sdram.addr_to_col(addr),
+                   d);
+endtask
+
+//////////////////////////////////////////////////////////////////////
+
 string fn_rombios = "rombios.bin";
 
 `ifdef USE_IOCTL_FOR_LOAD
@@ -211,10 +228,7 @@ logic [24:0] addr;
             code = $fread(data, fin, 0, 2);
             if (!$feof(fin)) begin
                 data = {data[7:0], data[15:8]}; // $fread is big-endian
-                sdrb.u1a.write(pcfx_top.sdram.addr_to_bank(addr),
-                               pcfx_top.sdram.addr_to_row(addr),
-                               pcfx_top.sdram.addr_to_col(addr),
-                               data);
+                sdram_write(addr, data);
                 addr += 2;
             end
         end
@@ -365,6 +379,29 @@ task load_bk;
     @(posedge clk_sys) ;
     while (pcfx_top.bk_loading)
         @(posedge clk_sys) ;
+
+`ifdef VERIFY_SRAM_LOAD
+    verify_bk_load(0);
+    verify_bk_load(1);
+`endif
+endtask
+
+task verify_bk_load(int vd);
+bit [15:0] dfile, dram;
+bit [24:0] base, addr;
+    if (sd_size[vd] == 0)
+        return;
+    $display("Verifying SD vol %1d", vd);
+    base = (vd != 0) ? pcfx_top.memif_sdram.BMP_BASE_A : pcfx_top.memif_sdram.SRAM_BASE_A;
+    addr = 0;
+    $fseek(sd_fin[vd], 0, 0);
+    for (longint i = 0; i < sd_size[vd]; i++) begin
+        $fread(dfile, sd_fin[vd], 0, 2);
+        dfile = {dfile[7:0], dfile[15:8]}; // $fread is big-endian
+        sdram_read(base + addr, dram);
+        assert(dfile == dram) else $error("Wanted %x, got %x @ addr. %x", dfile, dram, addr);
+        addr += 25'd2;
+    end
 endtask
 
 task save_bk;

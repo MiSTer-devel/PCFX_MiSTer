@@ -57,6 +57,10 @@ logic [9:0]     col;
 
 logic [15:0] 	mem[1<<2][1<<13][1<<10];
 
+task read(input [1:0] bank, input [12:0] row, input [9:0] col, output [15:0] d);
+    d = mem[bank][row][col];
+endtask
+
 task write(input [1:0] bank, input [12:0] row, input [9:0] col, input [15:0] d);
     mem[bank][row][col] = d;
 endtask
