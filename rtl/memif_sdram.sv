@@ -104,7 +104,7 @@ assign mem_start_req = rom_start_req | ram_start_req | sram_start_req | bmp_star
 assign mem_readyn = rom_readyn & ram_readyn & sram_readyn & bmp_readyn;
 
 always @(posedge SDRAM_CLK) begin
-    mem_pend_req <= (mem_pend_req | mem_start_req) & ~(ract | wact);
+    mem_pend_req <= (mem_pend_req | mem_start_req) & ~(~CPU_RESn | ract | wact);
     sdram_rd_d <= SDRAM_RD;
     sdram_we_d <= SDRAM_WE;
 end

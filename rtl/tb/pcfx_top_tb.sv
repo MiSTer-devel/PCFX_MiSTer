@@ -62,12 +62,13 @@ wire        pce;
 wire        hbl, vbl;
 wire        vs;
 wire [7:0]  r, g, b;
+logic       reset_sys;
 
 pcfx_top pcfx_top
 (
 	.clk_sys(clk_sys),
     .clk_ram(clk_ram),
-	.reset(reset),
+	.reset(reset_sys),
     .pll_locked('1),
 
 	.img_mounted(img_mounted),
@@ -138,6 +139,9 @@ end
 initial forever begin :clkgen_ram
     #0.005 clk_ram = ~clk_ram; // 100 MHz
 end
+
+always @(posedge clk_sys)
+    reset_sys <= reset;
 
 //////////////////////////////////////////////////////////////////////
 
