@@ -1,12 +1,12 @@
 logic           reset;
 logic           clk, ce;
-logic [2:1]     a;
+logic [4:1]     a;
 logic           csn, rdn, wrn, busyn;
 logic [15:0]    din, dout;
-enum            {MMC, VCE, VDC0, VDC1} io_sel;
+enum            {MMC, VCE, VDC0, VDC1, VPU} io_sel;
 logic           vce_sel = '0;
-logic [15:0]    mmc_dout, vce_dout;
-logic           mmc_csn, vce_csn;
+logic [15:0]    mmc_dout, vce_dout, vdc0_dout, vdc1_dout, vpu_dout;
+logic           mmc_csn, vce_csn, vdc0_csn, vdc1_csn, vpu_csn;
 logic           dck, dck_nededge, dck70, dck70_negedge;
 logic           hsync_posedge, hsync_negedge;
 logic           vsync_posedge, vsync_negedge;
@@ -18,30 +18,34 @@ logic [15:0]    rb_di, rb_do;
 wire [15:0]     kramb_io;
 logic [8:0]     rb_a;
 logic           rb_oen, rb_wen, rb_rasn, rb_lcasn, rb_ucasn;
-logic [23:0]    mmc_vd, vce_vd;
+logic [23:0]    mmc_vd, vce_vd, vpu_vd;
 logic [8:0]     vdc0_vd, vdc1_vd;
 logic           mmc_vde;
 logic           vce_hbl, vce_vbl, vce_vde;
 `ifdef TB_VDC
-logic           vdc0_csn;
-logic [15:0]    vdc0_dout;
 wire [15:0]     vram0_a;
 wire [15:0]     vram0_di, vram0_do;
 wire            vram0_we;
-logic           vdc1_csn;
-logic [15:0]    vdc1_dout;
 wire [15:0]     vram1_a;
 wire [15:0]     vram1_di, vram1_do;
 wire            vram1_we;
 `endif
+logic [7:0]     kbus_di;
+logic           kbus_req_vpu, kbus_ack_vpu;
+`ifdef TB_VPU
+wire [12:0]     rrama_a, rramb_a;
+wire [7:0]      rrama_di, rrama_do, rramb_di, rramb_do;
+wire            rrama_oen, rrama_wen, rramb_oen, rramb_wen;
+`endif
 
+`ifndef TB_NO_MMC
 huc6272 mmc
    (
     .CLK(clk),
     .CE(ce),
     .RESn(~reset),
 
-    .A(a),
+    .A(a[2:1]),
     .DI(din),
     .DO(mmc_dout),
     .CSn(mmc_csn),
@@ -104,6 +108,7 @@ pd424260 kramb
 
 assign kramb_io = rb_oen ? rb_do : 'Z;
 assign rb_di = kramb_io;
+`endif //TB_NO_MMC
 
 huc6261 vce
    (
@@ -131,6 +136,7 @@ huc6261 vce
     .DCKKR(dck),
     .DCKKR_NEGEDGE(dck_negedge),
     .MMC_VD(mmc_vd),
+    .VPU_VD(vpu_vd),
 
     .Y(vce_vd[16+:8]),
     .U(vce_vd[8+:8]),
@@ -150,7 +156,7 @@ huc6270 vdc0
      .CPU_CE(ce),
 
      .BYTEWORD('0),
-     .A(a),
+     .A(a[2:1]),
      .DI(din),
      .DO(vdc0_dout),
      .CS_N(vdc0_csn),
@@ -204,7 +210,7 @@ huc6270 vdc1
      .CPU_CE(ce),
 
      .BYTEWORD('0),
-     .A(a),
+     .A(a[2:1]),
      .DI(din),
      .DO(vdc1_dout),
      .CS_N(vdc1_csn),
@@ -251,6 +257,77 @@ dpram #(.addr_width(16), .data_width(16), .disable_value(0)) vram1
      );
 `endif
 
+`ifdef TB_VPU
+huc6271 vpu
+   (
+    .CLK(clk),
+    .CE(ce),
+    .RESn(~reset),
+    
+    .A(a[4:2]),
+    .DI(din),
+    .DO(vpu_dout),
+    .CSn(vpu_csn),
+    .WRn(wrn),
+    .RDn(rdn),
+
+    .KBUS_DI(kbus_di),
+    .KBUS_REQ(kbus_req_vpu),
+    .KBUS_ACK(kbus_ack_vpu),
+
+    .RA_A(rrama_a),
+    .RA_DI(rrama_di),
+    .RA_DO(rrama_do),
+    .RA_OEn(rrama_oen),
+    .RA_WEn(rrama_wen),
+
+    .RB_A(rramb_a),
+    .RB_DI(rramb_di),
+    .RB_DO(rramb_do),
+    .RB_OEn(rramb_oen),
+    .RB_WEn(rramb_wen),
+
+    .DCK(dck),
+    .HSYNC_NEGEDGE(hsync_negedge),
+    .VD(vpu_vd)
+    );
+
+dpram #(.addr_width(13), .data_width(8), .disable_value(0)) rrama
+    (
+     .clock(clk),
+     .address_a(rrama_a),
+     .data_a(rrama_do),
+     .enable_a('1),
+     .wren_a(~rrama_wen),
+     .q_a(rrama_di),
+     .cs_a(~rrama_oen | ~rrama_wen),
+     .address_b('0),
+     .data_b('0),
+     .enable_b('1),
+     .wren_b('0),
+     .q_b(),
+     .cs_b('1)
+     );
+
+dpram #(.addr_width(13), .data_width(8), .disable_value(0)) rramb
+    (
+     .clock(clk),
+     .address_a(rramb_a),
+     .data_a(rramb_do),
+     .enable_a('1),
+     .wren_a(~rramb_wen),
+     .q_a(rramb_di),
+     .cs_a(~rramb_oen | ~rramb_wen),
+     .address_b('0),
+     .data_b('0),
+     .enable_b('1),
+     .wren_b('0),
+     .q_b(),
+     .cs_b('1)
+     );
+
+`endif
+
 initial begin
     reset = 1;
     ce = 0;
@@ -265,6 +342,7 @@ always @* begin
     vce_csn = 1'b1;
     vdc0_csn = 1'b1;
     vdc1_csn = 1'b1;
+    vpu_csn = 1'b1;
     dout = 'X;
     case (io_sel)
         MMC: begin
@@ -283,6 +361,10 @@ always @* begin
             vdc1_csn = csn;
             dout = vdc1_dout;
         end
+        VPU: begin
+            vpu_csn = csn;
+            dout = vpu_dout;
+        end
         default: ;
     endcase
 end
@@ -297,7 +379,7 @@ end
 
 //////////////////////////////////////////////////////////////////////
 
-task io_read16(input [2:1] ain, output [15:0] v);
+task io_read16(input [4:1] ain, output [15:0] v);
     @(posedge clk) ;
     while (!ce)
         @(posedge clk) ;
@@ -313,7 +395,7 @@ task io_read16(input [2:1] ain, output [15:0] v);
     csn <= 1;
 endtask
 
-task io_write16(input [2:1] ain, input [15:0] v);
+task io_write16(input [4:1] ain, input [15:0] v);
     @(posedge clk) ;
     while (!ce)
         @(posedge clk) ;
@@ -354,6 +436,7 @@ endtask
 
 //////////////////////////////////////////////////////////////////////
 
+`ifndef TB_NO_MMC
 task vram_write(input page, input [17:0] addr, input [15:0] d);
     if (addr[17])
         kramb.write({page, addr[16:9]}, addr[8:0], d);
@@ -382,4 +465,5 @@ logic [18:1] addr;
         $fclose(fin);
     end
 endtask
+`endif // TB_NO_MMC
 

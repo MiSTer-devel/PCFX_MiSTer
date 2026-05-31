@@ -1,6 +1,8 @@
-/*.bin
-/*.hex
+*.bin
+*.hex
+*.dmp
 /*.fxb
+/*.raw
 /frames/
 /*render.hex
 /*render.png

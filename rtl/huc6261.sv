@@ -33,10 +33,11 @@ module huc6261
      input [8:0]      VDC0_VD,
      input [8:0]      VDC1_VD,
 
-     // MMC (HuC6272 KING) video interface
+     // MMC (HuC6272 KING) and VPU (HuC6271 RAINBOW) video interface
      output           DCKKR, // pixel clock enable
      output           DCKKR_NEGEDGE,
      input [23:0]     MMC_VD,
+     input [23:0]     VPU_VD,
 
      // NTSC/YUV video output
      output reg [7:0] Y,
@@ -119,7 +120,9 @@ cr_t            cr, cr_next;
 logic [8:0]     cpa;
 logic [15:0]    cpdin, cpdout;
 logic           cpd_wr, cpd_wr_d;
-logic [7:0]     vdc_sp_cpao, vdc_bg_cpao;
+logic [7:0]     vdc_sp_cpao, vdc_bg_cpao, 
+                mmc_bg0_cpao, mmc_bg1_cpao, mmc_bg2_cpao, mmc_bg3_cpao,
+                vpu_cpao;
 logic [2:0]     pri_vdc_bg, pri_vdc_sp, pri_vpu,
                 pri_mmc_bg0, pri_mmc_bg1, pri_mmc_bg2, pri_mmc_bg3;
 logic [15:0]    ccr, ccr_next;
@@ -148,6 +151,11 @@ always @(posedge CLK) if (CE) begin
         cpa <= '0;
         vdc_sp_cpao <= '0;
         vdc_bg_cpao <= '0;
+        mmc_bg0_cpao <= '0;
+        mmc_bg1_cpao <= '0;
+        mmc_bg2_cpao <= '0;
+        mmc_bg3_cpao <= '0;
+        vpu_cpao <= '0;
         pri_vdc_bg <= '0;
         pri_vdc_sp <= '0;
         pri_vpu <= '0;
@@ -188,6 +196,16 @@ always @(posedge CLK) if (CE) begin
                             vdc_sp_cpao <= DI[15:8];
                             vdc_bg_cpao <= DI[7:0];
                         end
+                        5'd05: begin
+                            mmc_bg1_cpao <= DI[15:8];
+                            mmc_bg0_cpao <= DI[7:0];
+                        end
+                        5'd06: begin
+                            mmc_bg3_cpao <= DI[15:8];
+                            mmc_bg2_cpao <= DI[7:0];
+                        end
+                        5'd07:
+                            vpu_cpao <= DI[7:0];
                         5'h08: begin
                             pri_vdc_bg <= DI[0+:3];
                             pri_vdc_sp <= DI[4+:3];
@@ -479,12 +497,20 @@ assign layers[1].pal = '0;
 assign layers[1].cpe = ble.mmc_bg0;
 
 //////////////////////////////////////////////////////////////////////
-// [Placeholder] VPU (RAINBOW) video input
+// VPU (RAINBOW) video input
+
+logic [8:0]     vpu_cpa;
+logic           vpu_en, vpu_key;
+
+assign vpu_en = cr.bg71;
+assign vpu_key = vpu_en & |VPU_VD[0+:8];
+
+assign vpu_cpa = {vpu_cpao, 1'b0} + {2'b0, VPU_VD[6:0]};
 
 assign layers[2].pri = pri_vpu;
-assign layers[2].key = '0; // transparent
-assign layers[2].vd  = '0;
-assign layers[2].pal = '0;
+assign layers[2].key = vpu_key;
+assign layers[2].vd  = 24'(vpu_cpa);
+assign layers[2].pal = '1;
 assign layers[2].cpe = ble.vpu;
 
 //////////////////////////////////////////////////////////////////////

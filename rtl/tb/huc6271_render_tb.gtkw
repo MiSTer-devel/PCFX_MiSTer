@@ -1,0 +1,103 @@
+[*]
+[*] GTKWave Analyzer v4.0.0-prealpha (8ba24ab+) (w)1999-2022 BSI
+[*] Sun May 31 06:34:32 2026
+[*]
+[dumpfile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/huc6271_render_tb.vcd"
+[dumpfile_mtime] "Sun May 31 06:33:48 2026"
+[dumpfile_size] 195903893
+[savefile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/huc6271_render_tb.gtkw"
+[timestart] 0
+[size] 1333 600
+[pos] -1 -1
+*-21.793781 14697600 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+[markername] AA
+[markername] BB
+[markername] CC
+[markername] DD
+[markername] EE
+[markername] FF
+[markername] GG
+[markername] HH
+[markername] II
+[markername] JJ
+[markername] KK
+[markername] LL
+[markername] MM
+[markername] NN
+[markername] OO
+[markername] PP
+[markername] QQ
+[markername] RR
+[markername] SS
+[markername] TT
+[markername] UU
+[markername] VV
+[markername] WW
+[markername] XX
+[markername] YY
+[markername] ZZ
+[treeopen] huc6271_render_tb.
+[sst_width] 255
+[signals_width] 177
+[sst_expanded] 1
+[sst_vpaned_height] 159
+@28
+huc6271_render_tb.vpu.DCK
+huc6271_render_tb.vpu.CE
+huc6271_render_tb.vpu.HSYNC_NEGEDGE
+huc6271_render_tb.vpu.A[3:1]
+huc6271_render_tb.vpu.WRn
+huc6271_render_tb.vpu.KBUS_REQ
+huc6271_render_tb.vpu.KBUS_ACK
+@22
+huc6271_render_tb.vpu.KBUS_DI[7:0]
+@28
+huc6271_render_tb.vpu.RA_OEn
+huc6271_render_tb.vpu.RA_WEn
+huc6271_render_tb.vpu.RB_OEn
+huc6271_render_tb.vpu.RB_WEn
+@22
+huc6271_render_tb.vpu.v_cnt[3:0]
+huc6271_render_tb.vpu.h_cnt[9:0]
+@28
+huc6271_render_tb.vpu.rbsel
+huc6271_render_tb.vpu.dec_act
+huc6271_render_tb.vpu.dec_valid[1:0]
+@24
+huc6271_render_tb.vpu.sist[2:0]
+@28
+huc6271_render_tb.vpu.si_hdr_det
+@22
+huc6271_render_tb.vpu.si_hdr[3:0]
+@28
+huc6271_render_tb.vpu.si_ready
+@22
+huc6271_render_tb.vpu.si_len[15:0]
+@24
+huc6271_render_tb.vpu.rles[1:0]
+@22
+huc6271_render_tb.vpu.rle_run[7:0]
+huc6271_render_tb.vpu.rle_cnt[7:0]
+@28
+huc6271_render_tb.vpu.rle_rwe
+@22
+huc6271_render_tb.vpu.rle_raddr[12:0]
+huc6271_render_tb.vpu.rle_rdata[7:0]
+@28
+huc6271_render_tb.vpu.vo_hact
+@22
+huc6271_render_tb.vpu.vo_raddr[12:0]
+huc6271_render_tb.vpu.vo_rdata[7:0]
+huc6271_render_tb.vpu.vo_vd[15:0]
+@23
+huc6271_render_tb.vpu.VD[23:0]
+@200
+-
+@28
+huc6271_render_tb.vce.HBL
+@22
+huc6271_render_tb.vce.Y[7:0]
+huc6271_render_tb.vce.U[7:0]
+huc6271_render_tb.vce.V[7:0]
+[pattern_trace] 1
+[pattern_trace] 0
