@@ -443,8 +443,10 @@ task vram_write(input page, input [17:0] addr, input [15:0] d);
     else
         krama.write({page, addr[16:9]}, addr[8:0], d);
 endtask
+`endif
 
 task vram_load_file(input string fn, input page);
+`ifndef TB_NO_MMC
 integer fin;
 integer code;
 logic [15:0] data;
@@ -464,6 +466,6 @@ logic [18:1] addr;
         end
         $fclose(fin);
     end
+`endif
 endtask
-`endif // TB_NO_MMC
 

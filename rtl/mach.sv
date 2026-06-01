@@ -608,7 +608,7 @@ assign VID_PCE = dck70;
 //////////////////////////////////////////////////////////////////////
 
 always @(posedge CLK) if (0 && CE) begin
-    if (~io_cen & ~cpu_dan)
+    if (~io_cen & ~cpu_dan & ~cpu_readyn)
         $display("%t: %x %s %x", $realtime,A, (cpu_rw ? "R" : "w"), 
                  (cpu_rw ? cpu_d_i[15:0] : cpu_d_o[15:0]));
 end

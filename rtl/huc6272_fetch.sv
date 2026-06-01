@@ -63,18 +63,31 @@ rf_bgp_t bgp;
     mpe_rd_en = |bgp.prio & ~mpd.nop;
 endfunction
 
+function [17:3] bg_size_off(rf_bgp_t bgp);
+logic [3:0] xw, yw;
+logic [17:3] xoff, yoff;
+    xw = bgp.size_n - 4'd3;
+    yw = bgp.size_m;
+    xoff = 15'(FETCH_BG_COL[9:3] & ((1 << xw) - 1));
+    yoff = 15'(FETCH_BG_ROW[9:0] & ((1 << yw) - 1)) << xw;
+    bg_size_off = xoff | yoff;
+endfunction
+
 function [17:0] mpe_addr(mpd_t mpd);
-logic [7:0] base;
+logic [17:3] size_off;
 rf_bgp_t bgp;
     bgp = get_bgp(mpd.layer);
     mpe_addr = '0;
+    size_off = bg_size_off(bgp);
     // TODO: mpe_addr[17] = REG.0F[4];
     if (~mpd.nop) begin
         mpe_addr[16:10] = mpd.bat ? bgp.bat[6:0] : bgp.cg[6:0]; // [7] is A/-B
         if (mpd.bat)
             ; // TODO
-        else // CG
-            mpe_addr[15:0] += {FETCH_BG_ROW[7:0], FETCH_BG_COL[7:3], mpd.cgoff};
+        else begin // CG
+            mpe_addr[17:3] += size_off;
+            mpe_addr[2:0] = mpd.cgoff;
+        end
     end
 endfunction
 

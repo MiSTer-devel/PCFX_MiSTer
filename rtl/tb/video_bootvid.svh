@@ -53,7 +53,6 @@ task load_vdc1_reg();
     reg_write(7'h13, 16'h7f00); // DVSSR
 endtask
 
-// TODO: update
 task load_kreg();
     // KING BG
     io_sel = MMC;
@@ -61,7 +60,7 @@ task load_kreg();
     reg_write(7'h12, 16'h0004); // Prio
     reg_write(7'h16, 16'h0001); // ScrM
     // KBG0
-    reg_write(7'h2c, 16'h8888); // Size
+    reg_write(7'h2c, 16'h6666); // Size
     reg_write(7'h20, 16'h0000); // BAT
     reg_write(7'h21, 16'h0080); // CG
     reg_write(7'h22, 16'h0000); // SubBAT
@@ -126,5 +125,7 @@ endtask
 
 task load_vmem();
     $readmemh("vce_cp-bootvid.hex", vce.cpram.mem);
+    vram_load_file("kram0-bootvid.bin", 0);
+    vram_load_file("kram1-bootvid.bin", 1);
 endtask
 
