@@ -51,6 +51,11 @@ logic           si_hdr_det, si_block, si_end;
 wor             si_busy;
 
 //////////////////////////////////////////////////////////////////////
+// CPU memory / I/O bus interface
+
+// TODO
+
+//////////////////////////////////////////////////////////////////////
 // Main FSM
 
 logic [9:0]     h_cnt;
@@ -122,7 +127,7 @@ always @(posedge CLK) if (CE) begin
 
         case (sist)
             SIS_INIT:
-                if (&KBUS_DI) begin
+                if (si_din & &KBUS_DI) begin
                     sist <= SIS_HDR_TYPE;
                 end
             SIS_HDR_TYPE:

@@ -92,6 +92,12 @@ task load_kreg();
     reg_write(7'h3b, 16'h0000); // D
     reg_write(7'h3c, 16'h0000); // X
     reg_write(7'h3d, 16'h0000); // Y
+    // RAINBOW
+    reg32_write(7'h41, 32'h00000000); // RKRAMA
+    reg_write(7'h42, 16'h0006); // RSTART
+    reg_write(7'h43, 16'h000f); // RCOUNT
+    reg_write(7'h44, 16'h0000); // RIRQLINE
+    reg_write(7'h40, 16'h0001); // RTCTRL
     // MPROG
     reg_write(7'h13, 16'h0000); // uAddr=0
     reg_write(7'h14, 16'h0100); // 0

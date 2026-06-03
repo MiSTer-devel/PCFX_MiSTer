@@ -13,6 +13,10 @@ module huc6272_video
     // Register file
     input         rf_bgm_t rf_bgm,
 
+    // Video status
+    output [9:0]  ROW,
+    output [9:0]  COL,
+
     // Bank A memory client interface
     output [17:0] MA_A,
     input [15:0]  MA_DI,
@@ -79,6 +83,9 @@ always @(posedge CLK) begin
             vsync_l <= '1;
     end
 end
+
+assign ROW = row;
+assign COL = col;
 
 //////////////////////////////////////////////////////////////////////
 // Active fetch / render windows

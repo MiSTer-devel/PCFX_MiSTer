@@ -23,6 +23,7 @@ module huc6272_cpuif
     // Register files
     output        rf_scsi_t rf_scsi,
     output        rf_bgm_t rf_bgm,
+    output        rf_c71xfer_t rf_c71xfer,
 
     // Status
     input         st_scsi_t st_scsi,
@@ -69,6 +70,7 @@ always @(posedge CLK) if (CE) begin
         rsel <= '0;
         rf_scsi <= '0;
         rf_bgm <= '0;
+        rf_c71xfer <= '0;
         krra <= '0;
         krwa <= '0;
         krd <= '0;
@@ -168,6 +170,14 @@ always @(posedge CLK) if (CE) begin
                         7'h35: rf_bgm.bgp[2].bsy <= {1'b0, DI[9:0]};
                         7'h36: rf_bgm.bgp[3].bsx <= {1'b0, DI[9:0]};
                         7'h37: rf_bgm.bgp[3].bsy <= {1'b0, DI[9:0]};
+                        7'h40: begin
+                            rf_c71xfer.ren <= DI[0];
+                            rf_c71xfer.rint <= DI[1];
+                        end
+                        7'h41: rf_c71xfer.ka[15:0] <= DI;
+                        7'h42: rf_c71xfer.tsr <= DI[8:0];
+                        7'h43: rf_c71xfer.tbc <= DI[4:0];
+                        7'h44: rf_c71xfer.rm <= DI[8:0];
                         default: ;
                     endcase
                 end
@@ -179,6 +189,10 @@ always @(posedge CLK) if (CE) begin
                         7'h0e: begin
                             krd <= DI;
                             krwr_pend <= '1;
+                        end
+                        7'h41: begin
+                            rf_c71xfer.kba <= DI[1];
+                            rf_c71xfer.ka[16] <= DI[0];
                         end
                         default: ;
                     endcase

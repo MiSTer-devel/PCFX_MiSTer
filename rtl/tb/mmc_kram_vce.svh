@@ -78,7 +78,11 @@ huc6272 mmc
     .VSYNC_POSEDGE(vsync_posedge),
     .VSYNC_NEGEDGE(vsync_negedge),
     .VD(mmc_vd),
-    .VDE(mmc_vde)
+    .VDE(mmc_vde),
+
+    .KBUS_DO(kbus_di),
+    .KBUS_REQ_C71(kbus_req_vpu),
+    .KBUS_ACK_C71(kbus_ack_vpu)
     );
 
 pd424260 krama

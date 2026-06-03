@@ -35,6 +35,15 @@ module huc6272_fabric
     input         vid_mb_req, 
     output        vid_mb_ack,
 
+    input         c71xfer_m_ba,
+    input [17:0]  c71xfer_m_a,
+    output [15:0] c71xfer_m_di,
+    input [15:0]  c71xfer_m_do,
+    input [1:0]   c71xfer_m_be,
+    input         c71xfer_m_wr,
+    input         c71xfer_m_req,
+    output        c71xfer_m_ack,
+
     output [17:0] dmca_m_a,
     input [15:0]  dmca_m_di, 
     output [15:0] dmca_m_do,
@@ -59,6 +68,10 @@ wire [15:0]   cpuif_ma_di, cpuif_mb_di;
 wire          cpuif_ma_req, cpuif_mb_req;
 wire          cpuif_ma_ack, cpuif_mb_ack;
 
+wire [15:0]   c71xfer_ma_di, c71xfer_mb_di;
+wire          c71xfer_ma_req, c71xfer_mb_req;
+wire          c71xfer_ma_ack, c71xfer_mb_ack;
+
 huc6272_fabric_tee cpuif
    (
     .M_BA(cpuif_m_ba),
@@ -75,20 +88,36 @@ huc6272_fabric_tee cpuif
     .MB_ACK(cpuif_mb_ack)
     );
 
+huc6272_fabric_tee c71xfer
+   (
+    .M_BA(c71xfer_m_ba),
+    .M_DI(c71xfer_m_di),
+    .M_REQ(c71xfer_m_req),
+    .M_ACK(c71xfer_m_ack),
+
+    .MA_DI(c71xfer_ma_di),
+    .MA_REQ(c71xfer_ma_req),
+    .MA_ACK(c71xfer_ma_ack),
+
+    .MB_DI(c71xfer_mb_di),
+    .MB_REQ(c71xfer_mb_req),
+    .MB_ACK(c71xfer_mb_ack)
+    );
+
 //////////////////////////////////////////////////////////////////////
 // Per-bank multiplexers
 
-huc6272_fabric_bank #(.CN(2)) fba
+huc6272_fabric_bank #(.CN(3)) fba
    (
     .*,
 
-    .cm_a('{vid_ma_a, cpuif_m_a}),
-    .cm_di('{vid_ma_di, cpuif_ma_di}),
-    .cm_do('{vid_ma_do, cpuif_m_do}),
-    .cm_be('{vid_ma_be, cpuif_m_be}),
-    .cm_wr('{vid_ma_wr, cpuif_m_wr}),
-    .cm_req('{vid_ma_req, cpuif_ma_req}),
-    .cm_ack('{vid_ma_ack, cpuif_ma_ack}),
+    .cm_a('{vid_ma_a, c71xfer_m_a, cpuif_m_a}),
+    .cm_di('{vid_ma_di, c71xfer_ma_di, cpuif_ma_di}),
+    .cm_do('{vid_ma_do, c71xfer_m_do, cpuif_m_do}),
+    .cm_be('{vid_ma_be, c71xfer_m_be, cpuif_m_be}),
+    .cm_wr('{vid_ma_wr, c71xfer_m_wr, cpuif_m_wr}),
+    .cm_req('{vid_ma_req, c71xfer_ma_req, cpuif_ma_req}),
+    .cm_ack('{vid_ma_ack, c71xfer_ma_ack, cpuif_ma_ack}),
 
     .dmc_m_a(dmca_m_a),
     .dmc_m_di(dmca_m_di),
@@ -99,17 +128,17 @@ huc6272_fabric_bank #(.CN(2)) fba
     .dmc_m_ack(dmca_m_ack)
     );
 
-huc6272_fabric_bank #(.CN(2)) fbb
+huc6272_fabric_bank #(.CN(3)) fbb
    (
     .*,
 
-    .cm_a('{vid_mb_a, cpuif_m_a}),
-    .cm_di('{vid_mb_di, cpuif_mb_di}),
-    .cm_do('{vid_mb_do, cpuif_m_do}),
-    .cm_be('{vid_mb_be, cpuif_m_be}),
-    .cm_wr('{vid_mb_wr, cpuif_m_wr}),
-    .cm_req('{vid_mb_req, cpuif_mb_req}),
-    .cm_ack('{vid_mb_ack, cpuif_mb_ack}),
+    .cm_a('{vid_mb_a, c71xfer_m_a, cpuif_m_a}),
+    .cm_di('{vid_mb_di, c71xfer_mb_di, cpuif_mb_di}),
+    .cm_do('{vid_mb_do, c71xfer_m_do, cpuif_m_do}),
+    .cm_be('{vid_mb_be, c71xfer_m_be, cpuif_m_be}),
+    .cm_wr('{vid_mb_wr, c71xfer_m_wr, cpuif_m_wr}),
+    .cm_req('{vid_mb_req, c71xfer_mb_req, cpuif_mb_req}),
+    .cm_ack('{vid_mb_ack, c71xfer_mb_ack, cpuif_mb_ack}),
 
     .dmc_m_a(dmcb_m_a),
     .dmc_m_di(dmcb_m_di),

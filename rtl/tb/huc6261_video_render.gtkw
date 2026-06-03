@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v4.0.0-prealpha (8ba24ab+) (w)1999-2022 BSI
-[*] Fri May 15 04:44:32 2026
+[*] Wed Jun  3 06:25:11 2026
 [*]
 [dumpfile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/huc6261_video_render_tb.vcd"
-[dumpfile_mtime] "Fri May 15 04:44:32 2026"
-[dumpfile_size] 125861888
+[dumpfile_mtime] "Wed Jun  3 06:18:42 2026"
+[dumpfile_size] 355171278
 [savefile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/huc6261_video_render.gtkw"
-[timestart] 13001708
+[timestart] 0
 [size] 1333 600
 [pos] -1 -1
-*-7.829422 13002540 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+*-19.824339 884880 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 [markername] AA
 [markername] BB
 [markername] CC
@@ -37,11 +37,40 @@
 [markername] YY
 [markername] ZZ
 [treeopen] huc6261_video_render_tb.
-[treeopen] huc6261_video_render_tb.vce.
+[treeopen] huc6261_video_render_tb.vpu.
 [sst_width] 255
 [signals_width] 229
 [sst_expanded] 1
 [sst_vpaned_height] 159
+@800200
+-mmc.c71xfer
+@28
+huc6261_video_render_tb.mmc.c71xfer.row_start_trig
+huc6261_video_render_tb.mmc.c71xfer.start_raster_match
+huc6261_video_render_tb.mmc.c71xfer.M_REQ
+huc6261_video_render_tb.mmc.c71xfer.M_ACK
+huc6261_video_render_tb.mmc.c71xfer.m_a0
+huc6261_video_render_tb.mmc.c71xfer.m_ready
+@22
+huc6261_video_render_tb.mmc.c71xfer.M_A[17:0]
+@28
+huc6261_video_render_tb.mmc.c71xfer.KBUS_REQ
+huc6261_video_render_tb.mmc.c71xfer.KBUS_ACK
+@22
+huc6261_video_render_tb.mmc.c71xfer.KBUS_DO[7:0]
+@1000200
+-mmc.c71xfer
+@800200
+-vpu
+@28
+huc6261_video_render_tb.vpu.KBUS_REQ
+huc6261_video_render_tb.vpu.KBUS_ACK
+@29
+huc6261_video_render_tb.vpu.sist[2:0]
+@28
+huc6261_video_render_tb.vpu.dec_act
+@1000200
+-vpu
 @22
 huc6261_video_render_tb.vce.vmux[30:0]
 huc6261_video_render_tb.vce.mix_vd[23:0]
@@ -67,9 +96,7 @@ huc6261_video_render_tb.mmc.video.row[9:0]
 huc6261_video_render_tb.vce.prio_out[1:0]
 huc6261_video_render_tb.vce.CLK
 huc6261_video_render_tb.vce.ckenf
-@29
 huc6261_video_render_tb.vce.DCK70
-@28
 huc6261_video_render_tb.vce.ckenkr
 huc6261_video_render_tb.vce.prio_sel[1:0]
 huc6261_video_render_tb.vce.vmux_low_chroma

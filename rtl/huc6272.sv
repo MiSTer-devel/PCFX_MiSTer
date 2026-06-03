@@ -88,13 +88,21 @@ module huc6272
      output        SCSI_SELn,
      input         SCSI_CDn,
      input         SCSI_REQn,
-     input         SCSI_IOn
+     input         SCSI_IOn,
+
+     // K-BUS interface
+     output [7:0]  KBUS_DO,
+     input         KBUS_REQ_C71,
+     output        KBUS_ACK_C71
      );
 
 rf_scsi_t       rf_scsi;
 rf_bgm_t        rf_bgm;
+rf_c71xfer_t    rf_c71xfer;
 
 st_scsi_t       st_scsi;
+
+wire [9:0]      ROW, COL;
 
 wire            cpuif_m_ba;
 wire [17:0]     cpuif_m_a;
@@ -119,6 +127,14 @@ wire [17:0]     dmcb_m_a;
 wire [15:0]     dmcb_m_di, dmcb_m_do;
 wire [1:0]      dmcb_m_be;
 wire            dmcb_m_wr, dmcb_m_req, dmcb_m_ack;
+
+wire            c71xfer_m_ba;
+wire [17:0]     c71xfer_m_a;
+wire [15:0]     c71xfer_m_di, c71xfer_m_do;
+wire [1:0]      c71xfer_m_be;
+wire            c71xfer_m_wr, c71xfer_m_req, c71xfer_m_ack;
+
+wor [7:0]       kbus_do;
 
 //////////////////////////////////////////////////////////////////////
 // CPU memory / I/O bus interface
@@ -247,6 +263,36 @@ huc6272_video video
     .MB_ACK(vid_mb_ack)
     );
 
+//////////////////////////////////////////////////////////////////////
+// HuC6271 data transfer
+
+logic [7:0]     kbus_do_c71;
+
+huc6272_c71xfer c71xfer
+   (
+    .*,
+
+    .KBUS_DO(kbus_do_c71),
+    .KBUS_REQ(KBUS_REQ_C71),
+    .KBUS_ACK(KBUS_ACK_C71),
+
+    .M_BA(c71xfer_m_ba),
+    .M_A(c71xfer_m_a),
+    .M_DI(c71xfer_m_di),
+    .M_DO(c71xfer_m_do),
+    .M_BE(c71xfer_m_be),
+    .M_WR(c71xfer_m_wr),
+    .M_REQ(c71xfer_m_req),
+    .M_ACK(c71xfer_m_ack)
+    );
+
+assign kbus_do = kbus_do_c71;
+
+//////////////////////////////////////////////////////////////////////
+// K-BUS interface
+
+assign KBUS_DO = kbus_do;
+
 endmodule
 
 `include "huc6272_cpuif.sv"
@@ -258,3 +304,4 @@ endmodule
 `include "huc6272_video.sv"
 `include "huc6272_fetch.sv"
 `include "huc6272_bgm.sv"
+`include "huc6272_c71xfer.sv"

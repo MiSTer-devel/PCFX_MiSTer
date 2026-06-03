@@ -82,3 +82,17 @@ typedef struct packed {
     logic           ext; // EXT / -INT
     logic [2:0]     cgoff; // CG offset
 } mpd_t;
+
+//////////////////////////////////////////////////////////////////////
+// HuC6271 data transfer
+
+typedef struct packed {
+    logic          ren;
+    logic          rint;
+    logic          kba;
+    logic [16:0]   ka; // data start addr.
+    logic [8:0]    tsr; // transfer start raster
+    logic [4:0]    tbc; // transfer block count
+    logic [8:0]    rm; // raster monitor
+} rf_c71xfer_t;
+
