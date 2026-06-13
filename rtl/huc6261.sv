@@ -622,9 +622,14 @@ blxx_t          ccdp_m, ccdp_n;
 yuv888_t        ccdp_ccout;
 logic           ccdp_reg1_en;
 logic           ccdp_low_chroma;
+logic           ccdp_front, ccdp_back;
 
 // There are four processing phases per dot clock.
 wire [1:0] ccdp_phase = ckenkr_cnt[2:1];
+
+// One dot requires three processing phases, plus one if front/back
+// cellphane is enabled.
+wire [1:0] ccdp_last_phase = 2'd2 + ble.ed;
 
 // Cellophane calculation
 function [7:0] ccdp_cc(input [7:0] m, input [7:0] n, 
@@ -667,8 +672,18 @@ function blxx_t get_ccdp_n(input ble_cpe_t cpe);
     endcase
 endfunction
 
-assign ccdp_m = get_ccdp_m(mix.cpe);
-assign ccdp_n = get_ccdp_n(mix.cpe);
+// Front/back cellophane selected
+assign ccdp_front = ble.ed &  ble.fb & (ccdp_phase == 2'd3);
+assign ccdp_back  = ble.ed & ~ble.fb & (ccdp_phase == 2'd0);
+
+always @* begin
+    ccdp_m = get_ccdp_m(mix.cpe);
+    ccdp_n = get_ccdp_n(mix.cpe);
+    if (ccdp_front) begin
+        ccdp_m = bl1a;
+        ccdp_n = bl1b;
+    end
+end
 
 always @* begin
     ccdp_ccout.y = ccdp_cc(ccdp_sel1.y, ccdp_reg1.y, ccdp_m.y, ccdp_n.y, 0);
@@ -713,16 +728,23 @@ always @* begin
         ccdp_reg1_en = '1;
     end
     else begin
-        if (ccdp_phase < 2'd3) begin
-            prio_sel = ccdp_phase;
-            ccdp_reg1_en = mix.key;
-            ccdp_sel1_ccr = '0;
-            ccdp_sel2_cc = mix.cpe != CPE_OFF;
-        end
-        if (ccdp_phase == 2'd0 && !(ble.ed & ~ble.fb)) begin
-            // Special case for lowest priority layer
-            ccdp_low_chroma = '1;
+        if (ccdp_front | ccdp_back) begin
+            // Apply front/back cellophane
+            ccdp_sel1_ccr = '1;
+            ccdp_sel2_cc = ccdp_front;
             ccdp_reg1_en = '1;
+        end
+        if (~ccdp_sel1_ccr) begin
+            if (ccdp_phase <= ccdp_last_phase) begin
+                prio_sel = ccdp_phase - 1'(ble.ed & ~ble.fb);
+                ccdp_reg1_en = mix.key;
+                ccdp_sel2_cc = mix.cpe != CPE_OFF;
+            end
+            if (ccdp_phase == 2'd0 & ~ccdp_back) begin
+                // Special case for lowest priority layer
+                ccdp_low_chroma = '1;
+                ccdp_reg1_en = '1;
+            end
         end
     end
 end

@@ -84,7 +84,7 @@ always @(posedge CLK) begin
             end
 
             h_cnt <= '0;
-            if (|v_cnt | dec_act | dec_valid[rbsel])
+            if (|v_cnt | dec_act | dec_valid[~rbsel])
                 v_cnt <= v_cnt + 1'd1;
         end
         if (CE & si_hdr_det)
@@ -151,13 +151,14 @@ always @(posedge CLK) if (CE) begin
                 end
             SIS_BLOCK:
                 if (si_din) begin
-                    si_len <= si_len - 2'd1;
+                    si_len <= si_len - 1'd1;
                     if (si_len_end)
                         sist <= SIS_END;
                 end
             SIS_END:
                 if (~dec_act)
                     sist <= SIS_INIT;
+            default: ;
         endcase
     end
 end

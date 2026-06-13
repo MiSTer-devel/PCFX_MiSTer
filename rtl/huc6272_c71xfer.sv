@@ -46,7 +46,7 @@ logic           m_req, m_a0, m_ready;
 
 assign row_start = (COL == '0);
 assign row_start_trig = row_start & ~row_start_d;
-assign start_raster_match = (ROW == rf_c71xfer.tsr);
+assign start_raster_match = (ROW[8:0] == rf_c71xfer.tsr);
 assign start = row_start_trig & start_raster_match;
 
 always @(posedge CLK) if (CE) begin

@@ -150,6 +150,17 @@ logic           dckkr, dckkr_negedge;
 logic           hs_posedge, hs_negedge;
 logic           vs_posedge, vs_negedge;
 
+wire [15:0]     vpu_do;
+wire            vpu_csn;
+wire [23:0]     vpu_vd;
+
+wire [7:0]      kbus_di;
+wire            kbus_req_vpu, kbus_ack_vpu;
+
+wire [12:0]     rrama_a, rramb_a;
+wire [7:0]      rrama_di, rrama_do, rramb_di, rramb_do;
+wire            rrama_oen, rrama_wen, rramb_oen, rramb_wen;
+
 wire            mmc_csn;
 logic           mmc_busyn;
 wire            mmc_irqn;
@@ -234,7 +245,7 @@ fx_ga ga
 
      .FX_GA_CSn(ga_csn),
      .PSG_CSn(),
-     .VPU_CSn(),
+     .VPU_CSn(vpu_csn),
      .VCE_CSn(vce_csn),
      .VDC0_CSn(vdc0_csn),
      .VDC1_CSn(vdc1_csn),
@@ -291,6 +302,7 @@ huc6261 vce
      .DCKKR(dckkr),
      .DCKKR_NEGEDGE(dckkr_negedge),
      .MMC_VD(mmc_vd),
+     .VPU_VD(vpu_vd),
 
      .Y(VID_Y),
      .U(VID_U),
@@ -409,6 +421,74 @@ dpram #(.addr_width(16), .data_width(16), .disable_value(0)) vram1
      .cs_b('1)
      );
 
+huc6271 vpu
+   (
+    .CLK(CLK),
+    .CE(CE),
+    .RESn(RESn),
+    
+    .A(mem16_a[4:2]),
+    .DI(cpu_d_o[15:0]),
+    .DO(vpu_do),
+    .CSn(vpu_csn),
+    .WRn(ga_wrn),
+    .RDn(ga_rdn),
+
+    .KBUS_DI(kbus_di),
+    .KBUS_REQ(kbus_req_vpu),
+    .KBUS_ACK(kbus_ack_vpu),
+
+    .RA_A(rrama_a),
+    .RA_DI(rrama_di),
+    .RA_DO(rrama_do),
+    .RA_OEn(rrama_oen),
+    .RA_WEn(rrama_wen),
+
+    .RB_A(rramb_a),
+    .RB_DI(rramb_di),
+    .RB_DO(rramb_do),
+    .RB_OEn(rramb_oen),
+    .RB_WEn(rramb_wen),
+
+    .DCK(dckkr),
+    .HSYNC_NEGEDGE(hs_negedge),
+    .VD(vpu_vd)
+    );
+
+dpram #(.addr_width(13), .data_width(8), .disable_value(0)) rrama
+    (
+     .clock(CLK),
+     .address_a(rrama_a),
+     .data_a(rrama_do),
+     .enable_a('1),
+     .wren_a(~rrama_wen),
+     .q_a(rrama_di),
+     .cs_a(~rrama_oen | ~rrama_wen),
+     .address_b('0),
+     .data_b('0),
+     .enable_b('1),
+     .wren_b('0),
+     .q_b(),
+     .cs_b('1)
+     );
+
+dpram #(.addr_width(13), .data_width(8), .disable_value(0)) rramb
+    (
+     .clock(CLK),
+     .address_a(rramb_a),
+     .data_a(rramb_do),
+     .enable_a('1),
+     .wren_a(~rramb_wen),
+     .q_a(rramb_di),
+     .cs_a(~rramb_oen | ~rramb_wen),
+     .address_b('0),
+     .data_b('0),
+     .enable_b('1),
+     .wren_b('0),
+     .q_b(),
+     .cs_b('1)
+     );
+
 huc6272 mmc
     (
      .CLK(CLK),
@@ -460,7 +540,11 @@ huc6272 mmc
      .SCSI_SELn(scsi_seln),
      .SCSI_CDn(scsi_cdn),
      .SCSI_REQn(scsi_reqn),
-     .SCSI_IOn(scsi_ion)
+     .SCSI_IOn(scsi_ion),
+
+     .KBUS_DO(kbus_di),
+     .KBUS_REQ_C71(kbus_req_vpu),
+     .KBUS_ACK_C71(kbus_ack_vpu)
      );
 
 // SCSI <-> CD bridge
@@ -520,6 +604,8 @@ always @* begin
         io_do = vdc1_do;
     else if (~ga_csn)
         io_do = ga_do;
+    else if (~vpu_csn)
+        io_do = vpu_do;
     else if (~mmc_csn)
         io_do = mmc_do;
     else

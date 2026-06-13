@@ -12,6 +12,7 @@ dpram.sv
 ../mach.sv
 ../huc6261.sv
 ../huc6270.sv
+../huc6271.sv
 ../huc6272.sv
 ../fx_ga.sv
 ../scsi.v

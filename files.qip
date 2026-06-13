@@ -21,6 +21,7 @@ set_global_assignment -name SYSTEMVERILOG_FILE rtl/memif_sdram.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/huc6261.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/huc6270.sv
 # set_global_assignment -name VHDL_FILE rtl/huc6270.vhd
+set_global_assignment -name SYSTEMVERILOG_FILE rtl/huc6271.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/huc6272.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/fx_ga.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/scsi.v

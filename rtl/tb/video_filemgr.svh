@@ -112,6 +112,9 @@ task load_kreg();
     reg_write(7'h15, 16'h0001); // MPSW=1
 endtask
 
+task load_rreg();
+endtask
+
 task load_vmem();
     $readmemh("vram0-filemgr.hex", vram0.mem);
     $readmemh("vram1-filemgr.hex", vram1.mem);
