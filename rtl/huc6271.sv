@@ -222,7 +222,7 @@ always @(posedge CLK) if (CE) begin
                 rle_run <= '0;
                 rle_cnt <= '1;
                 rle_raddr <= '0;
-                if (si_block)
+                if (si_block & ~si_hdr[3])
                     rles <= RLES_IN1;
             end
             RLES_IN1:
@@ -266,26 +266,29 @@ assign si_busy = (rles == RLES_FILL);
 //////////////////////////////////////////////////////////////////////
 // Video output
 
-localparam [9:0] VO_HACT_START = 10'd56;
+localparam [9:0] VO_HACT_START = 10'd62;
 localparam [9:0] VO_HACT_END   = VO_HACT_START + 10'd256;
 
 logic [12:0]    vo_raddr;
 logic [7:0]     vo_rdata;
 logic           vo_ract;
+logic           vo_hact;
 logic           vo_rre;
-logic [15:0]    vo_vd;
+logic [23:0]    vo_vd_p, vo_vd;
 
 wire vo_valid = dec_valid[~rbsel];
-wire vo_hact = (h_cnt >= VO_HACT_START) & (h_cnt < VO_HACT_END);
+wire vo_hact_p = (h_cnt >= VO_HACT_START) & (h_cnt < VO_HACT_END);
 
 always @(posedge CLK) begin
     if (~RESn | ~vo_valid) begin
         vo_raddr <= '0;
+        vo_hact <= '0;
         vo_ract <= '0;
     end
     else begin
-        if (vo_hact & DCK) begin
-            vo_ract <= '1;
+        if (DCK) begin
+            vo_hact <= vo_hact_p;
+            vo_ract <= vo_hact_p;
         end
         if (vo_ract & CE) begin
             vo_raddr <= vo_raddr + 1'd1;
@@ -293,26 +296,27 @@ always @(posedge CLK) begin
                 vo_ract <= '0;
         end
     end
+    vo_rre <= vo_ract;
 end
-
-assign vo_rre = vo_valid;
 
 always @(posedge CLK) if (CE) begin
     if (~vo_valid)
-        vo_vd <= '0;
+        vo_vd_p <= '0;
     else if (vo_ract) begin
         if (~vo_raddr[0])
-            vo_vd[15:8] <= vo_rdata;
+            vo_vd_p[15:8] <= vo_rdata;
         else
-            vo_vd[7:0] <= vo_rdata;
+            vo_vd_p[7:0] <= vo_rdata;
     end
 end
 
-always @* begin
-    VD = '0;
+always @(posedge CLK) if (DCK) begin
+    vo_vd <= '0;
     if (vo_hact)
-        VD[15:0] = vo_vd;
+        vo_vd <= vo_vd_p;
 end
+
+assign VD = vo_vd;
 
 //////////////////////////////////////////////////////////////////////
 // R-RAM memory interface MUX

@@ -16,7 +16,7 @@ initial begin
 end
 
 `include "mmc_kram_vce.svh"
-`include "video_bootvid.svh"
+`include "video_bootvid2.svh"
 
 assign vdc0_vd = '0;
 assign vdc1_vd = '0;
@@ -64,7 +64,7 @@ always @(posedge clk) begin
 end
 
 initial begin
-    fdat = $fopen("bootvid/blk0.bin", "r");
+    fdat = $fopen("bootvid/blk000.bin", "r");
     kbus_di = '0;
     kbus_ack_vpu = '0;
 end

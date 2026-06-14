@@ -16,7 +16,7 @@ initial begin
 end
 
 `include "mmc_kram_vce.svh"
-`include "video_bootvid.svh"
+`include "video_bootvid2.svh"
 
 //////////////////////////////////////////////////////////////////////
 

@@ -43,6 +43,11 @@ logic [16:0]    addr;
 logic           kbus_ack;
 logic [15:0]    m_di;
 logic           m_req, m_a0, m_ready;
+`ifdef HUC6272_DUMP_C71XFER
+integer         fdat = -1;
+integer         blknum = 0;
+string          fname;
+`endif
 
 assign row_start = (COL == '0);
 assign row_start_trig = row_start & ~row_start_d;
@@ -61,6 +66,13 @@ always @(posedge CLK) if (CE) begin
         row_start_d <= row_start;
 
         if (start & rf_c71xfer.ren) begin
+`ifdef HUC6272_DUMP_C71XFER
+            $sformat(fname, "bootvid/blk%03d.bin", blknum);
+            blknum += 1;
+            if (fdat != -1)
+                $fclose(fdat);
+            fdat = $fopen(fname, "wb");
+`endif
             act <= '1;
             row_cnt <= '1;
             block_cnt <= '0;
@@ -103,6 +115,9 @@ always @(posedge CLK) begin
             if (~kbus_ack & m_ready)
                 kbus_ack <= '1;
             else if (kbus_ack) begin
+`ifdef HUC6272_DUMP_C71XFER
+                $fwrite(fdat, "%c", KBUS_DO);
+`endif
                 kbus_ack <= '0;
                 if (m_a0)
                     m_ready <= '0;
@@ -124,5 +139,11 @@ assign M_DO = '0;
 assign M_BE = '1;
 assign M_WR = '0;
 assign M_REQ = m_req;
+
+`ifdef HUC6272_DUMP_C71XFER
+final
+    if (fdat != -1)
+        $fclose(fdat);
+`endif
 
 endmodule
