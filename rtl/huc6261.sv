@@ -639,8 +639,8 @@ logic signed [12:0] ma;
     if (uv) begin
         m -= 8'sh80;
         n -= 8'sh80;
-        ma = $signed(m) * $signed(a);
-        ma += $signed(n) * $signed(b);
+        ma = $signed(m) * $signed(5'(a));
+        ma += $signed(n) * $signed(5'(b));
         ma += 13'(11'sh80 << 3);
     end
     else begin
