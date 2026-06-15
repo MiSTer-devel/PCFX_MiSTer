@@ -100,38 +100,45 @@ end
 //////////////////////////////////////////////////////////////////////
 // Bank A/B memory client interface
 
-logic               mtrg, mreq, mack;
+logic               mtrg, mtrg2, mreq0, mreq, mack;
 logic [1:0]         mdl;
-logic [17:0]        ma, ma_d;
+logic [17:0]        ma;
 logic [15:0]        md;
 
-assign ma = mpe_ra;
 assign mtrg = mpe_ren & FETCH & DCK;
+assign mreq0 = (~mreq | mack) & (mtrg | mtrg2);
 assign mack = M_REQ & M_ACK;
 
 always @(posedge CLK) begin
     if (~RESn) begin
-        ma_d <= '0;
+        mtrg2 <= '0;
+        ma <= '0;
         mdl <= '0;
         md <= '0;
         mreq <= '0;
     end
     else begin
-        mreq <= M_REQ & ~M_ACK;
-
-        if (mtrg) begin
-            ma_d <= ma;
+        if (mreq0) begin
+            mreq <= '1;
+            mtrg2 <= '0;
+            ma <= mpe_ra;
             mdl <= mpe_layer;
         end
-        if (mack)
+        else if (mreq) begin
+            mtrg2 <= mtrg;
+        end
+
+        if (mack) begin
             md <= M_DI;
+            mreq <= mreq0;
+        end
     end
 end
 
 assign M_A = ma;
 assign M_BE = '1;
 assign M_WR = '0;
-assign M_REQ = mreq | mtrg;
+assign M_REQ = mreq;
 
 assign MDS = mack;
 assign MDL = mdl;
