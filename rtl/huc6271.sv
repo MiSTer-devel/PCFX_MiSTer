@@ -6,6 +6,7 @@
 
 // References:
 // - https://github.com/libretro-mirrors/mednafen-git/blob/master/src/pcfx/rainbow.cpp
+// - https://github.com/libretro-mirrors/mednafen-git/blob/master/src/pcfx/idct.cpp
 // - PC-FXGA Authoring Software / GMAKER Starter Kit Plus (Ver. 1.0) / Device Description: HuC6271
 
 module huc6271
@@ -44,11 +45,14 @@ module huc6271
     // Video interface
     input             DCK, // pixel clock enable
     input             HSYNC_NEGEDGE,
+    output reg        VDMODE, // 0=palette, 1=YUV
     output reg [23:0] VD // [7:0] = palette data / [23:0] = {Y,U,V}
     );
 
 logic           si_hdr_det, si_block, si_end;
-wor             si_busy;
+wor             si_busy_rle, si_busy_dct;
+logic           si_hdr_dct;
+logic           idct_done;
 
 //////////////////////////////////////////////////////////////////////
 // CPU memory / I/O bus interface
@@ -63,6 +67,7 @@ logic [3:0]     v_cnt;
 logic           rbsel; // 1: Decode to B, output from A
 logic           dec_act;
 logic [1:0]     dec_valid;
+logic [1:0]     dec_vdmode;
 
 always @(posedge CLK) begin
     if (~RESn) begin
@@ -71,6 +76,7 @@ always @(posedge CLK) begin
         rbsel <= '0;
         dec_act <= '0;
         dec_valid <= '0;
+        dec_vdmode <= '0;
     end
     else begin
         if (DCK) begin
@@ -79,6 +85,7 @@ always @(posedge CLK) begin
         if (HSYNC_NEGEDGE) begin
             if (v_cnt == 4'd15) begin
                 dec_valid[rbsel] <= (dec_act & si_end);
+                dec_vdmode[rbsel] <= si_hdr_dct;
                 dec_act <= '0;
                 rbsel <= ~rbsel;
             end
@@ -163,6 +170,8 @@ always @(posedge CLK) if (CE) begin
     end
 end
 
+wire si_busy = si_hdr_dct ? si_busy_dct : si_busy_rle;
+
 always @* begin
     kbus_req = RESn;
     si_ready = si_din;
@@ -182,6 +191,7 @@ assign KBUS_REQ = kbus_req;
 assign si_hdr_det = (sist == SIS_HDR_LEN1);
 assign si_block = (sist == SIS_BLOCK) & ~si_len_end;
 assign si_end = (sist == SIS_END);
+assign si_hdr_dct = si_hdr[3];
 
 //////////////////////////////////////////////////////////////////////
 // RLE block decoder
@@ -222,7 +232,7 @@ always @(posedge CLK) if (CE) begin
                 rle_run <= '0;
                 rle_cnt <= '1;
                 rle_raddr <= '0;
-                if (si_block & ~si_hdr[3])
+                if (si_block & ~si_hdr_dct)
                     rles <= RLES_IN1;
             end
             RLES_IN1:
@@ -249,7 +259,7 @@ always @(posedge CLK) if (CE) begin
             default: ;
         endcase
 
-        if (~si_block)
+        if (~si_block | ~dec_act)
             rles <= RLES_INIT;
     end
 end
@@ -261,22 +271,829 @@ always @* begin
         rle_rdata = rle_run;
 end
 
-assign si_busy = (rles == RLES_FILL);
+assign si_busy_rle = (rles == RLES_FILL);
+
+//////////////////////////////////////////////////////////////////////
+// DCT block decoder
+
+// Main FSM state
+typedef enum bit [3:0] {
+    DCTS_INIT,
+    DCTS_IQTBL,
+    DCTS_Y00,
+    DCTS_Y01,
+    DCTS_Y10,
+    DCTS_Y11,
+    DCTS_U,
+    DCTS_V,
+    DCTS_COL_DONE,
+    DCTS_BLK_DONE
+} dcts_t;
+
+// Plane (Ynn,U,V) state
+typedef enum bit [2:0] {
+    DCTPS_INIT,
+    DCTPS_DECODE,
+    DCTPS_IDCT,
+    DCTPS_STORE,
+    DCTPS_DONE
+} dctps_t;
+
+// Decoder state
+typedef enum bit [2:0]
+{
+    DCTDS_INIT,
+    DCTDS_DC_CODE,
+    DCTDS_DC_K,
+    DCTDS_AC_CODE,
+    DCTDS_AC_K,
+    DCTDS_AC_STORE,
+    DCTDS_AC_END,
+    DCTDS_DONE
+} dctds_t;
+
+dcts_t          dcts;
+dctps_t         dctps;
+dctds_t         dctds;
+logic [3:0]     dct_col;
+logic           dct_plane_y, dct_plane_u, dct_plane_v;
+logic [1:0]     dct_plane_ynn;
+logic [7:0]     dct_iqtbl [128];
+logic [6:0]     dct_iqtbl_widx;
+logic [7:0]     dct_iq;
+logic [22:0]    dct_bits_buf;
+logic [5:0]     dct_bits_cnt;
+logic [5:0]     dct_bits_pop_cnt, dct_bits_peek_cnt;
+logic [15:0]    dct_bits_pop, dct_bits_pop_mse;
+logic           dct_bits_ready;
+logic [7:0]     dct_bits_code, dct_bits_code_d;
+logic [3:0]     dct_qc;
+logic [5:0]     dct_ic_cnt;
+logic [15:0]    dct_dc_y, dct_dc_u, dct_dc_v;
+logic [3:0]     dct_ac_zeros;
+logic [15:0]    dct_ac_val;
+logic           dct_ac_zero;
+logic [15:0]    dct_acdc;
+logic [31:0]    dct_ictbl [64]; // TODO: Minimize element size
+logic [5:0]     dct_ictbl_widx;
+logic [31:0]    dct_ictbl_wd;
+logic           dct_ictbl_we;
+logic [7:0]     dct_idtbl [8][8];
+logic [2:0]     dct_idx, dct_idy;
+logic           dct_idcnt;
+logic           dct_store_done;
+logic [12:0]    dct_raddr;
+logic [7:0]     dct_rdata;
+logic           dct_rwe;
+
+always @(posedge CLK) if (CE) begin
+    dct_ictbl_we <= '0;
+    dct_ac_zero <= '0;
+
+    if (~dec_act) begin
+        dcts <= DCTS_INIT;
+        dctps <= DCTPS_INIT;
+        dctds <= DCTDS_INIT;
+    end
+    else begin
+        // Main FSM
+        case (dcts)
+            DCTS_INIT: begin
+                dct_col <= '0;
+                dctds <= DCTDS_INIT;
+                if (si_block & si_hdr_dct) begin
+                    if (si_hdr[2]) begin
+                        dcts <= DCTS_IQTBL;
+                        dct_iqtbl_widx <= '0;
+                    end
+                    else
+                        dcts <= DCTS_Y00;
+                end
+            end
+            DCTS_IQTBL:
+                if (si_ready) begin
+                    dct_iqtbl[dct_iqtbl_widx] <= KBUS_DI;
+                    dct_iqtbl_widx <= dct_iqtbl_widx + 1'd1;
+                    if (dct_iqtbl_widx == 7'd127)
+                        dcts <= DCTS_Y00;
+                end
+            DCTS_Y00,
+            DCTS_Y01,
+            DCTS_Y10,
+            DCTS_Y11,
+            DCTS_U,
+            DCTS_V:
+                if (dctps == DCTPS_DONE) begin
+                    dcts <= dcts_t'(dcts + 1'd1);
+                    if (dcts != DCTS_V) begin
+                        dctps <= DCTPS_INIT;
+                    end
+                end
+            DCTS_COL_DONE: begin
+                dct_col <= dct_col + 1'd1;
+                dctps <= DCTPS_INIT;
+                if (dct_col == 4'd15)
+                    dcts <= DCTS_BLK_DONE;
+                else
+                    dcts <= DCTS_Y00;
+            end
+            DCTS_BLK_DONE:
+                dctds <= DCTDS_INIT;
+            default: ;
+        endcase
+
+        // Plane FSM
+        case (dctps)
+            DCTPS_INIT:
+                if (dct_plane_y | dct_plane_u | dct_plane_v) begin
+                    dctps <= DCTPS_DECODE;
+                    dctds <= DCTDS_DC_CODE;
+                end
+            DCTPS_DECODE: begin
+                if (dctds == DCTDS_DONE) begin
+`ifdef TB_VPU
+                    dump_ictbl();
+`endif
+                    dctps <= DCTPS_IDCT;
+                end
+            end
+            DCTPS_IDCT: begin
+                if (idct_done)
+                    dctps <= DCTPS_STORE;
+            end
+            DCTPS_STORE: begin
+                if (dct_store_done)
+                    dctps <= DCTPS_DONE;
+            end
+        endcase
+
+        // Decode FSM
+        case (dctds)
+            DCTDS_DC_CODE: begin
+                dct_ic_cnt <= '0;
+                if (dct_bits_ready) begin
+                    if (dct_bits_code < 8'h0f)
+                        dctds <= DCTDS_DC_K;
+                    else if (dct_bits_code == 8'h0f)
+                        dctds <= DCTDS_AC_CODE;
+                    else
+                        dctds <= DCTDS_DC_CODE;
+                end
+            end
+            DCTDS_DC_K:
+                if (dct_bits_ready) begin
+                    dct_ictbl_we <= '1;
+                    dctds <= DCTDS_AC_CODE;
+                end
+            DCTDS_AC_CODE:
+                if (dct_bits_ready)
+                    dctds <= DCTDS_AC_K;
+            DCTDS_AC_K:
+                if (dct_bits_ready) begin
+                    dctds <= DCTDS_AC_STORE;
+                    if (dct_bits_pop_mse == '0 && dct_ac_zeros == '0)
+                        dctds <= DCTDS_AC_END;
+                end
+            DCTDS_AC_STORE: begin
+                dct_ictbl_we <= '1;
+
+                if (dct_ac_zeros != '0) begin
+                    dct_ac_zero <= '1;
+                    dct_ac_zeros <= dct_ac_zeros - 1'd1;
+                end
+                else
+                    dctds <= DCTDS_AC_CODE;
+
+                if (dct_ic_cnt == 6'd63)
+                    dctds <= DCTDS_DONE;
+                else
+                    dct_ic_cnt <= dct_ic_cnt + 1'd1;
+            end
+            DCTDS_AC_END: begin
+                dct_ictbl_we <= '1;
+                dct_ac_zero <= '1;
+
+                if (dct_ic_cnt == 6'd63)
+                    dctds <= DCTDS_DONE;
+                else
+                    dct_ic_cnt <= dct_ic_cnt + 1'd1;
+            end
+            default: ;
+        endcase
+    end
+end
+
+assign si_busy_dct = (dcts == DCTS_INIT) | 
+                     ((dcts >= DCTS_Y00) & (dcts < DCTS_BLK_DONE) &
+                      (dctds == DCTDS_INIT));
+
+always @* begin
+    dct_plane_y = '0;
+    dct_plane_u = '0;
+    dct_plane_v = '0;
+    dct_plane_ynn = '0;
+    case (dcts)
+        DCTS_Y00, DCTS_Y01, DCTS_Y10, DCTS_Y11: begin
+            dct_plane_y = '1;
+            dct_plane_ynn = 2'(dcts - DCTS_Y00);
+        end
+        DCTS_U:
+            dct_plane_u = '1;
+        DCTS_V:
+            dct_plane_v = '1;
+        default: ;
+    endcase
+end
+
+// Decoder input buffer
+//
+// The bitstream is apparently read starting at the most significant
+// bit, so it is shifted into the buffer from the right.
+always @(posedge CLK) if (CE) begin
+    if (dctds == DCTDS_INIT) begin
+        dct_bits_buf <= '0;
+        dct_bits_cnt <= '0;
+    end
+    else begin
+    logic [5:0] cnt;
+        cnt = dct_bits_cnt;
+        if (si_ready) begin
+            dct_bits_buf <= {dct_bits_buf[$left(dct_bits_buf)-8:0], KBUS_DI};
+            cnt += 6'd8;
+        end
+        if (dct_bits_ready) begin
+            cnt -= dct_bits_pop_cnt;
+        end
+        dct_bits_cnt <= cnt;
+    end
+end
+
+assign dct_bits_full = dct_bits_cnt > 6'($size(dct_bits_buf) - 8);
+assign si_busy_dct = (dctds != DCTDS_INIT) & dct_bits_full;
+
+task dct_bits_get(input [5:0] cnt, output [15:0] pbuf);
+    pbuf = $size(pbuf)'(dct_bits_buf >> (dct_bits_cnt - cnt));
+endtask
+
+always @* begin
+    dct_bits_ready = '0;
+    dct_bits_code = '0;
+    dct_bits_peek_cnt = '0;
+    dct_bits_pop_cnt = '0;
+    case (dctds)
+        DCTDS_DC_CODE: begin
+            if (dct_plane_y) begin
+                dct_bits_peek_cnt = 6'd9;
+                dct_bits_get(dct_bits_peek_cnt, dct_bits_pop);
+                huffdec_dcy(dct_bits_pop[8:0], dct_bits_code, dct_bits_pop_cnt);
+            end
+            else begin
+                dct_bits_peek_cnt = 6'd8;
+                dct_bits_get(dct_bits_peek_cnt, dct_bits_pop);
+                huffdec_dcuv(dct_bits_pop[7:0], dct_bits_code, dct_bits_pop_cnt);
+            end
+            dct_bits_ready = dct_bits_cnt >= dct_bits_peek_cnt;
+        end
+        DCTDS_DC_K,
+        DCTDS_AC_K: begin
+            dct_bits_pop_cnt = dct_bits_code_d;
+            if (dctds == DCTDS_AC_K)
+                dct_bits_pop_cnt[7:4] = '0;
+            dct_bits_get(dct_bits_pop_cnt, dct_bits_pop);
+            dct_bits_ready = dct_bits_cnt >= dct_bits_pop_cnt;
+        end
+        DCTDS_AC_CODE: begin
+            dct_bits_peek_cnt = 6'd12;
+            dct_bits_get(dct_bits_peek_cnt, dct_bits_pop);
+            if (dct_plane_y)
+                huffdec_acy(dct_bits_pop[11:0], dct_bits_code, dct_bits_pop_cnt);
+            else
+                huffdec_acuv(dct_bits_pop[11:0], dct_bits_code, dct_bits_pop_cnt);
+            dct_bits_ready = dct_bits_cnt >= dct_bits_peek_cnt;
+        end
+        default: ;
+    endcase
+end
+
+// Huffman decoders
+task huffdec_dcy(input [8:0] bbuf, output [7:0] code, output [5:0] pop);
+    casez (bbuf)
+        9'b000zzzzzz:   {code, pop} = {8'h00, 6'd03};
+        9'b001zzzzzz:   {code, pop} = {8'h02, 6'd03};
+        9'b010zzzzzz:   {code, pop} = {8'h03, 6'd03};
+        9'b011zzzzzz:   {code, pop} = {8'h04, 6'd03};
+        9'b100zzzzzz:   {code, pop} = {8'h05, 6'd03};
+        9'b101zzzzzz:   {code, pop} = {8'h06, 6'd03};
+        9'b110zzzzzz:   {code, pop} = {8'h07, 6'd03};
+        9'b1110zzzzz:   {code, pop} = {8'h01, 6'd04};
+        9'b111100zzz:   {code, pop} = {8'h08, 6'd06};
+        9'b1111010zz:   {code, pop} = {8'h09, 6'd07};
+        9'b1111011zz:   {code, pop} = {8'h0f, 6'd07};
+        9'b11111zzzz:   {code, pop} = {8'(bbuf[4:0]), 6'd09};
+        default:        {code, pop} = {8'h00, 6'd00};
+    endcase
+endtask
+
+logic [7:0] huffdec_acy_fzz [0:'h7f] = '{
+    8'h00, 8'h00, 8'h00, 8'h00, 8'h00, 8'h00, 8'h00, 8'h00,
+    8'h00, 8'h00, 8'h00, 8'h00, 8'h00, 8'h00, 8'h00, 8'h00,
+    8'h08, 8'h14, 8'h15, 8'h16, 8'h17, 8'h18, 8'h23, 8'h24,
+    8'h25, 8'h26, 8'h27, 8'h28, 8'h32, 8'h33, 8'h34, 8'h35,
+    8'h36, 8'h37, 8'h38, 8'h42, 8'h43, 8'h44, 8'h45, 8'h46,
+    8'h47, 8'h48, 8'h52, 8'h53, 8'h54, 8'h55, 8'h56, 8'h57,
+    8'h58, 8'h62, 8'h63, 8'h64, 8'h65, 8'h66, 8'h67, 8'h68,
+    8'h72, 8'h73, 8'h74, 8'h75, 8'h76, 8'h77, 8'h78, 8'h81,
+    8'h82, 8'h83, 8'h84, 8'h85, 8'h86, 8'h87, 8'h88, 8'h91,
+    8'h92, 8'h93, 8'h94, 8'h95, 8'h96, 8'h97, 8'h98, 8'ha1,
+    8'ha2, 8'ha3, 8'ha4, 8'ha5, 8'ha6, 8'ha7, 8'ha8, 8'hb1,
+    8'hb2, 8'hb3, 8'hb4, 8'hb5, 8'hb6, 8'hb7, 8'hb8, 8'hc1,
+    8'hc2, 8'hc3, 8'hc4, 8'hc5, 8'hc6, 8'hc7, 8'hc8, 8'hd1,
+    8'hd2, 8'hd3, 8'hd4, 8'hd5, 8'hd6, 8'hd7, 8'hd8, 8'he1,
+    8'he2, 8'he3, 8'he4, 8'he5, 8'he6, 8'he7, 8'he8, 8'hf1,
+    8'hf2, 8'hf3, 8'hf4, 8'hf5, 8'hf6, 8'hf7, 8'hf8, 8'h10
+};
+
+task huffdec_acy(input [11:0] bbuf, output [7:0] code, output [5:0] pop);
+    casez (bbuf)
+        12'b00zzzzzzzzzz:   {code, pop} = {8'h01, 6'd02};
+        12'b01zzzzzzzzzz:   {code, pop} = {8'h02, 6'd02};
+        12'b100zzzzzzzzz:   {code, pop} = {8'h03, 6'd03};
+        12'b1010zzzzzzzz:   {code, pop} = {8'h04, 6'd04};
+        12'b1011zzzzzzzz:   {code, pop} = {8'h11, 6'd04};
+        12'b11000zzzzzzz:   {code, pop} = {8'h05, 6'd05};
+        12'b11001zzzzzzz:   {code, pop} = {8'h12, 6'd05};
+        12'b11010zzzzzzz:   {code, pop} = {8'h21, 6'd05};
+        12'b110110zzzzzz:   {code, pop} = {8'h06, 6'd06};
+        12'b110111zzzzzz:   {code, pop} = {8'h31, 6'd06};
+        12'b111000zzzzzz:   {code, pop} = {8'h41, 6'd06};
+        12'b111001zzzzzz:   {code, pop} = {8'h51, 6'd06};
+        12'b1110100zzzzz:   {code, pop} = {8'h13, 6'd07};
+        12'b1110101zzzzz:   {code, pop} = {8'h22, 6'd07};
+        12'b1110110zzzzz:   {code, pop} = {8'h61, 6'd07};
+        12'b111011100zzz:   {code, pop} = {8'h07, 6'd09};
+        12'b111011101zzz:   {code, pop} = {8'h71, 6'd09};
+        12'b11101111zzzz,
+        12'b11110000zzzz:   {code, pop} = {{bbuf[8], bbuf[3:1], 4'h9}, 6'd11};
+        12'b11110001zzzz,
+        12'b1111001zzzzz,
+        12'b111101zzzzzz:   {code, pop} = {huffdec_acy_fzz[bbuf[6:0]], 6'd12};
+        12'b11111zzzzzzz:   {code, pop} = {8'h00, 6'd05};
+        default:            {code, pop} = {8'h00, 6'd00};
+    endcase
+endtask
+
+task huffdec_dcuv(input [7:0] bbuf, output [7:0] code, output [5:0] pop);
+    casez (bbuf)
+        8'b00zzzzzz:    {code, pop} = {8'h00, 6'd02};
+        8'b01zzzzzz:    {code, pop} = {8'h01, 6'd02};
+        8'b10zzzzzz:    {code, pop} = {8'h02, 6'd02};
+        8'b110zzzzz:    {code, pop} = {8'h03, 6'd03};
+        8'b1110zzzz:    {code, pop} = {8'h04, 6'd04};
+        8'b11110zzz:    {code, pop} = {8'h05, 6'd05};
+        8'b111110zz:    {code, pop} = {8'h06, 6'd06};
+        8'b1111110z:    {code, pop} = {8'h07, 6'd07};
+        8'b11111110:    {code, pop} = {8'h08, 6'd08};
+        8'b11111111:    {code, pop} = {8'h09, 6'd08};
+        default:        {code, pop} = {8'h00, 6'd00};
+    endcase
+endtask
+
+logic [7:0] huffdec_acuv_fzz [0:'h7f] = '{
+    8'h00, 8'h00, 8'h00, 8'h00, 8'h00, 8'h00, 8'h00, 8'h00,
+    8'h00, 8'h00, 8'h00, 8'h00, 8'h00, 8'h00, 8'h00, 8'h00,
+    8'h06, 8'h07, 8'h08, 8'h14, 8'h15, 8'h16, 8'h17, 8'h18,
+    8'h23, 8'h24, 8'h25, 8'h26, 8'h27, 8'h28, 8'h33, 8'h34,
+    8'h35, 8'h36, 8'h37, 8'h38, 8'h42, 8'h43, 8'h44, 8'h45,
+    8'h46, 8'h47, 8'h48, 8'h52, 8'h53, 8'h54, 8'h55, 8'h56,
+    8'h57, 8'h58, 8'h62, 8'h63, 8'h64, 8'h65, 8'h66, 8'h67,
+    8'h68, 8'h72, 8'h73, 8'h74, 8'h75, 8'h76, 8'h77, 8'h78,
+    8'h82, 8'h83, 8'h84, 8'h85, 8'h86, 8'h87, 8'h88, 8'h91,
+    8'h92, 8'h93, 8'h94, 8'h95, 8'h96, 8'h97, 8'h98, 8'ha1,
+    8'ha2, 8'ha3, 8'ha4, 8'ha5, 8'ha6, 8'ha7, 8'ha8, 8'hb1,
+    8'hb2, 8'hb3, 8'hb4, 8'hb5, 8'hb6, 8'hb7, 8'hb8, 8'hc1,
+    8'hc2, 8'hc3, 8'hc4, 8'hc5, 8'hc6, 8'hc7, 8'hc8, 8'hd1,
+    8'hd2, 8'hd3, 8'hd4, 8'hd5, 8'hd6, 8'hd7, 8'hd8, 8'he1,
+    8'he2, 8'he3, 8'he4, 8'he5, 8'he6, 8'he7, 8'he8, 8'hf1,
+    8'hf2, 8'hf3, 8'hf4, 8'hf5, 8'hf6, 8'hf7, 8'hf8, 8'h10
+};
+
+task huffdec_acuv(input [11:0] bbuf, output [7:0] code, output [5:0] pop);
+    casez (bbuf)
+        12'b00zzzzzzzzzz:   {code, pop} = {8'h01, 6'd02};
+        12'b01zzzzzzzzzz:   {code, pop} = {8'h02, 6'd02};
+        12'b100zzzzzzzzz:   {code, pop} = {8'h11, 6'd03};
+        12'b1010zzzzzzzz:   {code, pop} = {8'h03, 6'd04};
+        12'b1011zzzzzzzz:   {code, pop} = {8'h21, 6'd04};
+        12'b11000zzzzzzz:   {code, pop} = {8'h04, 6'd05};
+        12'b11001zzzzzzz:   {code, pop} = {8'h12, 6'd05};
+        12'b11010zzzzzzz:   {code, pop} = {8'h31, 6'd05};
+        12'b11011zzzzzzz:   {code, pop} = {8'h41, 6'd05};
+        12'b111000zzzzzz:   {code, pop} = {8'h51, 6'd06};
+        12'b1110010zzzzz:   {code, pop} = {8'h05, 6'd07};
+        12'b1110011zzzzz:   {code, pop} = {8'h13, 6'd07};
+        12'b1110100zzzzz:   {code, pop} = {8'h22, 6'd07};
+        12'b1110101zzzzz:   {code, pop} = {8'h61, 6'd07};
+        12'b1110110zzzzz:   {code, pop} = {8'h71, 6'd07};
+        12'b111011100zzz:   {code, pop} = {8'h32, 6'd09};
+        12'b111011101zzz:   {code, pop} = {8'h81, 6'd09};
+        12'b11101111zzzz,
+        12'b11110000zzzz:   {code, pop} = {{bbuf[8], bbuf[3:1], 4'h9}, 6'd11};
+        12'b11110001zzzz,
+        12'b1111001zzzzz,
+        12'b111101zzzzzz:   {code, pop} = {huffdec_acuv_fzz[bbuf[6:0]], 6'd12};
+        12'b11111zzzzzzz:   {code, pop} = {8'h00, 6'd05};
+        default:            {code, pop} = {8'h00, 6'd00};
+    endcase
+endtask
+
+always @* begin
+    if (~dct_bits_pop[dct_bits_pop_cnt - 1])
+        // "Funny" sign extension
+        dct_bits_pop_mse = (dct_bits_pop | ~((1 << dct_bits_pop_cnt) - 1)) + 1'd1;
+    else
+        dct_bits_pop_mse = dct_bits_pop & ((1 << dct_bits_pop_cnt) - 1);
+end
+
+// Code -> coefficients
+always @(posedge CLK) if (CE) begin
+    if (~RESn) begin
+        dct_qc <= 4'd4;
+    end
+    if (dctds == DCTDS_INIT) begin
+        dct_bits_code_d <= '0;
+        dct_dc_y <= '0;
+        dct_dc_u <= '0;
+        dct_dc_v <= '0;
+        dct_ac_zeros <= '0;
+        dct_ac_val <= '0;
+    end
+    else if (dct_bits_ready) begin
+        dct_bits_cnt <= dct_bits_cnt - dct_bits_pop_cnt;
+        case (dctds)
+            DCTDS_DC_CODE: begin
+                dct_bits_code_d <= dct_bits_code;
+                if (dct_bits_code > 8'h0f)
+                    dct_qc <= dct_bits_code[3:0];
+                else if (dct_bits_code == 8'h0f) begin
+                    $error("TODO: Zeros in DC clear columns");
+                end
+            end
+            DCTDS_AC_CODE: begin
+                dct_bits_code_d <= dct_bits_code;
+                dct_ac_zeros <= dct_ac_zeros + dct_bits_code[7:4];
+            end
+            DCTDS_DC_K: begin
+                if (dct_plane_y)
+                    dct_dc_y <= dct_dc_y + dct_bits_pop_mse;
+                else if (dct_plane_u)
+                    dct_dc_u <= dct_dc_u + dct_bits_pop_mse;
+                else if (dct_plane_v)
+                    dct_dc_v <= dct_dc_v + dct_bits_pop_mse;
+            end
+            DCTDS_AC_K: begin
+                dct_ac_val <= dct_bits_pop_mse;
+                if (dct_bits_pop_mse == '0 && dct_ac_zeros == 4'd1)
+                    dct_ac_zeros <= 4'd15;
+            end
+            default: ;
+        endcase
+    end
+end
+
+// IQ table * QC * coefficients -> image data table
+always @* begin
+    dct_acdc = dct_ac_val;
+    if (dct_ac_zero)
+        dct_acdc = '0;
+
+    if (dct_ic_cnt == '0) begin
+        if (dct_plane_y)
+            dct_acdc = dct_dc_y;
+        else if (dct_plane_u)
+            dct_acdc = dct_dc_u;
+        else if (dct_plane_v)
+            dct_acdc = dct_dc_v;
+    end
+end
+
+always @* begin
+logic [11:0] x;
+logic [3:0]  qc;
+logic [6:0]  iqtbl_ridx;
+
+    iqtbl_ridx[5:0] = dct_ictbl_widx;
+    iqtbl_ridx[6] = ~dct_plane_y;
+
+    qc = dct_qc;
+    if (iqtbl_ridx == 7'h40) // for dct_dc_u/v
+        qc = 4'd1;
+    x = (dct_iqtbl[iqtbl_ridx] * qc) >> 2;
+
+    if (x < 12'd1)
+        x = 12'd1;
+    else if (x > 12'hFE)
+        x = 12'hFE;
+
+    dct_iq = x[7:0];
+end
+
+logic [6:0] dct_zigzag_tbl [64] = '{
+    7'h00, 7'h01, 7'h08, 7'h10, 7'h09, 7'h02, 7'h03, 7'h0A,
+    7'h11, 7'h18, 7'h20, 7'h19, 7'h12, 7'h0B, 7'h04, 7'h05,
+    7'h0C, 7'h13, 7'h1A, 7'h21, 7'h28, 7'h30, 7'h29, 7'h22,
+    7'h1B, 7'h14, 7'h0D, 7'h06, 7'h07, 7'h0E, 7'h15, 7'h1C,
+    7'h23, 7'h2A, 7'h31, 7'h38, 7'h39, 7'h32, 7'h2B, 7'h24,
+    7'h1D, 7'h16, 7'h0F, 7'h17, 7'h1E, 7'h25, 7'h2C, 7'h33,
+    7'h3A, 7'h3B, 7'h34, 7'h2D, 7'h26, 7'h1F, 7'h27, 7'h2E,
+    7'h35, 7'h3C, 7'h3D, 7'h36, 7'h2F, 7'h37, 7'h3E, 7'h3F
+};
+
+assign dct_ictbl_widx = dct_zigzag_tbl[dct_ic_cnt];
+assign dct_ictbl_wd = $signed(9'(dct_iq)) * $signed(dct_acdc);
+
+always @(posedge CLK) if (CE) begin
+    if (dct_ictbl_we)
+        dct_ictbl[dct_ictbl_widx] <= dct_ictbl_wd;
+end
+
+// Store IDCT output to R-RAM
+always @* begin
+    dct_rwe = (dctps == DCTPS_STORE);
+    if (dct_plane_y)
+        dct_raddr = {dct_plane_ynn[0], dct_idy, dct_col, dct_plane_ynn[1], dct_idx[2:1], 1'b0, dct_idx[0]};
+    else
+        dct_raddr = {dct_idy, dct_idcnt, dct_col, dct_idx, 1'b1, dct_plane_v};
+    dct_rdata = dct_idtbl[dct_idy][dct_idx];
+end
+
+always @(posedge CLK) if (CE) begin
+    if (dctps != DCTPS_STORE) begin
+        dct_idcnt <= '0;
+        dct_idx <= '0;
+        dct_idy <= '0;
+    end
+    else if (~dct_store_done) begin
+        if (~dct_plane_y)
+            dct_idcnt <= dct_idcnt + 1'd1;
+        if (dct_plane_y | &dct_idcnt) begin
+            dct_idx <= dct_idx + 1'd1;
+            if (&dct_idx)
+                dct_idy <= dct_idy + 1'd1;
+        end
+    end
+end
+
+assign dct_store_done = &dct_idx & &dct_idy & (dct_plane_y | &dct_idcnt);
+
+`ifdef TB_VPU
+task dump_ictbl;
+    $display("IDCT col=%1d plane=%1d", dct_col, 
+             3'(dcts - DCTS_Y00 + 1));
+/* -----\/----- EXCLUDED -----\/-----
+    for (int i = 0; i < 64; i += 8) begin
+        $display("%02x: %08x %08x %08x %08x %08x %08x %08x %08x", i[5:0],
+                 dct_ictbl[i+0], dct_ictbl[i+1], dct_ictbl[i+2], dct_ictbl[i+3],
+                 dct_ictbl[i+4], dct_ictbl[i+5], dct_ictbl[i+6], dct_ictbl[i+7]);
+    end
+ -----/\----- EXCLUDED -----/\----- */
+endtask
+`endif
+
+//////////////////////////////////////////////////////////////////////
+// 2-D 8x8 Inverse Discrete Cosine Transform
+
+logic [5:0]     idct_step;
+
+always @(posedge CLK) if (CE) begin
+    if (dctps != DCTPS_IDCT) begin
+        idct_step <= '0;
+        idct_done <= '0;
+    end
+    else if (~idct_done) begin
+        idct_run(idct_step);
+        idct_step <= idct_step + 1'd1;
+        if (idct_step == 6'd26)
+            idct_done <= '1;
+    end
+end
+
+`define IDCT_PRESHIFT 9
+`define EFF_RSHIFT_1D_COEFF 2
+`define EFF_RSHIFT_1D_POST  6
+`define EFF_RSHIFT_2D ((`EFF_RSHIFT_1D_COEFF) * 2 + `EFF_RSHIFT_1D_POST - 1)
+`define C_COEFF(m) (int'((1 << (32 - `EFF_RSHIFT_1D_COEFF)) * (m) + 0.5))
+
+`ifdef TB_VPU
+integer      fout = $fopen("huc6271_yuvblk.hex", "w");
+`endif
+
+logic [8] [31:0] bufr1 [5];
+logic [8] [31:0] bufr2 [5];
+
+function [7:0] idct_clamp(input signed [31:0] din);
+    idct_clamp = din[7:0];
+    if (din < 32'sd0)
+        idct_clamp = 8'd0;
+    else if (din > 32'sd255)
+        idct_clamp = 8'd255;
+endfunction
+
+task idct_run(input int stage);
+logic [8] [31:0] bufrt [8];
+logic [8] [31:0] bufro [8];
+int              i;
+
+    // Input to first IDCT as rows
+    if (stage >= 0 && stage <= 7) begin
+        i = stage - 0;
+        for (int j = 0; j < 8; j++)
+            bufr1[0][j] <= dct_ictbl[i*8+j];
+    end
+
+    // First 1-D IDCT processes each row
+    if (stage >= 1 && stage <= 11) begin
+        for (int s = 0; s < 4; s++) begin
+        logic [8] [31:0] c_out;
+            hack_IDCT_1D(s, bufr1[s], c_out, 0);
+            bufr1[s+1] <= c_out;
+        end
+    end
+
+    if (stage >= 1 && stage <= 12) begin
+/* -----\/----- EXCLUDED -----\/-----
+        for (int j = 0; j < 8; j++)
+            $display("%d %08x %08x %08x %08x %08x", stage, bufr1[0][j], bufr1[1][j], bufr1[2][j], bufr1[3][j], bufr1[4][j]);
+ -----/\----- EXCLUDED -----/\----- */
+    end
+
+    // Translate first IDCT output from rows to columns
+    if (stage >= 5 && stage <= 12) begin
+        i = stage - 5;
+        for (int j = 0; j < 8; j++)
+            bufrt[j][i] <= bufr1[4][j];
+    end
+
+    // Input to second IDCT as columns
+    if (stage >= 13 && stage <= 20) begin
+        i = stage - 13;
+        //$display("%d %08x %08x %08x %08x %08x %08x %08x %08x", stage, bufrt[i][0], bufrt[i][1], bufrt[i][2], bufrt[i][3], bufrt[i][4], bufrt[i][5], bufrt[i][6], bufrt[i][7]);
+        for (int j = 0; j < 8; j++)
+            bufr2[0][j] <= bufrt[i][j];
+    end
+
+    // Second 1-D IDCT processes each column
+    if (stage >= 14 && stage <= 24) begin
+        for (int s = 0; s < 4; s++) begin
+        logic [8] [31:0] c_out;
+            hack_IDCT_1D(s, bufr2[s], c_out, `EFF_RSHIFT_1D_POST);
+            bufr2[s+1] <= c_out;
+        end
+    end
+
+    if (stage >= 13 && stage <= 24) begin
+/* -----\/----- EXCLUDED -----\/-----
+        for (int j = 0; j < 8; j++)
+            $display("%d %08x %08x %08x %08x %08x", stage, bufr2[0][j], bufr2[1][j], bufr2[2][j], bufr2[3][j], bufr2[4][j]);
+ -----/\----- EXCLUDED -----/\----- */
+    end
+
+    // Output from second IDCT as columns
+    if (stage >= 18 && stage <= 25) begin
+        i = stage - 18;
+        for (int j = 0; j < 8; j++) begin
+            bufro[j][i] <= bufr2[4][j];
+            dct_idtbl[j][i] <= idct_clamp(bufr2[4][j] + 32'sd128);
+        end
+    end
+
+`ifdef TB_VPU
+    if (stage == 26) begin
+        for (int i = 0; i < 8; i++)
+            for (int j = 0; j < 8; j++)
+                $fdisplay(fout, "%08x", bufro[i][j]);
+    end
+`endif
+endtask
+
+`ifdef TB_VPU
+final
+    $fclose(fout);
+`endif
+
+task hack_IDCT_1D(input int         step,
+                  input [8] [31:0]  c_in,
+                  output [8] [31:0] c_out,
+                  input int         psh);
+
+const static logic signed [31:0] coeffs [10] = '{
+    1779033704,
+
+    `C_COEFF( 0.5411961001461970), 
+    `C_COEFF(-1.8477590650225736),
+    `C_COEFF( 0.7653668647301796),
+
+    `C_COEFF(-0.5555702330196022),
+    `C_COEFF( 1.3870398453221474),
+    `C_COEFF( 0.2758993792829430),
+
+    `C_COEFF( 0.1950903220161282),
+    `C_COEFF( 0.7856949583871022),
+    `C_COEFF(-1.1758756024193586)
+};
+logic signed [31:0] c [8];
+
+    for (int i = 0; i < 8; i++)
+        c[i] = c_in[i];
+
+    if (step == 0) begin
+    logic signed [31:0] m;
+        if (psh == 0) begin
+            c_out[0] = c[0] << (`IDCT_PRESHIFT - `EFF_RSHIFT_1D_COEFF);
+            c_out[4] = c[4] << (`IDCT_PRESHIFT - `EFF_RSHIFT_1D_COEFF);
+
+            c_out[7] = (c[7] + c[1]) << `IDCT_PRESHIFT;
+            c_out[1] = (c[7] - c[1]) << `IDCT_PRESHIFT;
+
+            c_out[3] = (46341 * c[5]) >>> (15 - `IDCT_PRESHIFT);
+            c_out[5] = (46341 * c[3]) >>> (15 - `IDCT_PRESHIFT);
+
+            m = 35468 * (c[2] + c[6]);
+            c_out[2] = (-121095 * c[6] + m) >>> (16 - `IDCT_PRESHIFT + `EFF_RSHIFT_1D_COEFF);
+            c_out[6] = (  50159 * c[2] + m) >>> (16 - `IDCT_PRESHIFT + `EFF_RSHIFT_1D_COEFF);
+        end
+        else begin
+            c_out[0] = (c[0] >>> `EFF_RSHIFT_1D_COEFF) + ((1 << psh) >>> 1);
+            c_out[4] = c[4] >>> `EFF_RSHIFT_1D_COEFF;
+
+            c_out[7] = c[7] + c[1];
+            c_out[1] = c[7] - c[1];
+
+            c_out[3] = (c[5] * 181) >>> 7;
+            c_out[5] = (c[3] * 181) >>> 7;
+
+            m = 32'((64'(coeffs[1]) * (c[2] + c[6])) >>> 32);
+            c_out[2] = 32'((64'(coeffs[2]) * c[6]) >>> 32) + m;
+            c_out[6] = 32'((64'(coeffs[3]) * c[2]) >>> 32) + m;
+        end
+    end
+
+    if (step == 1) begin
+        {c_out[0], c_out[4]} = {c[0] + c[4], c[0] - c[4]};
+        {c_out[7], c_out[5]} = {c[7] + c[5], c[7] - c[5]};
+        {c_out[3], c_out[1]} = {c[3] + c[1], c[3] - c[1]};
+        {c_out[2], c_out[6]} = {c[2], c[6]};
+    end
+    
+    if (step == 2) begin
+    logic signed [31:0] m1, r1;
+    logic signed [31:0] m2, r2;
+        m1 = 32'((64'(coeffs[4]) * (c[7] + c[1])) >>> 32);
+        r1 = 32'((64'(coeffs[5]) * c[1]) >>> 32) + m1;
+        c_out[1] = 32'((64'(coeffs[6]) * c[7]) >>> 32) - m1;
+        c_out[7] = r1;
+
+        m2 = 32'((64'(coeffs[7]) * (c[3] + c[5])) >>> 32);
+        r2 = 32'((64'(coeffs[8]) * c[5]) >>> 32) + m2;
+        c_out[5] = 32'((64'(coeffs[9]) * c[3]) >>> 32) + m2;
+        c_out[3] = r2;
+
+        {c_out[0], c_out[6]} = {c[0] + c[6], c[0] - c[6]};
+        {c_out[4], c_out[2]} = {c[4] + c[2], c[4] - c[2]};
+    end
+
+    if (step == 3) begin
+        c_out[0] = (c[0] + c[1]) >>> psh;
+        c_out[1] = (c[4] + c[5]) >>> psh;
+        c_out[2] = (c[2] + c[3]) >>> psh;
+        c_out[3] = (c[6] + c[7]) >>> psh;
+        c_out[4] = (c[6] - c[7]) >>> psh;
+        c_out[5] = (c[2] - c[3]) >>> psh;
+        c_out[6] = (c[4] - c[5]) >>> psh;
+        c_out[7] = (c[0] - c[1]) >>> psh;
+    end
+endtask
 
 //////////////////////////////////////////////////////////////////////
 // Video output
 
 localparam [9:0] VO_HACT_START = 10'd62;
 localparam [9:0] VO_HACT_END   = VO_HACT_START + 10'd256;
+localparam [9:0] VO_RACT_START = VO_HACT_START - 10'd1;
 
 logic [12:0]    vo_raddr;
 logic [7:0]     vo_rdata;
-logic           vo_ract;
+logic [31:0]    vo_rbuf1, vo_rbuf2, vo_rbuf2_d;
+logic           vo_ract, vo_rtrg;
 logic           vo_hact;
 logic           vo_rre;
 logic [23:0]    vo_vd_p, vo_vd;
+logic           vo_roff_en;
+logic [2:0]     vo_roff;
 
 wire vo_valid = dec_valid[~rbsel];
+wire vo_vdmode = dec_vdmode[~rbsel];
+wire vo_ract_pos = (h_cnt == VO_RACT_START);
+wire vo_ract_neg = vo_rtrg & &vo_raddr[8:0];
 wire vo_hact_p = (h_cnt >= VO_HACT_START) & (h_cnt < VO_HACT_END);
 
 always @(posedge CLK) begin
@@ -284,29 +1101,71 @@ always @(posedge CLK) begin
         vo_raddr <= '0;
         vo_hact <= '0;
         vo_ract <= '0;
+        vo_rtrg <= '0;
+        vo_roff_en <= '0;
+        vo_roff <= '0;
     end
     else begin
         if (DCK) begin
             vo_hact <= vo_hact_p;
-            vo_ract <= vo_hact_p;
         end
-        if (vo_ract & CE) begin
-            vo_raddr <= vo_raddr + 1'd1;
-            if (vo_raddr[0])
-                vo_ract <= '0;
+        if (CE) begin
+            vo_ract <= (vo_ract & ~vo_ract_neg) | vo_ract_pos;
+            if (vo_ract) begin
+                vo_rtrg <= ~vo_rtrg;
+                if (vo_rtrg)
+                    vo_raddr <= vo_raddr + 1'd1;
+            end
+            else
+                vo_rtrg <= '0;
+
+            if (~vo_roff_en)
+                vo_roff_en <= vo_hact & vo_rtrg;
+            else if (vo_roff_en)
+                vo_roff_en <= vo_hact;
+
+            if (vo_roff_en)
+                vo_roff <= vo_roff + 1'd1;
+            else
+                vo_roff <= '0;
         end
     end
-    vo_rre <= vo_ract;
 end
 
+assign vo_rre = vo_rtrg;
+
 always @(posedge CLK) if (CE) begin
-    if (~vo_valid)
-        vo_vd_p <= '0;
-    else if (vo_ract) begin
-        if (~vo_raddr[0])
-            vo_vd_p[15:8] <= vo_rdata;
-        else
-            vo_vd_p[7:0] <= vo_rdata;
+    vo_rbuf2_d <= vo_rbuf2;
+
+    if (~vo_valid) begin
+        vo_rbuf1 <= '0;
+    end
+    else if (vo_rtrg) begin
+        vo_rbuf1 <= {vo_rbuf1[23:0], vo_rdata};
+    end
+end
+
+always @* begin
+    vo_rbuf2 = vo_rbuf2_d;
+    if (~|vo_raddr[1:0])
+        vo_rbuf2 = vo_rbuf1;
+end
+
+always @* begin
+    vo_vd_p = '0;
+    if (~vo_vdmode) begin // palette
+        case (vo_roff[2])
+            1'b0: vo_vd_p = vo_rbuf2[16+:16];
+            1'b1: vo_vd_p = vo_rbuf2[00+:16];
+        endcase
+    end
+    else begin // YUV
+        case (vo_roff[2])
+            1'b0: vo_vd_p[16+:8] = vo_rbuf2[24+:8];
+            1'b1: vo_vd_p[16+:8] = vo_rbuf2[16+:8];
+        endcase
+        vo_vd_p[08+:8] = vo_rbuf2[08+:8]; // U
+        vo_vd_p[00+:8] = vo_rbuf2[00+:8]; // V
     end
 end
 
@@ -316,18 +1175,27 @@ always @(posedge CLK) if (DCK) begin
         vo_vd <= vo_vd_p;
 end
 
+assign VDMODE = vo_vdmode;
 assign VD = vo_vd;
 
 //////////////////////////////////////////////////////////////////////
 // R-RAM memory interface MUX
 
+logic [12:0]    dec_raddr;
+logic [7:0]     dec_rdata;
+logic           dec_rwe;
+
+assign dec_raddr = si_hdr_dct ? dct_raddr : rle_raddr;
+assign dec_rdata = si_hdr_dct ? dct_rdata : rle_rdata;
+assign dec_rwe   = si_hdr_dct ? dct_rwe   : rle_rwe;
+
 always @* begin
     if (~rbsel) begin
         // Decode to A, output from B
-        RA_A = rle_raddr;
-        RA_DO = rle_rdata;
+        RA_A = dec_raddr;
+        RA_DO = dec_rdata;
         RA_OEn = '1;
-        RA_WEn = ~rle_rwe;
+        RA_WEn = ~dec_rwe;
 
         RB_A = vo_raddr;
         RB_DO = '0;
@@ -337,10 +1205,10 @@ always @* begin
     end
     else begin
         // Decode to B, output from A
-        RB_A = rle_raddr;
-        RB_DO = rle_rdata;
+        RB_A = dec_raddr;
+        RB_DO = dec_rdata;
         RB_OEn = '1;
-        RB_WEn = ~rle_rwe;
+        RB_WEn = ~dec_rwe;
 
         RA_A = vo_raddr;
         RA_DO = '0;

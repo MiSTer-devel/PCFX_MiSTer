@@ -18,6 +18,7 @@ logic [15:0]    rb_di, rb_do;
 wire [15:0]     kramb_io;
 logic [8:0]     rb_a;
 logic           rb_oen, rb_wen, rb_rasn, rb_lcasn, rb_ucasn;
+logic           vpu_vdmode;
 logic [23:0]    mmc_vd, vce_vd, vpu_vd;
 logic [8:0]     vdc0_vd, vdc1_vd;
 logic           mmc_vde;
@@ -140,6 +141,7 @@ huc6261 vce
     .DCKKR(dck),
     .DCKKR_NEGEDGE(dck_negedge),
     .MMC_VD(mmc_vd),
+    .VPU_VDMODE(vpu_vdmode),
     .VPU_VD(vpu_vd),
 
     .Y(vce_vd[16+:8]),
@@ -293,6 +295,7 @@ huc6271 vpu
 
     .DCK(dck),
     .HSYNC_NEGEDGE(hsync_negedge),
+    .VDMODE(vpu_vdmode),
     .VD(vpu_vd)
     );
 

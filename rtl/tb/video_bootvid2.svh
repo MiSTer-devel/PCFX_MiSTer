@@ -1,6 +1,5 @@
 // PC-FX boot video, test 2
 
-// TODO: update
 task load_vce_reg();
     io_sel = VCE;
     reg_write(7'h00, 16'h4700); // CR
@@ -21,7 +20,6 @@ task load_vce_reg();
     reg_write(7'h15, 16'h0000); // BL3B
 endtask
 
-// TODO: update
 task load_vdc0_reg();
     io_sel = VDC0;
     reg_write(7'h05, 16'h00c8); // CR
@@ -37,7 +35,6 @@ task load_vdc0_reg();
     reg_write(7'h13, 16'h7f00); // DVSSR
 endtask
 
-// TODO: update
 task load_vdc1_reg();
     io_sel = VDC1;
     reg_write(7'h05, 16'h00c0); // CR

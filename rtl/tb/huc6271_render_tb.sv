@@ -24,6 +24,24 @@ assign mmc_vd = '0;
 
 //////////////////////////////////////////////////////////////////////
 
+integer fpix;
+logic   pix_hact;
+
+initial begin
+    fpix = $fopen("huc6271_pix.hex", "w");
+end
+always @(posedge clk) begin
+    if (dck) begin
+        pix_hact <= vpu.vo_hact;
+        if (pix_hact)
+        $fwrite(fpix, "%x\n", 32'(vpu_vd));
+    end
+end
+final
+    $fclose(fpix);
+
+//////////////////////////////////////////////////////////////////////
+
 integer fpic;
 logic   pice;
 
@@ -64,7 +82,7 @@ always @(posedge clk) begin
 end
 
 initial begin
-    fdat = $fopen("bootvid/blk000.bin", "r");
+    fdat = $fopen("bootvid/blk109.bin", "r");
     kbus_di = '0;
     kbus_ack_vpu = '0;
 end

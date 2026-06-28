@@ -37,6 +37,7 @@ module huc6261
      output           DCKKR, // pixel clock enable
      output           DCKKR_NEGEDGE,
      input [23:0]     MMC_VD,
+     input            VPU_VDMODE,
      input [23:0]     VPU_VD,
 
      // NTSC/YUV video output
@@ -500,17 +501,28 @@ assign layers[1].cpe = ble.mmc_bg0;
 // VPU (RAINBOW) video input
 
 logic [8:0]     vpu_cpa;
+logic [23:0]    vpu_vd;
 logic           vpu_en, vpu_key;
 
 assign vpu_en = cr.bg71;
-assign vpu_key = vpu_en & |VPU_VD[0+:8];
 
 assign vpu_cpa = {vpu_cpao, 1'b0} + {2'b0, VPU_VD[6:0]};
 
+always @* begin
+    if (~VPU_VDMODE) begin // palette
+        vpu_key = vpu_en & |VPU_VD[0+:8];
+        vpu_vd = 24'(vpu_cpa);
+    end
+    else begin // YUV
+        vpu_key = '1; // TODO
+        vpu_vd = VPU_VD;
+    end
+end
+
 assign layers[2].pri = pri_vpu;
 assign layers[2].key = vpu_key;
-assign layers[2].vd  = 24'(vpu_cpa);
-assign layers[2].pal = '1;
+assign layers[2].vd  = vpu_vd;
+assign layers[2].pal = ~VPU_VDMODE;
 assign layers[2].cpe = ble.vpu;
 
 //////////////////////////////////////////////////////////////////////
