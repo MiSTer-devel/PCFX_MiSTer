@@ -117,7 +117,7 @@ typedef enum bit [2:0] {
 
 logic           kbus_req;
 sis_t           sist;
-logic           si_din_ones;
+logic           si_din_ones, si_din_zeros;
 logic [3:0]     si_hdr;
 logic [15:0]    si_len;
 logic           si_ready;
@@ -131,19 +131,23 @@ always @(posedge CLK) if (CE) begin
         si_hdr <= '0;
         si_len <= '1;
         si_din_ones <= '0;
+        si_din_zeros <= '1;
     end
     else begin
-        if (si_din)
+        if (si_din) begin
             si_din_ones <= &KBUS_DI;
+            si_din_zeros <= ~|KBUS_DI;
+        end
 
         case (sist)
             SIS_INIT:
-                if (si_din & &KBUS_DI) begin
-                    sist <= SIS_HDR_TYPE;
+                if (si_din) begin
+                    if (si_din_zeros & &KBUS_DI)
+                        sist <= SIS_HDR_TYPE;
                 end
             SIS_HDR_TYPE:
                 if (si_din) begin
-                    if (si_din_ones) begin
+                    if (si_din_ones & &KBUS_DI[7:4]) begin
                         si_hdr <= KBUS_DI[3:0];
                         sist <= SIS_HDR_LEN1;
                     end
@@ -227,7 +231,7 @@ always @* begin
 end
 
 always @(posedge CLK) if (CE) begin
-    if (~RESn) begin
+    if (~si_block | ~dec_act) begin
         rles <= RLES_INIT;
     end
     else begin
@@ -262,9 +266,6 @@ always @(posedge CLK) if (CE) begin
             end
             default: ;
         endcase
-
-        if (~si_block | ~dec_act)
-            rles <= RLES_INIT;
     end
 end
 
@@ -740,7 +741,7 @@ always @(posedge CLK) if (CE) begin
                 if (dct_bits_code > 8'h0f)
                     dct_qc <= dct_bits_code[3:0];
                 else if (dct_bits_code == 8'h0f) begin
-                    $error("TODO: Zeros in DC clear columns");
+                    $warning("TODO: Zeros in DC clear columns");
                 end
             end
             DCTDS_AC_CODE: begin
@@ -1179,7 +1180,7 @@ always @(posedge CLK) if (DCK) begin
         vo_vd <= vo_vd_p;
 end
 
-assign VDMODE = vo_vdmode;
+assign VDMODE = vo_vdmode & vo_valid;
 assign VD = vo_vd;
 
 //////////////////////////////////////////////////////////////////////

@@ -82,7 +82,7 @@ always @(posedge clk) begin
 end
 
 initial begin
-    fdat = $fopen("bootvid/blk109.bin", "r");
+    fdat = $fopen("bootvid/blk170.bin", "r");
     kbus_di = '0;
     kbus_ack_vpu = '0;
 end
@@ -91,8 +91,9 @@ integer code;
     if (kbus_ack_vpu)
         kbus_ack_vpu <= '0;
     else if (kbus_req_vpu & vpu_kbus_en) begin
+        kbus_di = '0;
         code = $fread(kbus_di, fdat, 0, 1);
-        kbus_ack_vpu <= '1;
+        kbus_ack_vpu <= (code == 1);
     end
 end
 final
