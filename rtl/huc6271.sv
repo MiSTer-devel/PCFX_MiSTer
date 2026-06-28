@@ -68,8 +68,11 @@ logic           rbsel; // 1: Decode to B, output from A
 logic           dec_act;
 logic [1:0]     dec_valid;
 logic [1:0]     dec_vdmode;
+logic           dec_vend;
 
 always @(posedge CLK) begin
+    dec_vend <= '0;
+
     if (~RESn) begin
         h_cnt <= '0;
         v_cnt <= '0;
@@ -87,6 +90,7 @@ always @(posedge CLK) begin
                 dec_valid[rbsel] <= (dec_act & si_end);
                 dec_vdmode[rbsel] <= si_hdr_dct;
                 dec_act <= '0;
+                dec_vend <= '1;
                 rbsel <= ~rbsel;
             end
 
@@ -162,11 +166,11 @@ always @(posedge CLK) if (CE) begin
                     if (si_len_end)
                         sist <= SIS_END;
                 end
-            SIS_END:
-                if (~dec_act)
-                    sist <= SIS_INIT;
             default: ;
         endcase
+
+        if (dec_vend)
+            sist <= SIS_INIT;
     end
 end
 
@@ -425,6 +429,7 @@ always @(posedge CLK) if (CE) begin
                 if (dct_store_done)
                     dctps <= DCTPS_DONE;
             end
+            default: ;
         endcase
 
         // Decode FSM
@@ -517,18 +522,18 @@ always @(posedge CLK) if (CE) begin
     else begin
     logic [5:0] cnt;
         cnt = dct_bits_cnt;
+        if (dct_bits_ready) begin
+            cnt -= dct_bits_pop_cnt;
+        end
         if (si_ready) begin
             dct_bits_buf <= {dct_bits_buf[$left(dct_bits_buf)-8:0], KBUS_DI};
             cnt += 6'd8;
-        end
-        if (dct_bits_ready) begin
-            cnt -= dct_bits_pop_cnt;
         end
         dct_bits_cnt <= cnt;
     end
 end
 
-assign dct_bits_full = dct_bits_cnt > 6'($size(dct_bits_buf) - 8);
+wire dct_bits_full = dct_bits_cnt > 6'($size(dct_bits_buf) - 8);
 assign si_busy_dct = (dctds != DCTDS_INIT) & dct_bits_full;
 
 task dct_bits_get(input [5:0] cnt, output [15:0] pbuf);
@@ -540,6 +545,7 @@ always @* begin
     dct_bits_code = '0;
     dct_bits_peek_cnt = '0;
     dct_bits_pop_cnt = '0;
+    dct_bits_pop = '0;
     case (dctds)
         DCTDS_DC_CODE: begin
             if (dct_plane_y) begin
@@ -556,9 +562,9 @@ always @* begin
         end
         DCTDS_DC_K,
         DCTDS_AC_K: begin
-            dct_bits_pop_cnt = dct_bits_code_d;
+            dct_bits_pop_cnt = dct_bits_code_d[5:0];
             if (dctds == DCTDS_AC_K)
-                dct_bits_pop_cnt[7:4] = '0;
+                dct_bits_pop_cnt[5:4] = '0;
             dct_bits_get(dct_bits_pop_cnt, dct_bits_pop);
             dct_bits_ready = dct_bits_cnt >= dct_bits_pop_cnt;
         end
@@ -728,7 +734,6 @@ always @(posedge CLK) if (CE) begin
         dct_ac_val <= '0;
     end
     else if (dct_bits_ready) begin
-        dct_bits_cnt <= dct_bits_cnt - dct_bits_pop_cnt;
         case (dctds)
             DCTDS_DC_CODE: begin
                 dct_bits_code_d <= dct_bits_code;
@@ -797,15 +802,15 @@ logic [6:0]  iqtbl_ridx;
     dct_iq = x[7:0];
 end
 
-logic [6:0] dct_zigzag_tbl [64] = '{
-    7'h00, 7'h01, 7'h08, 7'h10, 7'h09, 7'h02, 7'h03, 7'h0A,
-    7'h11, 7'h18, 7'h20, 7'h19, 7'h12, 7'h0B, 7'h04, 7'h05,
-    7'h0C, 7'h13, 7'h1A, 7'h21, 7'h28, 7'h30, 7'h29, 7'h22,
-    7'h1B, 7'h14, 7'h0D, 7'h06, 7'h07, 7'h0E, 7'h15, 7'h1C,
-    7'h23, 7'h2A, 7'h31, 7'h38, 7'h39, 7'h32, 7'h2B, 7'h24,
-    7'h1D, 7'h16, 7'h0F, 7'h17, 7'h1E, 7'h25, 7'h2C, 7'h33,
-    7'h3A, 7'h3B, 7'h34, 7'h2D, 7'h26, 7'h1F, 7'h27, 7'h2E,
-    7'h35, 7'h3C, 7'h3D, 7'h36, 7'h2F, 7'h37, 7'h3E, 7'h3F
+logic [5:0] dct_zigzag_tbl [64] = '{
+    6'h00, 6'h01, 6'h08, 6'h10, 6'h09, 6'h02, 6'h03, 6'h0A,
+    6'h11, 6'h18, 6'h20, 6'h19, 6'h12, 6'h0B, 6'h04, 6'h05,
+    6'h0C, 6'h13, 6'h1A, 6'h21, 6'h28, 6'h30, 6'h29, 6'h22,
+    6'h1B, 6'h14, 6'h0D, 6'h06, 6'h07, 6'h0E, 6'h15, 6'h1C,
+    6'h23, 6'h2A, 6'h31, 6'h38, 6'h39, 6'h32, 6'h2B, 6'h24,
+    6'h1D, 6'h16, 6'h0F, 6'h17, 6'h1E, 6'h25, 6'h2C, 6'h33,
+    6'h3A, 6'h3B, 6'h34, 6'h2D, 6'h26, 6'h1F, 6'h27, 6'h2E,
+    6'h35, 6'h3C, 6'h3D, 6'h36, 6'h2F, 6'h37, 6'h3E, 6'h3F
 };
 
 assign dct_ictbl_widx = dct_zigzag_tbl[dct_ic_cnt];
@@ -862,7 +867,10 @@ endtask
 //////////////////////////////////////////////////////////////////////
 // 2-D 8x8 Inverse Discrete Cosine Transform
 
-logic [5:0]     idct_step;
+logic [7:0] [31:0]  idct_bufr1 [5];
+logic [7:0] [31:0]  idct_bufr2 [5];
+logic [7:0] [31:0]  idct_bufrt [8];
+logic [5:0]         idct_step;
 
 always @(posedge CLK) if (CE) begin
     if (dctps != DCTPS_IDCT) begin
@@ -870,7 +878,7 @@ always @(posedge CLK) if (CE) begin
         idct_done <= '0;
     end
     else if (~idct_done) begin
-        idct_run(idct_step);
+        idct_run(int'(idct_step));
         idct_step <= idct_step + 1'd1;
         if (idct_step == 6'd26)
             idct_done <= '1;
@@ -887,9 +895,6 @@ end
 integer      fout = $fopen("huc6271_yuvblk.hex", "w");
 `endif
 
-logic [8] [31:0] bufr1 [5];
-logic [8] [31:0] bufr2 [5];
-
 function [7:0] idct_clamp(input signed [31:0] din);
     idct_clamp = din[7:0];
     if (din < 32'sd0)
@@ -899,30 +904,29 @@ function [7:0] idct_clamp(input signed [31:0] din);
 endfunction
 
 task idct_run(input int stage);
-logic [8] [31:0] bufrt [8];
-logic [8] [31:0] bufro [8];
+static logic [7:0] [31:0] bufro [8];
 int              i;
 
     // Input to first IDCT as rows
     if (stage >= 0 && stage <= 7) begin
         i = stage - 0;
         for (int j = 0; j < 8; j++)
-            bufr1[0][j] <= dct_ictbl[i*8+j];
+            idct_bufr1[0][j] <= dct_ictbl[i*8+j];
     end
 
     // First 1-D IDCT processes each row
     if (stage >= 1 && stage <= 11) begin
         for (int s = 0; s < 4; s++) begin
-        logic [8] [31:0] c_out;
-            hack_IDCT_1D(s, bufr1[s], c_out, 0);
-            bufr1[s+1] <= c_out;
+        logic [7:0] [31:0] c_out;
+            hack_IDCT_1D(s, idct_bufr1[s], c_out, 0);
+            idct_bufr1[s+1] <= c_out;
         end
     end
 
     if (stage >= 1 && stage <= 12) begin
 /* -----\/----- EXCLUDED -----\/-----
         for (int j = 0; j < 8; j++)
-            $display("%d %08x %08x %08x %08x %08x", stage, bufr1[0][j], bufr1[1][j], bufr1[2][j], bufr1[3][j], bufr1[4][j]);
+            $display("%d %08x %08x %08x %08x %08x", stage, idct_bufr1[0][j], idct_bufr1[1][j], idct_bufr1[2][j], idct_bufr1[3][j], idct_bufr1[4][j]);
  -----/\----- EXCLUDED -----/\----- */
     end
 
@@ -930,30 +934,30 @@ int              i;
     if (stage >= 5 && stage <= 12) begin
         i = stage - 5;
         for (int j = 0; j < 8; j++)
-            bufrt[j][i] <= bufr1[4][j];
+            idct_bufrt[j][i] <= idct_bufr1[4][j];
     end
 
     // Input to second IDCT as columns
     if (stage >= 13 && stage <= 20) begin
         i = stage - 13;
-        //$display("%d %08x %08x %08x %08x %08x %08x %08x %08x", stage, bufrt[i][0], bufrt[i][1], bufrt[i][2], bufrt[i][3], bufrt[i][4], bufrt[i][5], bufrt[i][6], bufrt[i][7]);
+        //$display("%d %08x %08x %08x %08x %08x %08x %08x %08x", stage, idct_bufrt[i][0], idct_bufrt[i][1], idct_bufrt[i][2], idct_bufrt[i][3], idct_bufrt[i][4], idct_bufrt[i][5], idct_bufrt[i][6], idct_bufrt[i][7]);
         for (int j = 0; j < 8; j++)
-            bufr2[0][j] <= bufrt[i][j];
+            idct_bufr2[0][j] <= idct_bufrt[i][j];
     end
 
     // Second 1-D IDCT processes each column
     if (stage >= 14 && stage <= 24) begin
         for (int s = 0; s < 4; s++) begin
-        logic [8] [31:0] c_out;
-            hack_IDCT_1D(s, bufr2[s], c_out, `EFF_RSHIFT_1D_POST);
-            bufr2[s+1] <= c_out;
+        logic [7:0] [31:0] c_out;
+            hack_IDCT_1D(s, idct_bufr2[s], c_out, `EFF_RSHIFT_1D_POST);
+            idct_bufr2[s+1] <= c_out;
         end
     end
 
     if (stage >= 13 && stage <= 24) begin
 /* -----\/----- EXCLUDED -----\/-----
         for (int j = 0; j < 8; j++)
-            $display("%d %08x %08x %08x %08x %08x", stage, bufr2[0][j], bufr2[1][j], bufr2[2][j], bufr2[3][j], bufr2[4][j]);
+            $display("%d %08x %08x %08x %08x %08x", stage, idct_bufr2[0][j], idct_bufr2[1][j], idct_bufr2[2][j], idct_bufr2[3][j], idct_bufr2[4][j]);
  -----/\----- EXCLUDED -----/\----- */
     end
 
@@ -961,8 +965,8 @@ int              i;
     if (stage >= 18 && stage <= 25) begin
         i = stage - 18;
         for (int j = 0; j < 8; j++) begin
-            bufro[j][i] <= bufr2[4][j];
-            dct_idtbl[j][i] <= idct_clamp(bufr2[4][j] + 32'sd128);
+            bufro[j][i] <= idct_bufr2[4][j];
+            dct_idtbl[j][i] <= idct_clamp(idct_bufr2[4][j] + 32'sd128);
         end
     end
 
@@ -980,10 +984,10 @@ final
     $fclose(fout);
 `endif
 
-task hack_IDCT_1D(input int         step,
-                  input [8] [31:0]  c_in,
-                  output [8] [31:0] c_out,
-                  input int         psh);
+task hack_IDCT_1D(input int           step,
+                  input [7:0] [31:0]  c_in,
+                  output [7:0] [31:0] c_out,
+                  input int           psh);
 
 const static logic signed [31:0] coeffs [10] = '{
     1779033704,
@@ -1031,7 +1035,7 @@ logic signed [31:0] c [8];
             c_out[3] = (c[5] * 181) >>> 7;
             c_out[5] = (c[3] * 181) >>> 7;
 
-            m = 32'((64'(coeffs[1]) * (c[2] + c[6])) >>> 32);
+            m = 32'((64'(coeffs[1]) * 32'(c[2] + c[6])) >>> 32);
             c_out[2] = 32'((64'(coeffs[2]) * c[6]) >>> 32) + m;
             c_out[6] = 32'((64'(coeffs[3]) * c[2]) >>> 32) + m;
         end
@@ -1047,12 +1051,12 @@ logic signed [31:0] c [8];
     if (step == 2) begin
     logic signed [31:0] m1, r1;
     logic signed [31:0] m2, r2;
-        m1 = 32'((64'(coeffs[4]) * (c[7] + c[1])) >>> 32);
+        m1 = 32'((64'(coeffs[4]) * 32'(c[7] + c[1])) >>> 32);
         r1 = 32'((64'(coeffs[5]) * c[1]) >>> 32) + m1;
         c_out[1] = 32'((64'(coeffs[6]) * c[7]) >>> 32) - m1;
         c_out[7] = r1;
 
-        m2 = 32'((64'(coeffs[7]) * (c[3] + c[5])) >>> 32);
+        m2 = 32'((64'(coeffs[7]) * 32'(c[3] + c[5])) >>> 32);
         r2 = 32'((64'(coeffs[8]) * c[5]) >>> 32) + m2;
         c_out[5] = 32'((64'(coeffs[9]) * c[3]) >>> 32) + m2;
         c_out[3] = r2;
@@ -1155,8 +1159,8 @@ always @* begin
     vo_vd_p = '0;
     if (~vo_vdmode) begin // palette
         case (vo_roff[2])
-            1'b0: vo_vd_p = vo_rbuf2[16+:16];
-            1'b1: vo_vd_p = vo_rbuf2[00+:16];
+            1'b0: vo_vd_p[15:0] = vo_rbuf2[16+:16];
+            1'b1: vo_vd_p[15:0] = vo_rbuf2[00+:16];
         endcase
     end
     else begin // YUV

@@ -152,6 +152,7 @@ logic           vs_posedge, vs_negedge;
 
 wire [15:0]     vpu_do;
 wire            vpu_csn;
+wire            vpu_vdmode;
 wire [23:0]     vpu_vd;
 
 wire [7:0]      kbus_di;
@@ -302,6 +303,7 @@ huc6261 vce
      .DCKKR(dckkr),
      .DCKKR_NEGEDGE(dckkr_negedge),
      .MMC_VD(mmc_vd),
+     .VPU_VDMODE(vpu_vdmode),
      .VPU_VD(vpu_vd),
 
      .Y(VID_Y),
@@ -452,6 +454,7 @@ huc6271 vpu
 
     .DCK(dckkr),
     .HSYNC_NEGEDGE(hs_negedge),
+    .VDMODE(vpu_vdmode),
     .VD(vpu_vd)
     );
 
