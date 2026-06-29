@@ -111,8 +111,8 @@ always @(posedge CLK) begin
             m_ready <= '1;
         end
 
-        if (CE & KBUS_REQ) begin
-            if (~kbus_ack & m_ready)
+        if (CE) begin
+            if (KBUS_REQ & ~kbus_ack & m_ready)
                 kbus_ack <= '1;
             else if (kbus_ack) begin
 `ifdef HUC6272_DUMP_C71XFER

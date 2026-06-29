@@ -52,7 +52,7 @@ module huc6271
 logic           si_hdr_det, si_block, si_end;
 wor             si_busy_rle, si_busy_dct;
 logic           si_hdr_dct;
-logic           idct_done;
+wor             si_dec_blk_done;
 
 //////////////////////////////////////////////////////////////////////
 // CPU memory / I/O bus interface
@@ -165,11 +165,12 @@ always @(posedge CLK) if (CE) begin
                     sist <= SIS_BLOCK;
                 end
             SIS_BLOCK:
-                if (si_din) begin
-                    si_len <= si_len - 1'd1;
-                    if (si_len_end)
-                        sist <= SIS_END;
+                if (~si_len_end) begin
+                    if (si_din)
+                        si_len <= si_len - 1'd1;
                 end
+                else if (si_dec_blk_done)
+                    sist <= SIS_END;
             default: ;
         endcase
 
@@ -185,7 +186,7 @@ always @* begin
     si_ready = si_din;
     case (sist)
         SIS_BLOCK: begin
-            kbus_req = ~si_busy;
+            kbus_req = ~si_busy & ~si_len_end;
             si_ready &= ~si_din_ones;
         end
         SIS_END:
@@ -277,6 +278,7 @@ always @* begin
 end
 
 assign si_busy_rle = (rles == RLES_FILL);
+assign si_dec_blk_done = ~si_hdr_dct;
 
 //////////////////////////////////////////////////////////////////////
 // DCT block decoder
@@ -292,19 +294,20 @@ typedef enum bit [3:0] {
     DCTS_U,
     DCTS_V,
     DCTS_COL_DONE,
+    DCTS_SYNC_STORE,
     DCTS_BLK_DONE
 } dcts_t;
 
-// Plane (Ynn,U,V) state
+// Plane (Ynn,U,V) decode state
 typedef enum bit [2:0] {
     DCTPS_INIT,
     DCTPS_DECODE,
+    DCTPS_SYNC_STORE,
     DCTPS_IDCT,
-    DCTPS_STORE,
     DCTPS_DONE
 } dctps_t;
 
-// Decoder state
+// Decoder (iDCT input) state
 typedef enum bit [2:0]
 {
     DCTDS_INIT,
@@ -322,7 +325,6 @@ dctps_t         dctps;
 dctds_t         dctds;
 logic [3:0]     dct_col;
 logic           dct_plane_y, dct_plane_u, dct_plane_v;
-logic [1:0]     dct_plane_ynn;
 logic [7:0]     dct_iqtbl [128];
 logic [6:0]     dct_iqtbl_widx;
 logic [7:0]     dct_iq;
@@ -343,9 +345,17 @@ logic [31:0]    dct_ictbl [64]; // TODO: Minimize element size
 logic [5:0]     dct_ictbl_widx;
 logic [31:0]    dct_ictbl_wd;
 logic           dct_ictbl_we;
+logic           idct_act;
+logic           idct_input_done;
+logic           idct_done;
 logic [7:0]     dct_idtbl [8][8];
 logic [2:0]     dct_idx, dct_idy;
-logic           dct_store_done;
+logic           dct_store_act;
+dcts_t          dcts_store;
+logic [3:0]     dct_store_col;
+logic           dct_store_plane_y, dct_store_plane_v;
+logic [1:0]     dct_store_plane_ynn;
+logic           dct_sync_store;
 logic [12:0]    dct_raddr;
 logic [7:0]     dct_rdata;
 logic           dct_rwe;
@@ -354,34 +364,31 @@ always @(posedge CLK) if (CE) begin
     dct_ictbl_we <= '0;
     dct_ac_zero <= '0;
 
-    if (~dec_act) begin
-        dcts <= DCTS_INIT;
-        dctps <= DCTPS_INIT;
-        dctds <= DCTDS_INIT;
-    end
-    else begin
-        // Main FSM
-        case (dcts)
-            DCTS_INIT: begin
-                dct_col <= '0;
-                dctds <= DCTDS_INIT;
-                if (si_block & si_hdr_dct) begin
-                    if (si_hdr[2]) begin
-                        dcts <= DCTS_IQTBL;
-                        dct_iqtbl_widx <= '0;
-                    end
-                    else
-                        dcts <= DCTS_Y00;
+    // Main FSM
+    case (dcts)
+        DCTS_INIT: begin
+            dct_col <= '0;
+            dctds <= DCTDS_INIT;
+            dct_store_act <= '0;
+            dcts_store <= DCTS_INIT;
+            dct_store_col <= '0;
+            if (si_block & si_hdr_dct) begin
+                if (si_hdr[2]) begin
+                    dcts <= DCTS_IQTBL;
+                    dct_iqtbl_widx <= '0;
                 end
+                else
+                    dcts <= DCTS_Y00;
             end
-            DCTS_IQTBL:
-                if (si_ready) begin
-                    dct_iqtbl[dct_iqtbl_widx] <= KBUS_DI;
-                    dct_iqtbl_widx <= dct_iqtbl_widx + 1'd1;
-                    if (dct_iqtbl_widx == 7'd127)
-                        dcts <= DCTS_Y00;
-                end
-            DCTS_Y00,
+        end
+        DCTS_IQTBL:
+            if (si_ready) begin
+                dct_iqtbl[dct_iqtbl_widx] <= KBUS_DI;
+                dct_iqtbl_widx <= dct_iqtbl_widx + 1'd1;
+                if (dct_iqtbl_widx == 7'd127)
+                    dcts <= DCTS_Y00;
+            end
+        DCTS_Y00,
             DCTS_Y01,
             DCTS_Y10,
             DCTS_Y11,
@@ -393,112 +400,121 @@ always @(posedge CLK) if (CE) begin
                         dctps <= DCTPS_INIT;
                     end
                 end
-            DCTS_COL_DONE: begin
-                dct_col <= dct_col + 1'd1;
-                dctps <= DCTPS_INIT;
-                if (dct_col == 4'd15)
-                    dcts <= DCTS_BLK_DONE;
-                else
-                    dcts <= DCTS_Y00;
-            end
-            DCTS_BLK_DONE:
-                dctds <= DCTDS_INIT;
-            default: ;
-        endcase
+        DCTS_COL_DONE: begin
+            dct_col <= dct_col + 1'd1;
+            dctps <= DCTPS_INIT;
+            if (dct_col == 4'd15)
+                dcts <= DCTS_SYNC_STORE;
+            else
+                dcts <= DCTS_Y00;
+        end
+        DCTS_SYNC_STORE:
+            if (dct_sync_store)
+                dcts <= DCTS_BLK_DONE;
+        DCTS_BLK_DONE:
+            dctds <= DCTDS_INIT;
+        default: ;
+    endcase
 
-        // Plane FSM
-        case (dctps)
-            DCTPS_INIT:
-                if (dct_plane_y | dct_plane_u | dct_plane_v) begin
-                    dctps <= DCTPS_DECODE;
-                    dctds <= DCTDS_DC_CODE;
-                end
-            DCTPS_DECODE: begin
-                if (dctds == DCTDS_DONE) begin
+    // Plane FSM
+    case (dctps)
+        DCTPS_INIT:
+            if (dct_plane_y | dct_plane_u | dct_plane_v) begin
+                dctps <= DCTPS_DECODE;
+                dctds <= DCTDS_DC_CODE;
+            end
+        DCTPS_DECODE: begin
+            if (dctds == DCTDS_DONE) begin
 `ifdef TB_VPU
-                    dump_ictbl();
+                dump_ictbl();
 `endif
-                    dctps <= DCTPS_IDCT;
-                end
+                dctps <= DCTPS_SYNC_STORE;
             end
-            DCTPS_IDCT: begin
-                if (idct_done)
-                    dctps <= DCTPS_STORE;
+        end
+        DCTPS_SYNC_STORE:
+            if (dct_sync_store) begin
+                dctps <= DCTPS_IDCT;
+                dct_store_col <= dct_col;
+                dcts_store <= dcts;
             end
-            DCTPS_STORE: begin
-                if (dct_store_done)
-                    dctps <= DCTPS_DONE;
-            end
-            default: ;
-        endcase
+        DCTPS_IDCT: begin
+            if (idct_input_done)
+                dctps <= DCTPS_DONE;
+        end
+        default: ;
+    endcase
 
-        // Decode FSM
-        case (dctds)
-            DCTDS_DC_CODE: begin
-                dct_ic_cnt <= '0;
-                if (dct_bits_ready) begin
-                    if (dct_bits_code < 8'h0f)
-                        dctds <= DCTDS_DC_K;
-                    else if (dct_bits_code == 8'h0f)
-                        dctds <= DCTDS_AC_CODE;
-                    else
-                        dctds <= DCTDS_DC_CODE;
-                end
-            end
-            DCTDS_DC_K:
-                if (dct_bits_ready) begin
-                    dct_ictbl_we <= '1;
+    // Decode FSM
+    case (dctds)
+        DCTDS_DC_CODE: begin
+            dct_ic_cnt <= '0;
+            if (dct_bits_ready) begin
+                if (dct_bits_code < 8'h0f)
+                    dctds <= DCTDS_DC_K;
+                else if (dct_bits_code == 8'h0f)
                     dctds <= DCTDS_AC_CODE;
-                end
-            DCTDS_AC_CODE:
-                if (dct_bits_ready)
-                    dctds <= DCTDS_AC_K;
-            DCTDS_AC_K:
-                if (dct_bits_ready) begin
-                    dctds <= DCTDS_AC_STORE;
-                    if (dct_bits_pop_mse == '0 && dct_ac_zeros == '0)
-                        dctds <= DCTDS_AC_END;
-                end
-            DCTDS_AC_STORE: begin
-                dct_ictbl_we <= '1;
-
-                if (dct_ac_zeros != '0) begin
-                    dct_ac_zero <= '1;
-                    dct_ac_zeros <= dct_ac_zeros - 1'd1;
-                end
                 else
-                    dctds <= DCTDS_AC_CODE;
-
-                dct_ic_cnt <= dct_ic_cnt + 1'd1;
-                if (dct_ic_cnt + 1'd1 == 6'd63)
-                    dctds <= DCTDS_DONE;
+                    dctds <= DCTDS_DC_CODE;
             end
-            DCTDS_AC_END: begin
+        end
+        DCTDS_DC_K:
+            if (dct_bits_ready) begin
                 dct_ictbl_we <= '1;
-                dct_ac_zero <= '1;
-
-                dct_ic_cnt <= dct_ic_cnt + 1'd1;
-                if (dct_ic_cnt + 1'd1 == 6'd63)
-                    dctds <= DCTDS_DONE;
+                dctds <= DCTDS_AC_CODE;
             end
-            default: ;
-        endcase
+        DCTDS_AC_CODE:
+            if (dct_bits_ready)
+                dctds <= DCTDS_AC_K;
+        DCTDS_AC_K:
+            if (dct_bits_ready) begin
+                dctds <= DCTDS_AC_STORE;
+                if (dct_bits_pop_mse == '0 && dct_ac_zeros == '0)
+                    dctds <= DCTDS_AC_END;
+            end
+        DCTDS_AC_STORE: begin
+            dct_ictbl_we <= '1;
+
+            if (dct_ac_zeros != '0) begin
+                dct_ac_zero <= '1;
+                dct_ac_zeros <= dct_ac_zeros - 1'd1;
+            end
+            else
+                dctds <= DCTDS_AC_CODE;
+
+            dct_ic_cnt <= dct_ic_cnt + 1'd1;
+            if (dct_ic_cnt + 1'd1 == 6'd63)
+                dctds <= DCTDS_DONE;
+        end
+        DCTDS_AC_END: begin
+            dct_ictbl_we <= '1;
+            dct_ac_zero <= '1;
+
+            dct_ic_cnt <= dct_ic_cnt + 1'd1;
+            if (dct_ic_cnt + 1'd1 == 6'd63)
+                dctds <= DCTDS_DONE;
+        end
+        default: ;
+    endcase
+
+    if (~dec_act) begin
+        dcts <= DCTS_INIT;
+        dctps <= DCTPS_INIT;
+        dctds <= DCTDS_INIT;
     end
 end
 
 assign si_busy_dct = (dcts == DCTS_INIT) | 
                      ((dcts >= DCTS_Y00) & (dcts < DCTS_BLK_DONE) &
                       (dctds == DCTDS_INIT));
+assign si_dec_blk_done = (dcts == DCTS_BLK_DONE);
 
 always @* begin
     dct_plane_y = '0;
     dct_plane_u = '0;
     dct_plane_v = '0;
-    dct_plane_ynn = '0;
     case (dcts)
         DCTS_Y00, DCTS_Y01, DCTS_Y10, DCTS_Y11: begin
             dct_plane_y = '1;
-            dct_plane_ynn = 2'(dcts - DCTS_Y00);
         end
         DCTS_U:
             dct_plane_u = '1;
@@ -821,27 +837,45 @@ end
 
 // Store IDCT output to R-RAM
 always @* begin
-    dct_rwe = (dctps == DCTPS_STORE);
-    if (dct_plane_y)
-        dct_raddr = {dct_plane_ynn[0], dct_idy, dct_col, dct_plane_ynn[1], dct_idx[2:1], 1'b0, dct_idx[0]};
+    dct_store_plane_y = '0;
+    dct_store_plane_v = '0;
+    dct_store_plane_ynn = '0;
+    case (dcts_store)
+        DCTS_Y00, DCTS_Y01, DCTS_Y10, DCTS_Y11: begin
+            dct_store_plane_y = '1;
+            dct_store_plane_ynn = 2'(dcts_store - DCTS_Y00);
+        end
+        DCTS_V:
+            dct_store_plane_v = '1;
+        default: ;
+    endcase
+end
+
+always @* begin
+    dct_rwe = dct_store_act;
+    if (dct_store_plane_y)
+        dct_raddr = {dct_store_plane_ynn[0], dct_idy, dct_store_col, dct_store_plane_ynn[1], dct_idx[2:1], 1'b0, dct_idx[0]};
     else
-        dct_raddr = {dct_idy, 1'b0, dct_col, dct_idx, 1'b1, dct_plane_v};
+        dct_raddr = {dct_idy, 1'b0, dct_store_col, dct_idx, 1'b1, dct_store_plane_v};
     dct_rdata = dct_idtbl[dct_idy][dct_idx];
 end
 
 always @(posedge CLK) if (CE) begin
-    if (dctps != DCTPS_STORE) begin
+    if (~dct_store_act) begin
         dct_idx <= '0;
         dct_idy <= '0;
+        dct_store_act <= idct_done;
     end
-    else if (~dct_store_done) begin
+    else begin
         dct_idx <= dct_idx + 1'd1;
         if (&dct_idx)
             dct_idy <= dct_idy + 1'd1;
+        if (&dct_idx & &dct_idy)
+            dct_store_act <= '0;
     end
 end
 
-assign dct_store_done = &dct_idx & &dct_idy;
+assign dct_sync_store = ~idct_act & ~dct_store_act;
 
 `ifdef TB_VPU
 task dump_ictbl;
@@ -866,16 +900,26 @@ logic [7:0] [31:0]  idct_bufrt [8];
 logic [5:0]         idct_step;
 
 always @(posedge CLK) if (CE) begin
-    if (dctps != DCTPS_IDCT) begin
+    idct_input_done <= '0;
+
+    if (~dec_act)
+        idct_act <= '0;
+
+    if (~idct_act) begin
         idct_step <= '0;
         idct_done <= '0;
+        idct_act <= (dctps == DCTPS_IDCT);
     end
     else if (~idct_done) begin
         idct_run(int'(idct_step));
         idct_step <= idct_step + 1'd1;
+        if (idct_step == 6'd7)
+            idct_input_done <= '1;
         if (idct_step == 6'd26)
             idct_done <= '1;
     end
+    else
+        idct_act <= '0;
 end
 
 `define IDCT_PRESHIFT 9

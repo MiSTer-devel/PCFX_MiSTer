@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v4.0.0-prealpha (8ba24ab+) (w)1999-2022 BSI
-[*] Sun Jun 28 02:55:38 2026
+[*] Mon Jun 29 06:21:38 2026
 [*]
 [dumpfile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/huc6271_render_tb.vcd"
-[dumpfile_mtime] "Sun Jun 28 02:52:17 2026"
-[dumpfile_size] 261272202
+[dumpfile_mtime] "Mon Jun 29 06:17:17 2026"
+[dumpfile_size] 274229516
 [savefile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/huc6271_render_tb.gtkw"
-[timestart] 1261847
+[timestart] 0
 [size] 1333 600
 [pos] -1 -1
-*-8.243187 1262440 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+*-21.956560 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 [markername] AA
 [markername] BB
 [markername] CC
@@ -38,7 +38,7 @@
 [markername] ZZ
 [treeopen] huc6271_render_tb.
 [sst_width] 255
-[signals_width] 279
+[signals_width] 271
 [sst_expanded] 1
 [sst_vpaned_height] 159
 @28
@@ -129,26 +129,29 @@ huc6271_render_tb.vpu.dct_ictbl_widx[5:0]
 huc6271_render_tb.vpu.dct_ictbl_wd[31:0]
 @28
 huc6271_render_tb.vpu.dct_ictbl_we
+@22
+huc6271_render_tb.vpu.dcts_store[3:0]
+@28
+huc6271_render_tb.vpu.dct_sync_store
+huc6271_render_tb.vpu.dct_store_act
 @24
 huc6271_render_tb.vpu.dct_idy[2:0]
 huc6271_render_tb.vpu.dct_idx[2:0]
-@28
-huc6271_render_tb.vpu.dct_idcnt
 @22
 huc6271_render_tb.vpu.dct_raddr[12:0]
+@23
 huc6271_render_tb.vpu.dct_rdata[7:0]
 @28
 huc6271_render_tb.vpu.dct_rwe
 @22
 huc6271_render_tb.vpu.idct_step[5:0]
 @28
+huc6271_render_tb.vpu.idct_act
 huc6271_render_tb.vpu.idct_done
 huc6271_render_tb.vpu.vo_hact
 huc6271_render_tb.vpu.vo_ract
 huc6271_render_tb.vpu.vo_rtrg
-@29
 huc6271_render_tb.vpu.vo_roff_en
-@28
 huc6271_render_tb.vpu.vo_roff[2:0]
 @22
 huc6271_render_tb.vpu.vo_raddr[12:0]
