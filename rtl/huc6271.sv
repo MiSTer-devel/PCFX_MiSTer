@@ -345,7 +345,6 @@ logic [31:0]    dct_ictbl_wd;
 logic           dct_ictbl_we;
 logic [7:0]     dct_idtbl [8][8];
 logic [2:0]     dct_idx, dct_idy;
-logic           dct_idcnt;
 logic           dct_store_done;
 logic [12:0]    dct_raddr;
 logic [7:0]     dct_rdata;
@@ -470,19 +469,17 @@ always @(posedge CLK) if (CE) begin
                 else
                     dctds <= DCTDS_AC_CODE;
 
-                if (dct_ic_cnt == 6'd63)
+                dct_ic_cnt <= dct_ic_cnt + 1'd1;
+                if (dct_ic_cnt + 1'd1 == 6'd63)
                     dctds <= DCTDS_DONE;
-                else
-                    dct_ic_cnt <= dct_ic_cnt + 1'd1;
             end
             DCTDS_AC_END: begin
                 dct_ictbl_we <= '1;
                 dct_ac_zero <= '1;
 
-                if (dct_ic_cnt == 6'd63)
+                dct_ic_cnt <= dct_ic_cnt + 1'd1;
+                if (dct_ic_cnt + 1'd1 == 6'd63)
                     dctds <= DCTDS_DONE;
-                else
-                    dct_ic_cnt <= dct_ic_cnt + 1'd1;
             end
             default: ;
         endcase
@@ -828,28 +825,23 @@ always @* begin
     if (dct_plane_y)
         dct_raddr = {dct_plane_ynn[0], dct_idy, dct_col, dct_plane_ynn[1], dct_idx[2:1], 1'b0, dct_idx[0]};
     else
-        dct_raddr = {dct_idy, dct_idcnt, dct_col, dct_idx, 1'b1, dct_plane_v};
+        dct_raddr = {dct_idy, 1'b0, dct_col, dct_idx, 1'b1, dct_plane_v};
     dct_rdata = dct_idtbl[dct_idy][dct_idx];
 end
 
 always @(posedge CLK) if (CE) begin
     if (dctps != DCTPS_STORE) begin
-        dct_idcnt <= '0;
         dct_idx <= '0;
         dct_idy <= '0;
     end
     else if (~dct_store_done) begin
-        if (~dct_plane_y)
-            dct_idcnt <= dct_idcnt + 1'd1;
-        if (dct_plane_y | &dct_idcnt) begin
-            dct_idx <= dct_idx + 1'd1;
-            if (&dct_idx)
-                dct_idy <= dct_idy + 1'd1;
-        end
+        dct_idx <= dct_idx + 1'd1;
+        if (&dct_idx)
+            dct_idy <= dct_idy + 1'd1;
     end
 end
 
-assign dct_store_done = &dct_idx & &dct_idy & (dct_plane_y | &dct_idcnt);
+assign dct_store_done = &dct_idx & &dct_idy;
 
 `ifdef TB_VPU
 task dump_ictbl;
@@ -1085,7 +1077,7 @@ localparam [9:0] VO_HACT_START = 10'd62;
 localparam [9:0] VO_HACT_END   = VO_HACT_START + 10'd256;
 localparam [9:0] VO_RACT_START = VO_HACT_START - 10'd1;
 
-logic [12:0]    vo_raddr;
+logic [12:0]    vo_rcnt, vo_raddr;
 logic [7:0]     vo_rdata;
 logic [31:0]    vo_rbuf1, vo_rbuf2, vo_rbuf2_d;
 logic           vo_ract, vo_rtrg;
@@ -1098,12 +1090,12 @@ logic [2:0]     vo_roff;
 wire vo_valid = dec_valid[~rbsel];
 wire vo_vdmode = dec_vdmode[~rbsel];
 wire vo_ract_pos = (h_cnt == VO_RACT_START);
-wire vo_ract_neg = vo_rtrg & &vo_raddr[8:0];
+wire vo_ract_neg = vo_rtrg & &vo_rcnt[8:0];
 wire vo_hact_p = (h_cnt >= VO_HACT_START) & (h_cnt < VO_HACT_END);
 
 always @(posedge CLK) begin
     if (~RESn | ~vo_valid) begin
-        vo_raddr <= '0;
+        vo_rcnt <= '0;
         vo_hact <= '0;
         vo_ract <= '0;
         vo_rtrg <= '0;
@@ -1119,7 +1111,7 @@ always @(posedge CLK) begin
             if (vo_ract) begin
                 vo_rtrg <= ~vo_rtrg;
                 if (vo_rtrg)
-                    vo_raddr <= vo_raddr + 1'd1;
+                    vo_rcnt <= vo_rcnt + 1'd1;
             end
             else
                 vo_rtrg <= '0;
@@ -1139,6 +1131,14 @@ end
 
 assign vo_rre = vo_rtrg;
 
+always @* begin
+    vo_raddr = vo_rcnt;
+    if (vo_vdmode)
+        // U/V are only stored in even rows.
+        if (vo_raddr[1])
+            vo_raddr[9] = 1'b0; // matches 1'b0 in dct_raddr above
+end
+
 always @(posedge CLK) if (CE) begin
     vo_rbuf2_d <= vo_rbuf2;
 
@@ -1152,7 +1152,7 @@ end
 
 always @* begin
     vo_rbuf2 = vo_rbuf2_d;
-    if (~|vo_raddr[1:0])
+    if (~|vo_rcnt[1:0])
         vo_rbuf2 = vo_rbuf1;
 end
 
