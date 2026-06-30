@@ -320,45 +320,46 @@ typedef enum bit [2:0]
     DCTDS_DONE
 } dctds_t;
 
-dcts_t          dcts;
-dctps_t         dctps;
-dctds_t         dctds;
-logic [3:0]     dct_col;
-logic           dct_plane_y, dct_plane_u, dct_plane_v;
-logic [7:0]     dct_iqtbl [128];
-logic [6:0]     dct_iqtbl_widx;
-logic [7:0]     dct_iq;
-logic [22:0]    dct_bits_buf;
-logic [5:0]     dct_bits_cnt;
-logic [5:0]     dct_bits_pop_cnt, dct_bits_peek_cnt;
-logic [15:0]    dct_bits_pop, dct_bits_pop_mse;
-logic           dct_bits_ready;
-logic [7:0]     dct_bits_code, dct_bits_code_d;
-logic [3:0]     dct_qc;
-logic [5:0]     dct_ic_cnt;
-logic [15:0]    dct_dc_y, dct_dc_u, dct_dc_v;
-logic [3:0]     dct_ac_zeros;
-logic [15:0]    dct_ac_val;
-logic           dct_ac_zero;
-logic [15:0]    dct_acdc;
-logic [31:0]    dct_ictbl [64]; // TODO: Minimize element size
-logic [5:0]     dct_ictbl_widx;
-logic [31:0]    dct_ictbl_wd;
-logic           dct_ictbl_we;
-logic           idct_act;
-logic           idct_input_done;
-logic           idct_done;
-logic [7:0]     dct_idtbl [8][8];
-logic [2:0]     dct_idx, dct_idy;
-logic           dct_store_act;
-dcts_t          dcts_store;
-logic [3:0]     dct_store_col;
-logic           dct_store_plane_y, dct_store_plane_v;
-logic [1:0]     dct_store_plane_ynn;
-logic           dct_sync_store;
-logic [12:0]    dct_raddr;
-logic [7:0]     dct_rdata;
-logic           dct_rwe;
+dcts_t              dcts;
+dctps_t             dctps;
+dctds_t             dctds;
+logic [3:0]         dct_col;
+logic               dct_plane_y, dct_plane_u, dct_plane_v;
+logic [7:0]         dct_iqtbl [128];
+logic [6:0]         dct_iqtbl_widx;
+logic [7:0]         dct_iq;
+logic [22:0]        dct_bits_buf;
+logic [5:0]         dct_bits_cnt;
+logic [5:0]         dct_bits_pop_cnt, dct_bits_peek_cnt;
+logic [11:0]        dct_bits_pop;
+logic signed [11:0] dct_bits_pop_mse;
+logic               dct_bits_ready;
+logic [7:0]         dct_bits_code, dct_bits_code_d;
+logic [3:0]         dct_qc;
+logic [5:0]         dct_ic_cnt;
+logic signed [8:0]  dct_dc_y, dct_dc_u, dct_dc_v;
+logic [3:0]         dct_ac_zeros;
+logic signed [8:0]  dct_ac_val;
+logic               dct_ac_zero;
+logic signed [8:0]  dct_acdc;
+logic signed [17:0] dct_ictbl [64];
+logic [5:0]         dct_ictbl_widx;
+logic signed [17:0] dct_ictbl_wd;
+logic               dct_ictbl_we;
+logic               idct_act;
+logic               idct_input_done;
+logic               idct_done;
+logic [7:0]         dct_idtbl [8][8];
+logic [2:0]         dct_idx, dct_idy;
+logic               dct_store_act;
+dcts_t              dcts_store;
+logic [3:0]         dct_store_col;
+logic               dct_store_plane_y, dct_store_plane_v;
+logic [1:0]         dct_store_plane_ynn;
+logic               dct_sync_store;
+logic [12:0]        dct_raddr;
+logic [7:0]         dct_rdata;
+logic               dct_rwe;
 
 always @(posedge CLK) if (CE) begin
     dct_ictbl_we <= '0;
@@ -550,7 +551,7 @@ end
 wire dct_bits_full = dct_bits_cnt > 6'($size(dct_bits_buf) - 8);
 assign si_busy_dct = (dctds != DCTDS_INIT) & dct_bits_full;
 
-task dct_bits_get(input [5:0] cnt, output [15:0] pbuf);
+task dct_bits_get(input [5:0] cnt, output [11:0] pbuf);
     pbuf = $size(pbuf)'(dct_bits_buf >> (dct_bits_cnt - cnt));
 endtask
 
@@ -763,14 +764,14 @@ always @(posedge CLK) if (CE) begin
             end
             DCTDS_DC_K: begin
                 if (dct_plane_y)
-                    dct_dc_y <= dct_dc_y + dct_bits_pop_mse;
+                    dct_dc_y <= dct_dc_y + $size(dct_dc_y)'(dct_bits_pop_mse);
                 else if (dct_plane_u)
-                    dct_dc_u <= dct_dc_u + dct_bits_pop_mse;
+                    dct_dc_u <= dct_dc_u + $size(dct_dc_y)'(dct_bits_pop_mse);
                 else if (dct_plane_v)
-                    dct_dc_v <= dct_dc_v + dct_bits_pop_mse;
+                    dct_dc_v <= dct_dc_v + $size(dct_dc_y)'(dct_bits_pop_mse);
             end
             DCTDS_AC_K: begin
-                dct_ac_val <= dct_bits_pop_mse;
+                dct_ac_val <= $size(dct_ac_val)'(dct_bits_pop_mse);
                 if (dct_bits_pop_mse == '0 && dct_ac_zeros == 4'd1)
                     dct_ac_zeros <= 4'd15;
             end
@@ -828,7 +829,7 @@ logic [5:0] dct_zigzag_tbl [64] = '{
 };
 
 assign dct_ictbl_widx = dct_zigzag_tbl[dct_ic_cnt];
-assign dct_ictbl_wd = $signed(9'(dct_iq)) * $signed(dct_acdc);
+assign dct_ictbl_wd = $signed(9'(dct_iq)) * dct_acdc;
 
 always @(posedge CLK) if (CE) begin
     if (dct_ictbl_we)
@@ -883,7 +884,7 @@ task dump_ictbl;
              3'(dcts - DCTS_Y00 + 1));
 /* -----\/----- EXCLUDED -----\/-----
     for (int i = 0; i < 64; i += 8) begin
-        $display("%02x: %08x %08x %08x %08x %08x %08x %08x %08x", i[5:0],
+        $display("%02x: %05x %05x %05x %05x %05x %05x %05x %05x", i[5:0],
                  dct_ictbl[i+0], dct_ictbl[i+1], dct_ictbl[i+2], dct_ictbl[i+3],
                  dct_ictbl[i+4], dct_ictbl[i+5], dct_ictbl[i+6], dct_ictbl[i+7]);
     end
@@ -894,10 +895,12 @@ endtask
 //////////////////////////////////////////////////////////////////////
 // 2-D 8x8 Inverse Discrete Cosine Transform
 
-logic [7:0] [31:0]  idct_bufr1 [5];
-logic [7:0] [31:0]  idct_bufr2 [5];
-logic [7:0] [31:0]  idct_bufrt [8];
-logic [5:0]         idct_step;
+localparam IDW = 24;
+
+logic [7:0] [IDW-1:0] idct_bufr1 [5];
+logic [7:0] [IDW-1:0] idct_bufr2 [5];
+logic [7:0] [IDW-1:0] idct_bufrt [8];
+logic [5:0]           idct_step;
 
 always @(posedge CLK) if (CE) begin
     idct_input_done <= '0;
@@ -926,35 +929,37 @@ end
 `define EFF_RSHIFT_1D_COEFF 2
 `define EFF_RSHIFT_1D_POST  6
 `define EFF_RSHIFT_2D ((`EFF_RSHIFT_1D_COEFF) * 2 + `EFF_RSHIFT_1D_POST - 1)
-`define C_COEFF(m) (int'((1 << (32 - `EFF_RSHIFT_1D_COEFF)) * (m) + 0.5))
+`define C_COEFF(m) (IDW'(int'((1 << (IDW - `EFF_RSHIFT_1D_COEFF)) * (m) + 0.5)))
 
 `ifdef TB_VPU
 integer      fout = $fopen("huc6271_yuvblk.hex", "w");
 `endif
 
-function [7:0] idct_clamp(input signed [31:0] din);
+function [7:0] idct_clamp(input signed [IDW-1:0] din);
     idct_clamp = din[7:0];
-    if (din < 32'sd0)
+    if (din < IDW'(0))
         idct_clamp = 8'd0;
-    else if (din > 32'sd255)
+    else if (din > IDW'(255))
         idct_clamp = 8'd255;
 endfunction
 
 task idct_run(input int stage);
-static logic [7:0] [31:0] bufro [8];
+`ifdef TB_VPU
+static logic [7:0] [IDW-1:0] bufro [8];
+`endif
 int              i;
 
     // Input to first IDCT as rows
     if (stage >= 0 && stage <= 7) begin
         i = stage - 0;
         for (int j = 0; j < 8; j++)
-            idct_bufr1[0][j] <= dct_ictbl[i*8+j];
+            idct_bufr1[0][j] <= IDW'(dct_ictbl[i*8+j]);
     end
 
     // First 1-D IDCT processes each row
     if (stage >= 1 && stage <= 11) begin
         for (int s = 0; s < 4; s++) begin
-        logic [7:0] [31:0] c_out;
+        logic [7:0] [IDW-1:0] c_out;
             hack_IDCT_1D(s, idct_bufr1[s], c_out, 0);
             idct_bufr1[s+1] <= c_out;
         end
@@ -985,7 +990,7 @@ int              i;
     // Second 1-D IDCT processes each column
     if (stage >= 14 && stage <= 24) begin
         for (int s = 0; s < 4; s++) begin
-        logic [7:0] [31:0] c_out;
+        logic [7:0] [IDW-1:0] c_out;
             hack_IDCT_1D(s, idct_bufr2[s], c_out, `EFF_RSHIFT_1D_POST);
             idct_bufr2[s+1] <= c_out;
         end
@@ -1002,8 +1007,10 @@ int              i;
     if (stage >= 18 && stage <= 25) begin
         i = stage - 18;
         for (int j = 0; j < 8; j++) begin
+`ifdef TB_VPU
             bufro[j][i] <= idct_bufr2[4][j];
-            dct_idtbl[j][i] <= idct_clamp(idct_bufr2[4][j] + 32'sd128);
+`endif
+            dct_idtbl[j][i] <= idct_clamp(idct_bufr2[4][j] + IDW'(128));
         end
     end
 
@@ -1021,13 +1028,13 @@ final
     $fclose(fout);
 `endif
 
-task hack_IDCT_1D(input int           step,
-                  input [7:0] [31:0]  c_in,
-                  output [7:0] [31:0] c_out,
-                  input int           psh);
+task hack_IDCT_1D(input int                 step,
+                  input [7:0] [IDW-1:0]     c_in,
+                  output [7:0] [IDW-1:0]    c_out,
+                  input int                 psh);
 
-const static logic signed [31:0] coeffs [10] = '{
-    1779033704,
+const static logic signed [IDW-1:0] coeffs [10] = '{
+    0, // unused
 
     `C_COEFF( 0.5411961001461970), 
     `C_COEFF(-1.8477590650225736),
@@ -1041,13 +1048,13 @@ const static logic signed [31:0] coeffs [10] = '{
     `C_COEFF( 0.7856949583871022),
     `C_COEFF(-1.1758756024193586)
 };
-logic signed [31:0] c [8];
+logic signed [IDW-1:0] c [8];
 
     for (int i = 0; i < 8; i++)
         c[i] = c_in[i];
 
     if (step == 0) begin
-    logic signed [31:0] m;
+    logic signed [IDW-1:0] m;
         if (psh == 0) begin
             c_out[0] = c[0] << (`IDCT_PRESHIFT - `EFF_RSHIFT_1D_COEFF);
             c_out[4] = c[4] << (`IDCT_PRESHIFT - `EFF_RSHIFT_1D_COEFF);
@@ -1072,9 +1079,9 @@ logic signed [31:0] c [8];
             c_out[3] = (c[5] * 181) >>> 7;
             c_out[5] = (c[3] * 181) >>> 7;
 
-            m = 32'((64'(coeffs[1]) * 32'(c[2] + c[6])) >>> 32);
-            c_out[2] = 32'((64'(coeffs[2]) * c[6]) >>> 32) + m;
-            c_out[6] = 32'((64'(coeffs[3]) * c[2]) >>> 32) + m;
+            m = IDW'(((IDW*2)'(coeffs[1]) * IDW'(c[2] + c[6])) >>> IDW);
+            c_out[2] = IDW'(((IDW*2)'(coeffs[2]) * c[6]) >>> IDW) + m;
+            c_out[6] = IDW'(((IDW*2)'(coeffs[3]) * c[2]) >>> IDW) + m;
         end
     end
 
@@ -1086,16 +1093,16 @@ logic signed [31:0] c [8];
     end
     
     if (step == 2) begin
-    logic signed [31:0] m1, r1;
-    logic signed [31:0] m2, r2;
-        m1 = 32'((64'(coeffs[4]) * 32'(c[7] + c[1])) >>> 32);
-        r1 = 32'((64'(coeffs[5]) * c[1]) >>> 32) + m1;
-        c_out[1] = 32'((64'(coeffs[6]) * c[7]) >>> 32) - m1;
+    logic signed [IDW-1:0] m1, r1;
+    logic signed [IDW-1:0] m2, r2;
+        m1 = IDW'(((IDW*2)'(coeffs[4]) * IDW'(c[7] + c[1])) >>> IDW);
+        r1 = IDW'(((IDW*2)'(coeffs[5]) * c[1]) >>> IDW) + m1;
+        c_out[1] = IDW'(((IDW*2)'(coeffs[6]) * c[7]) >>> IDW) - m1;
         c_out[7] = r1;
 
-        m2 = 32'((64'(coeffs[7]) * 32'(c[3] + c[5])) >>> 32);
-        r2 = 32'((64'(coeffs[8]) * c[5]) >>> 32) + m2;
-        c_out[5] = 32'((64'(coeffs[9]) * c[3]) >>> 32) + m2;
+        m2 = IDW'(((IDW*2)'(coeffs[7]) * IDW'(c[3] + c[5])) >>> IDW);
+        r2 = IDW'(((IDW*2)'(coeffs[8]) * c[5]) >>> IDW) + m2;
+        c_out[5] = IDW'(((IDW*2)'(coeffs[9]) * c[3]) >>> IDW) + m2;
         c_out[3] = r2;
 
         {c_out[0], c_out[6]} = {c[0] + c[6], c[0] - c[6]};
