@@ -370,7 +370,6 @@ always @(posedge CLK) if (CE) begin
         DCTS_INIT: begin
             dct_col <= '0;
             dctds <= DCTDS_INIT;
-            dct_store_act <= '0;
             dcts_store <= DCTS_INIT;
             dct_store_col <= '0;
             if (si_block & si_hdr_dct) begin
@@ -475,10 +474,8 @@ always @(posedge CLK) if (CE) begin
         DCTDS_AC_STORE: begin
             dct_ictbl_we <= '1;
 
-            if (dct_ac_zeros != '0) begin
+            if (dct_ac_zeros != '0)
                 dct_ac_zero <= '1;
-                dct_ac_zeros <= dct_ac_zeros - 1'd1;
-            end
             else
                 dctds <= DCTDS_AC_CODE;
 
@@ -748,6 +745,11 @@ always @(posedge CLK) if (CE) begin
         dct_ac_zeros <= '0;
         dct_ac_val <= '0;
     end
+    else if (dctds == DCTDS_AC_STORE) begin
+        if (dct_ac_zeros != '0) begin
+            dct_ac_zeros <= dct_ac_zeros - 1'd1;
+        end
+    end
     else if (dct_bits_ready) begin
         case (dctds)
             DCTDS_DC_CODE: begin
@@ -874,6 +876,9 @@ always @(posedge CLK) if (CE) begin
         if (&dct_idx & &dct_idy)
             dct_store_act <= '0;
     end
+
+    if (dcts == DCTS_INIT)
+        dct_store_act <= '0;
 end
 
 assign dct_sync_store = ~idct_act & ~dct_store_act;
@@ -928,8 +933,7 @@ end
 `define IDCT_PRESHIFT 9
 `define EFF_RSHIFT_1D_COEFF 2
 `define EFF_RSHIFT_1D_POST  6
-`define EFF_RSHIFT_2D ((`EFF_RSHIFT_1D_COEFF) * 2 + `EFF_RSHIFT_1D_POST - 1)
-`define C_COEFF(m) (IDW'(int'((1 << (IDW - `EFF_RSHIFT_1D_COEFF)) * (m) + 0.5)))
+`define C_COEFF(m) (IDW'((m) >>> (30 - (IDW - `EFF_RSHIFT_1D_COEFF))))
 
 `ifdef TB_VPU
 integer      fout = $fopen("huc6271_yuvblk.hex", "w");
@@ -947,7 +951,7 @@ task idct_run(input int stage);
 `ifdef TB_VPU
 static logic [7:0] [IDW-1:0] bufro [8];
 `endif
-int              i;
+int i;
 
     // Input to first IDCT as rows
     if (stage >= 0 && stage <= 7) begin
@@ -1033,20 +1037,18 @@ task hack_IDCT_1D(input int                 step,
                   output [7:0] [IDW-1:0]    c_out,
                   input int                 psh);
 
-const static logic signed [IDW-1:0] coeffs [10] = '{
-    0, // unused
+const static logic signed [IDW-1:0] coeffs [9] = '{
+    `C_COEFF(  581104888), //  0.5411961001461970 * 2^30 + 0.5
+    `C_COEFF(-1984016189), // -1.8477590650225736 * 2^30 + 0.5
+    `C_COEFF(  821806413), //  0.7653668647301796 * 2^30 + 0.5
 
-    `C_COEFF( 0.5411961001461970), 
-    `C_COEFF(-1.8477590650225736),
-    `C_COEFF( 0.7653668647301796),
+    `C_COEFF( -596538995), // -0.5555702330196022 * 2^30 + 0.5
+    `C_COEFF( 1489322693), //  1.3870398453221474 * 2^30 + 0.5
+    `C_COEFF(  296244703), //  0.2758993792829430 * 2^30 + 0.5
 
-    `C_COEFF(-0.5555702330196022),
-    `C_COEFF( 1.3870398453221474),
-    `C_COEFF( 0.2758993792829430),
-
-    `C_COEFF( 0.1950903220161282),
-    `C_COEFF( 0.7856949583871022),
-    `C_COEFF(-1.1758756024193586)
+    `C_COEFF(  209476638), //  0.1950903220161282 * 2^30 + 0.5
+    `C_COEFF(  843633538), //  0.7856949583871022 * 2^30 + 0.5
+    `C_COEFF(-1262586814)  // -1.1758756024193586 * 2^30 + 0.5
 };
 logic signed [IDW-1:0] c [8];
 
@@ -1062,26 +1064,26 @@ logic signed [IDW-1:0] c [8];
             c_out[7] = (c[7] + c[1]) << `IDCT_PRESHIFT;
             c_out[1] = (c[7] - c[1]) << `IDCT_PRESHIFT;
 
-            c_out[3] = (46341 * c[5]) >>> (15 - `IDCT_PRESHIFT);
-            c_out[5] = (46341 * c[3]) >>> (15 - `IDCT_PRESHIFT);
+            c_out[3] = IDW'(((IDW+18)'(46341) * c[5]) >>> (15 - `IDCT_PRESHIFT));
+            c_out[5] = IDW'(((IDW+18)'(46341) * c[3]) >>> (15 - `IDCT_PRESHIFT));
 
-            m = 35468 * (c[2] + c[6]);
-            c_out[2] = (-121095 * c[6] + m) >>> (16 - `IDCT_PRESHIFT + `EFF_RSHIFT_1D_COEFF);
-            c_out[6] = (  50159 * c[2] + m) >>> (16 - `IDCT_PRESHIFT + `EFF_RSHIFT_1D_COEFF);
+            m = IDW'((IDW+17)'(35468) * (c[2] + c[6]));
+            c_out[2] = IDW'(((IDW+18)'(-121095) * c[6] + m) >>> (16 - `IDCT_PRESHIFT + `EFF_RSHIFT_1D_COEFF));
+            c_out[6] = IDW'(((IDW+18)'(  50159) * c[2] + m) >>> (16 - `IDCT_PRESHIFT + `EFF_RSHIFT_1D_COEFF));
         end
         else begin
-            c_out[0] = (c[0] >>> `EFF_RSHIFT_1D_COEFF) + ((1 << psh) >>> 1);
+            c_out[0] = (c[0] >>> `EFF_RSHIFT_1D_COEFF) + IDW'((1 << psh) >>> 1);
             c_out[4] = c[4] >>> `EFF_RSHIFT_1D_COEFF;
 
             c_out[7] = c[7] + c[1];
             c_out[1] = c[7] - c[1];
 
-            c_out[3] = (c[5] * 181) >>> 7;
-            c_out[5] = (c[3] * 181) >>> 7;
+            c_out[3] = IDW'((c[5] * (IDW+8)'(181)) >>> 7);
+            c_out[5] = IDW'((c[3] * (IDW+8)'(181)) >>> 7);
 
-            m = IDW'(((IDW*2)'(coeffs[1]) * IDW'(c[2] + c[6])) >>> IDW);
-            c_out[2] = IDW'(((IDW*2)'(coeffs[2]) * c[6]) >>> IDW) + m;
-            c_out[6] = IDW'(((IDW*2)'(coeffs[3]) * c[2]) >>> IDW) + m;
+            m = IDW'(((IDW*2)'(coeffs[0]) * IDW'(c[2] + c[6])) >>> IDW);
+            c_out[2] = IDW'(((IDW*2)'(coeffs[1]) * c[6]) >>> IDW) + m;
+            c_out[6] = IDW'(((IDW*2)'(coeffs[2]) * c[2]) >>> IDW) + m;
         end
     end
 
@@ -1095,14 +1097,14 @@ logic signed [IDW-1:0] c [8];
     if (step == 2) begin
     logic signed [IDW-1:0] m1, r1;
     logic signed [IDW-1:0] m2, r2;
-        m1 = IDW'(((IDW*2)'(coeffs[4]) * IDW'(c[7] + c[1])) >>> IDW);
-        r1 = IDW'(((IDW*2)'(coeffs[5]) * c[1]) >>> IDW) + m1;
-        c_out[1] = IDW'(((IDW*2)'(coeffs[6]) * c[7]) >>> IDW) - m1;
+        m1 = IDW'(((IDW*2)'(coeffs[3]) * IDW'(c[7] + c[1])) >>> IDW);
+        r1 = IDW'(((IDW*2)'(coeffs[4]) * c[1]) >>> IDW) + m1;
+        c_out[1] = IDW'(((IDW*2)'(coeffs[5]) * c[7]) >>> IDW) - m1;
         c_out[7] = r1;
 
-        m2 = IDW'(((IDW*2)'(coeffs[7]) * IDW'(c[3] + c[5])) >>> IDW);
-        r2 = IDW'(((IDW*2)'(coeffs[8]) * c[5]) >>> IDW) + m2;
-        c_out[5] = IDW'(((IDW*2)'(coeffs[9]) * c[3]) >>> IDW) + m2;
+        m2 = IDW'(((IDW*2)'(coeffs[6]) * IDW'(c[3] + c[5])) >>> IDW);
+        r2 = IDW'(((IDW*2)'(coeffs[7]) * c[5]) >>> IDW) + m2;
+        c_out[5] = IDW'(((IDW*2)'(coeffs[8]) * c[3]) >>> IDW) + m2;
         c_out[3] = r2;
 
         {c_out[0], c_out[6]} = {c[0] + c[6], c[0] - c[6]};
