@@ -9,6 +9,8 @@
 // - https://github.com/libretro-mirrors/mednafen-git/blob/master/src/pcfx/idct.cpp
 // - PC-FXGA Authoring Software / GMAKER Starter Kit Plus (Ver. 1.0) / Device Description: HuC6271
 
+// TODO: Rewrite to optimize for synthesis (e.g., use RAMs)
+
 module huc6271
    (
     input             CLK,
@@ -342,7 +344,7 @@ logic [3:0]         dct_ac_zeros;
 logic signed [8:0]  dct_ac_val;
 logic               dct_ac_zero;
 logic signed [8:0]  dct_acdc;
-logic signed [17:0] dct_ictbl [64];
+logic signed [17:0] dct_ictbl [8][8];
 logic [5:0]         dct_ictbl_widx;
 logic signed [17:0] dct_ictbl_wd;
 logic               dct_ictbl_we;
@@ -835,7 +837,7 @@ assign dct_ictbl_wd = $signed(9'(dct_iq)) * dct_acdc;
 
 always @(posedge CLK) if (CE) begin
     if (dct_ictbl_we)
-        dct_ictbl[dct_ictbl_widx] <= dct_ictbl_wd;
+        dct_ictbl[dct_ictbl_widx[5:3]][dct_ictbl_widx[2:0]] <= dct_ictbl_wd;
 end
 
 // Store IDCT output to R-RAM
@@ -854,13 +856,15 @@ always @* begin
     endcase
 end
 
-always @* begin
-    dct_rwe = dct_store_act;
+always @(posedge CLK) if (CE) begin
+    dct_rwe <= dct_store_act;
     if (dct_store_plane_y)
-        dct_raddr = {dct_store_plane_ynn[0], dct_idy, dct_store_col, dct_store_plane_ynn[1], dct_idx[2:1], 1'b0, dct_idx[0]};
+        dct_raddr <= {dct_store_plane_ynn[0], dct_idy, dct_store_col, 
+                      dct_store_plane_ynn[1], dct_idx[2:1], 1'b0, dct_idx[0]};
     else
-        dct_raddr = {dct_idy, 1'b0, dct_store_col, dct_idx, 1'b1, dct_store_plane_v};
-    dct_rdata = dct_idtbl[dct_idy][dct_idx];
+        dct_raddr <= {dct_idy, 1'b0, dct_store_col, 
+                      dct_idx, 1'b1, dct_store_plane_v};
+    dct_rdata <= dct_idtbl[dct_idy][dct_idx];
 end
 
 always @(posedge CLK) if (CE) begin
@@ -888,10 +892,10 @@ task dump_ictbl;
     $display("IDCT col=%1d plane=%1d", dct_col, 
              3'(dcts - DCTS_Y00 + 1));
 /* -----\/----- EXCLUDED -----\/-----
-    for (int i = 0; i < 64; i += 8) begin
+    for (int i = 0; i < 8; i ++) begin
         $display("%02x: %05x %05x %05x %05x %05x %05x %05x %05x", i[5:0],
-                 dct_ictbl[i+0], dct_ictbl[i+1], dct_ictbl[i+2], dct_ictbl[i+3],
-                 dct_ictbl[i+4], dct_ictbl[i+5], dct_ictbl[i+6], dct_ictbl[i+7]);
+                 dct_ictbl[i][0], dct_ictbl[i][1], dct_ictbl[i][2], dct_ictbl[i][3],
+                 dct_ictbl[i][4], dct_ictbl[i][5], dct_ictbl[i][6], dct_ictbl[i][7]);
     end
  -----/\----- EXCLUDED -----/\----- */
 endtask
@@ -957,14 +961,14 @@ int i;
     if (stage >= 0 && stage <= 7) begin
         i = stage - 0;
         for (int j = 0; j < 8; j++)
-            idct_bufr1[0][j] <= IDW'(dct_ictbl[i*8+j]);
+            idct_bufr1[0][j] <= IDW'(dct_ictbl[i][j]);
     end
 
     // First 1-D IDCT processes each row
     if (stage >= 1 && stage <= 11) begin
         for (int s = 0; s < 4; s++) begin
         logic [7:0] [IDW-1:0] c_out;
-            hack_IDCT_1D(s, idct_bufr1[s], c_out, 0);
+            IDCT_1D(s, idct_bufr1[s], c_out, 0);
             idct_bufr1[s+1] <= c_out;
         end
     end
@@ -972,7 +976,9 @@ int i;
     if (stage >= 1 && stage <= 12) begin
 /* -----\/----- EXCLUDED -----\/-----
         for (int j = 0; j < 8; j++)
-            $display("%d %08x %08x %08x %08x %08x", stage, idct_bufr1[0][j], idct_bufr1[1][j], idct_bufr1[2][j], idct_bufr1[3][j], idct_bufr1[4][j]);
+            $display("%d %08x %08x %08x %08x %08x", stage, 
+                     idct_bufr1[0][j], idct_bufr1[1][j], 
+                     idct_bufr1[2][j], idct_bufr1[3][j], idct_bufr1[4][j]);
  -----/\----- EXCLUDED -----/\----- */
     end
 
@@ -986,7 +992,12 @@ int i;
     // Input to second IDCT as columns
     if (stage >= 13 && stage <= 20) begin
         i = stage - 13;
-        //$display("%d %08x %08x %08x %08x %08x %08x %08x %08x", stage, idct_bufrt[i][0], idct_bufrt[i][1], idct_bufrt[i][2], idct_bufrt[i][3], idct_bufrt[i][4], idct_bufrt[i][5], idct_bufrt[i][6], idct_bufrt[i][7]);
+/* -----\/----- EXCLUDED -----\/-----
+        $display("%d %08x %08x %08x %08x %08x %08x %08x %08x", stage, 
+                 idct_bufrt[i][0], idct_bufrt[i][1], idct_bufrt[i][2], 
+                 idct_bufrt[i][3], idct_bufrt[i][4], idct_bufrt[i][5], 
+                 idct_bufrt[i][6], idct_bufrt[i][7]);
+ -----/\----- EXCLUDED -----/\----- */
         for (int j = 0; j < 8; j++)
             idct_bufr2[0][j] <= idct_bufrt[i][j];
     end
@@ -995,7 +1006,7 @@ int i;
     if (stage >= 14 && stage <= 24) begin
         for (int s = 0; s < 4; s++) begin
         logic [7:0] [IDW-1:0] c_out;
-            hack_IDCT_1D(s, idct_bufr2[s], c_out, `EFF_RSHIFT_1D_POST);
+            IDCT_1D(s, idct_bufr2[s], c_out, `EFF_RSHIFT_1D_POST);
             idct_bufr2[s+1] <= c_out;
         end
     end
@@ -1003,7 +1014,9 @@ int i;
     if (stage >= 13 && stage <= 24) begin
 /* -----\/----- EXCLUDED -----\/-----
         for (int j = 0; j < 8; j++)
-            $display("%d %08x %08x %08x %08x %08x", stage, idct_bufr2[0][j], idct_bufr2[1][j], idct_bufr2[2][j], idct_bufr2[3][j], idct_bufr2[4][j]);
+            $display("%d %08x %08x %08x %08x %08x", stage,
+                     idct_bufr2[0][j], idct_bufr2[1][j], 
+                     idct_bufr2[2][j], idct_bufr2[3][j], idct_bufr2[4][j]);
  -----/\----- EXCLUDED -----/\----- */
     end
 
@@ -1032,10 +1045,10 @@ final
     $fclose(fout);
 `endif
 
-task hack_IDCT_1D(input int                 step,
-                  input [7:0] [IDW-1:0]     c_in,
-                  output [7:0] [IDW-1:0]    c_out,
-                  input int                 psh);
+task IDCT_1D(input int                 step,
+             input [7:0] [IDW-1:0]     c_in,
+             output [7:0] [IDW-1:0]    c_out,
+             input int                 psh);
 
 const static logic signed [IDW-1:0] coeffs [9] = '{
     `C_COEFF(  581104888), //  0.5411961001461970 * 2^30 + 0.5
@@ -1068,8 +1081,10 @@ logic signed [IDW-1:0] c [8];
             c_out[5] = IDW'(((IDW+18)'(46341) * c[3]) >>> (15 - `IDCT_PRESHIFT));
 
             m = IDW'((IDW+17)'(35468) * (c[2] + c[6]));
-            c_out[2] = IDW'(((IDW+18)'(-121095) * c[6] + m) >>> (16 - `IDCT_PRESHIFT + `EFF_RSHIFT_1D_COEFF));
-            c_out[6] = IDW'(((IDW+18)'(  50159) * c[2] + m) >>> (16 - `IDCT_PRESHIFT + `EFF_RSHIFT_1D_COEFF));
+            c_out[2] = IDW'(((IDW+18)'(-121095) * c[6] + m)
+                            >>> (16 - `IDCT_PRESHIFT + `EFF_RSHIFT_1D_COEFF));
+            c_out[6] = IDW'(((IDW+18)'(  50159) * c[2] + m)
+                            >>> (16 - `IDCT_PRESHIFT + `EFF_RSHIFT_1D_COEFF));
         end
         else begin
             c_out[0] = (c[0] >>> `EFF_RSHIFT_1D_COEFF) + IDW'((1 << psh) >>> 1);
