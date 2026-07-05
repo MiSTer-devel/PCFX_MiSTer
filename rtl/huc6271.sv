@@ -344,9 +344,9 @@ logic [3:0]         dct_ac_zeros;
 logic signed [8:0]  dct_ac_val;
 logic               dct_ac_zero;
 logic signed [8:0]  dct_acdc;
-logic signed [17:0] dct_ictbl [8][8];
+logic signed [15:0] dct_ictbl [8][8];
 logic [5:0]         dct_ictbl_widx;
-logic signed [17:0] dct_ictbl_wd;
+logic signed [15:0] dct_ictbl_wd;
 logic               dct_ictbl_we;
 logic               idct_act;
 logic               idct_input_done;
@@ -833,7 +833,7 @@ logic [5:0] dct_zigzag_tbl [64] = '{
 };
 
 assign dct_ictbl_widx = dct_zigzag_tbl[dct_ic_cnt];
-assign dct_ictbl_wd = $signed(9'(dct_iq)) * dct_acdc;
+assign dct_ictbl_wd = $size(dct_ictbl_wd)'($signed(9'(dct_iq)) * dct_acdc);
 
 always @(posedge CLK) if (CE) begin
     if (dct_ictbl_we)
@@ -1077,13 +1077,13 @@ logic signed [IDW-1:0] c [8];
             c_out[7] = (c[7] + c[1]) << `IDCT_PRESHIFT;
             c_out[1] = (c[7] - c[1]) << `IDCT_PRESHIFT;
 
-            c_out[3] = IDW'(((IDW+18)'(46341) * c[5]) >>> (15 - `IDCT_PRESHIFT));
-            c_out[5] = IDW'(((IDW+18)'(46341) * c[3]) >>> (15 - `IDCT_PRESHIFT));
+            c_out[3] = IDW'((33'(46341) * c[5]) >>> (15 - `IDCT_PRESHIFT));
+            c_out[5] = IDW'((33'(46341) * c[3]) >>> (15 - `IDCT_PRESHIFT));
 
-            m = IDW'((IDW+17)'(35468) * (c[2] + c[6]));
-            c_out[2] = IDW'(((IDW+18)'(-121095) * c[6] + m)
+            m = IDW'(33'(35468) * IDW'(c[2] + c[6]));
+            c_out[2] = IDW'((34'(-121095) * c[6] + 34'(m))
                             >>> (16 - `IDCT_PRESHIFT + `EFF_RSHIFT_1D_COEFF));
-            c_out[6] = IDW'(((IDW+18)'(  50159) * c[2] + m)
+            c_out[6] = IDW'((34'(  50159) * c[2] + 34'(m))
                             >>> (16 - `IDCT_PRESHIFT + `EFF_RSHIFT_1D_COEFF));
         end
         else begin
