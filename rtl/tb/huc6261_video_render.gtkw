@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v4.0.0-prealpha (8ba24ab+) (w)1999-2022 BSI
-[*] Wed Jun  3 06:25:11 2026
+[*] Sun Jul  5 20:02:23 2026
 [*]
 [dumpfile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/huc6261_video_render_tb.vcd"
-[dumpfile_mtime] "Wed Jun  3 06:18:42 2026"
-[dumpfile_size] 355171278
+[dumpfile_mtime] "Sun Jul  5 19:33:26 2026"
+[dumpfile_size] 424701692
 [savefile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/huc6261_video_render.gtkw"
-[timestart] 0
+[timestart] 64775
 [size] 1333 600
 [pos] -1 -1
-*-19.824339 884880 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+*-7.824339 65040 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 [markername] AA
 [markername] BB
 [markername] CC
@@ -37,6 +37,9 @@
 [markername] YY
 [markername] ZZ
 [treeopen] huc6261_video_render_tb.
+[treeopen] huc6261_video_render_tb.mmc.
+[treeopen] huc6261_video_render_tb.mmc.c30xfer.
+[treeopen] huc6261_video_render_tb.mmc.c71xfer.
 [treeopen] huc6261_video_render_tb.vpu.
 [sst_width] 255
 [signals_width] 229
@@ -61,13 +64,33 @@ huc6261_video_render_tb.mmc.c71xfer.KBUS_DO[7:0]
 @1000200
 -mmc.c71xfer
 @800200
+-mmc.c30xfer
+@28
+huc6261_video_render_tb.mmc.cpuif.CE
+huc6261_video_render_tb.mmc.c30xfer.start
+huc6261_video_render_tb.mmc.c30xfer.csel
+huc6261_video_render_tb.mmc.c30xfer.M_REQ
+huc6261_video_render_tb.mmc.c30xfer.M_ACK
+huc6261_video_render_tb.mmc.c30xfer.m_a0
+huc6261_video_render_tb.mmc.c30xfer.m_ready
+@22
+huc6261_video_render_tb.mmc.c30xfer.M_A[17:0]
+@28
+huc6261_video_render_tb.mmc.c30xfer.kbus_ack
+@29
+huc6261_video_render_tb.mmc.c30xfer.KBUS_RHnL
+@28
+huc6261_video_render_tb.mmc.c30xfer.KBUS_CSn[1:0]
+@22
+huc6261_video_render_tb.mmc.c30xfer.KBUS_DO[7:0]
+@1000200
+-mmc.c30xfer
+@800200
 -vpu
 @28
 huc6261_video_render_tb.vpu.KBUS_REQ
 huc6261_video_render_tb.vpu.KBUS_ACK
-@29
 huc6261_video_render_tb.vpu.sist[2:0]
-@28
 huc6261_video_render_tb.vpu.dec_act
 @1000200
 -vpu

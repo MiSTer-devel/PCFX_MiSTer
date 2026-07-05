@@ -21,6 +21,7 @@ module huc6272_c71xfer
     output [7:0]  KBUS_DO,
     input         KBUS_REQ,
     output        KBUS_ACK,
+    input         KBUS_HOLDn,
 
     // Memory client interface
     output        M_BA,
@@ -88,7 +89,7 @@ always @(posedge CLK) if (CE) begin
                 end
                 row_cnt <= row_cnt - 1'd1;
             end
-            if (kbus_ack & m_a0)
+            if (KBUS_ACK & m_a0)
                 addr <= addr + 1'd1;
         end
     end
@@ -114,7 +115,7 @@ always @(posedge CLK) begin
         if (CE) begin
             if (KBUS_REQ & ~kbus_ack & m_ready)
                 kbus_ack <= '1;
-            else if (kbus_ack) begin
+            else if (KBUS_ACK) begin
 `ifdef HUC6272_DUMP_C71XFER
                 $fwrite(fdat, "%c", KBUS_DO);
 `endif
@@ -128,10 +129,11 @@ always @(posedge CLK) begin
 end
 
 wire page = 1'b0; // TODO: wire up to R.0F
+wire [7:0] kbus_do = ~m_a0 ? m_di[0+:8] : m_di[8+:8];
+wire kbus_doe = kbus_ack & KBUS_HOLDn;
 
-// Data is stored big-endian? Or is K-BUS 16 bits wide?
-assign KBUS_DO = ~m_a0 ? m_di[0+:8] : m_di[8+:8];
-assign KBUS_ACK = kbus_ack;
+assign KBUS_DO = kbus_doe ? kbus_do : '0;
+assign KBUS_ACK = kbus_doe;
 
 assign M_BA = rf_c71xfer.kba;
 assign M_A = {page, addr};

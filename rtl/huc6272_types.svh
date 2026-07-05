@@ -96,3 +96,29 @@ typedef struct packed {
     logic [8:0]    rm; // raster monitor
 } rf_c71xfer_t;
 
+//////////////////////////////////////////////////////////////////////
+// HuC6230 data transfer
+
+typedef struct packed {
+    logic [2:1]     ren;
+    logic [1:0]     div;
+    logic [2:1]     rng;
+    logic [2:1]     bend;
+    logic [2:1]     bhlf;
+    logic           kba1;
+    logic [16:8]    kasta1;
+    logic [16:0]    kaend1;
+    logic [16:6]    kahlf1;
+    logic           kba2;
+    logic [16:8]    kasta2;
+    logic [16:0]    kaend2;
+    logic [16:6]    kahlf2;
+
+    logic           ren_ws;
+    logic           reset_int;
+} rf_c30xfer_t;
+
+typedef struct packed {
+    logic [2:1]     send;
+    logic [2:1]     shlf;
+} st_c30xfer_t;

@@ -95,6 +95,12 @@ task load_kreg();
     reg_write(7'h43, 16'h000f); // RCOUNT
     reg_write(7'h44, 16'h0000); // RIRQLINE
     reg_write(7'h40, 16'h0001); // RTCTRL
+    // ADPCM (SOUNDBOX)
+    reg_write(7'h58, 16'h0080); // SA0
+    reg32_write(7'h59, 32'h0000df87); // EA0
+    reg_write(7'h5c, 16'h0080); // SA1
+    reg32_write(7'h5d, 32'h0000df87); // EA1
+    reg_write(7'h50, 16'h0003); // CTRL
     // MPROG
     reg_write(7'h13, 16'h0000); // uAddr=0
     reg_write(7'h14, 16'h0100); // 0

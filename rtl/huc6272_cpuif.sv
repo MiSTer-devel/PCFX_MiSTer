@@ -24,9 +24,11 @@ module huc6272_cpuif
     output        rf_scsi_t rf_scsi,
     output        rf_bgm_t rf_bgm,
     output        rf_c71xfer_t rf_c71xfer,
+    output        rf_c30xfer_t rf_c30xfer,
 
     // Status
     input         st_scsi_t st_scsi,
+    input         st_c30xfer_t st_c30xfer,
 
     // Memory client interface
     output        M_BA,
@@ -51,6 +53,10 @@ logic [6:0]     rsel;
 logic [31:0]    dout;
 logic           rbusy;
 
+logic           scsi_reset_int;
+logic           c30xfer_ren_ws;
+logic           c30xfer_reset_int;
+
 kradr_t         krra, krwa;
 logic [15:0]    krd;
 logic           krwr_pend;
@@ -63,7 +69,6 @@ logic           mpwr_pend;
 always @(posedge CLK) if (CE) begin
     rf_scsi.start_dma_tx <= '0;
     rf_scsi.start_dma_rx <= '0;
-    rf_scsi.reset_int <= '0;
     rf_scsi.rxbuf_rd <= '0;
 
     if (~RESn) begin
@@ -71,6 +76,7 @@ always @(posedge CLK) if (CE) begin
         rf_scsi <= '0;
         rf_bgm <= '0;
         rf_c71xfer <= '0;
+        rf_c30xfer <= '0;
         krra <= '0;
         krwa <= '0;
         krd <= '0;
@@ -78,6 +84,9 @@ always @(posedge CLK) if (CE) begin
         krwr_act <= '0;
         krrd_done <= '0;
         mpwr_pend <= '0;
+        scsi_reset_int <= '0;
+        c30xfer_ren_ws <= '0;
+        c30xfer_reset_int <= '0;
     end
     else begin
         if (~CSn & ~WRn & BUSYn) begin
@@ -178,6 +187,33 @@ always @(posedge CLK) if (CE) begin
                         7'h42: rf_c71xfer.tsr <= DI[8:0];
                         7'h43: rf_c71xfer.tbc <= DI[4:0];
                         7'h44: rf_c71xfer.rm <= DI[8:0];
+                        7'h50: begin
+                            c30xfer_ren_ws <= '1;
+                            rf_c30xfer.ren <= DI[1:0];
+                            rf_c30xfer.div <= DI[3:2];
+                        end
+                        7'h51: begin
+                            rf_c30xfer.rng[1] <= DI[0];
+                            rf_c30xfer.bend[1] <= DI[1];
+                            rf_c30xfer.bhlf[1] <= DI[2];
+                        end
+                        7'h52: begin
+                            rf_c30xfer.rng[2] <= DI[0];
+                            rf_c30xfer.bend[2] <= DI[1];
+                            rf_c30xfer.bhlf[2] <= DI[2];
+                        end
+                        7'h58: begin
+                            rf_c30xfer.kba1 <= DI[9];
+                            rf_c30xfer.kasta1[16:8] <= DI[8:0];
+                        end
+                        7'h59: rf_c30xfer.kaend1[15:0] <= DI[15:0];
+                        7'h5a: rf_c30xfer.kahlf1[16:6] <= DI[10:0]; // drop A/-B
+                        7'h5c: begin
+                            rf_c30xfer.kba2 <= DI[9];
+                            rf_c30xfer.kasta2[16:8] <= DI[8:0];
+                        end
+                        7'h5d: rf_c30xfer.kaend2[15:0] <= DI[15:0];
+                        7'h5e: rf_c30xfer.kahlf2[16:6] <= DI[10:0]; // drop A/-B
                         default: ;
                     endcase
                 end
@@ -194,6 +230,8 @@ always @(posedge CLK) if (CE) begin
                             rf_c71xfer.kba <= DI[1];
                             rf_c71xfer.ka[16] <= DI[0];
                         end
+                        7'h59: rf_c30xfer.kaend1[16] <= DI[0]; // drop A/-B
+                        7'h5d: rf_c30xfer.kaend2[16] <= DI[0]; // drop A/-B
                         default: ;
                     endcase
                 end
@@ -213,13 +251,17 @@ always @(posedge CLK) if (CE) begin
                 krwr_pend <= '0;
                 krwr_act <= '1;
             end
+
+            c30xfer_ren_ws <= '0;
+            rf_c30xfer.ren_ws <= c30xfer_ren_ws;
         end
 
         if (~CSn & ~RDn) begin
             case (A[2:1])
                 2'b10: begin
                     case (rsel)
-                        7'h07: rf_scsi.reset_int <= '1;
+                        7'h07: scsi_reset_int <= '1;
+                        7'h53: c30xfer_reset_int <= '1;
                         default: ;
                     endcase
                 end
@@ -234,6 +276,12 @@ always @(posedge CLK) if (CE) begin
         end
         else begin
             krrd_done <= '0;
+
+            scsi_reset_int <= '0;
+            rf_scsi.reset_int <= scsi_reset_int;
+
+            c30xfer_reset_int <= '0;
+            rf_c30xfer.reset_int <= c30xfer_reset_int;
         end
 
         if (krrd_act & M_ACK) begin
@@ -316,6 +364,12 @@ always @* begin
                 7'h0e: begin
                     dout = {2{krd}};
                     rbusy = '1;
+                end
+                7'h53: begin
+                    dout[0] = st_c30xfer.send[1];
+                    dout[1] = st_c30xfer.shlf[1];
+                    dout[2] = st_c30xfer.send[2];
+                    dout[3] = st_c30xfer.shlf[2];
                 end
                 default: ;
             endcase

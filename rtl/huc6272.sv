@@ -92,15 +92,19 @@ module huc6272
 
      // K-BUS interface
      output [7:0]  KBUS_DO,
+     output        KBUS_RHnL,
      input         KBUS_REQ_C71,
-     output        KBUS_ACK_C71
+     output        KBUS_ACK_C71,
+     output [1:0]  KBUS_CSn_C30
      );
 
 rf_scsi_t       rf_scsi;
 rf_bgm_t        rf_bgm;
 rf_c71xfer_t    rf_c71xfer;
+rf_c30xfer_t    rf_c30xfer;
 
 st_scsi_t       st_scsi;
+st_c30xfer_t    st_c30xfer;
 
 wire [9:0]      ROW, COL;
 
@@ -134,6 +138,13 @@ wire [15:0]     c71xfer_m_di, c71xfer_m_do;
 wire [1:0]      c71xfer_m_be;
 wire            c71xfer_m_wr, c71xfer_m_req, c71xfer_m_ack;
 
+wire            c30xfer_m_ba;
+wire [17:0]     c30xfer_m_a;
+wire [15:0]     c30xfer_m_di, c30xfer_m_do;
+wire [1:0]      c30xfer_m_be;
+wire            c30xfer_m_wr, c30xfer_m_req, c30xfer_m_ack;
+
+wor             kbus_rhnl;
 wor [7:0]       kbus_do;
 
 //////////////////////////////////////////////////////////////////////
@@ -267,6 +278,7 @@ huc6272_video video
 // HuC6271 data transfer
 
 logic [7:0]     kbus_do_c71;
+logic           kbus_holdn_c71;
 
 huc6272_c71xfer c71xfer
    (
@@ -275,6 +287,7 @@ huc6272_c71xfer c71xfer
     .KBUS_DO(kbus_do_c71),
     .KBUS_REQ(KBUS_REQ_C71),
     .KBUS_ACK(KBUS_ACK_C71),
+    .KBUS_HOLDn(kbus_holdn_c71),
 
     .M_BA(c71xfer_m_ba),
     .M_A(c71xfer_m_a),
@@ -289,9 +302,40 @@ huc6272_c71xfer c71xfer
 assign kbus_do = kbus_do_c71;
 
 //////////////////////////////////////////////////////////////////////
+// HuC6230 data transfer
+
+logic [7:0]     kbus_do_c30;
+logic           kbus_rhnl_c30;
+
+huc6272_c30xfer c30xfer
+   (
+    .*,
+
+    .KBUS_DO(kbus_do_c30),
+    .KBUS_RHnL(kbus_rhnl_c30),
+    .KBUS_CSn(KBUS_CSn_C30),
+
+    .M_BA(c30xfer_m_ba),
+    .M_A(c30xfer_m_a),
+    .M_DI(c30xfer_m_di),
+    .M_DO(c30xfer_m_do),
+    .M_BE(c30xfer_m_be),
+    .M_WR(c30xfer_m_wr),
+    .M_REQ(c30xfer_m_req),
+    .M_ACK(c30xfer_m_ack)
+    );
+
+assign kbus_do = kbus_do_c30;
+assign kbus_rhnl = kbus_rhnl_c30;
+
+//////////////////////////////////////////////////////////////////////
 // K-BUS interface
 
 assign KBUS_DO = kbus_do;
+assign KBUS_RHnL = kbus_rhnl;
+
+// C30's have priority over C71
+assign kbus_holdn_c71 = &KBUS_CSn_C30;
 
 endmodule
 
@@ -305,3 +349,4 @@ endmodule
 `include "huc6272_fetch.sv"
 `include "huc6272_bgm.sv"
 `include "huc6272_c71xfer.sv"
+`include "huc6272_c30xfer.sv"
