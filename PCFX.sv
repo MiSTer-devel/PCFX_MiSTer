@@ -192,9 +192,7 @@ assign HDMI_FREEZE = 0;
 assign HDMI_BLACKOUT = 0;
 assign HDMI_BOB_DEINT = 0;
 
-assign AUDIO_S = 0;
-assign AUDIO_L = 0;
-assign AUDIO_R = 0;
+assign AUDIO_S = '0;
 assign AUDIO_MIX = 0;
 
 assign LED_DISK = 0;
@@ -410,7 +408,10 @@ pcfx_top #(.CLK_RAM_MHZ(CLK_RAM_MHZ))  pcfx_top
 
 	.R(VGA_R),
 	.G(VGA_G),
-	.B(VGA_B)
+	.B(VGA_B),
+
+    .AUD_SLOUT(AUDIO_L),
+    .AUD_SROUT(AUDIO_R)
 );
 
 assign CLK_VIDEO = clk_sys;

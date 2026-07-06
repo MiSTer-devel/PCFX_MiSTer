@@ -30,9 +30,9 @@ initial begin
 `else
     $dumpfile("pcfx_top_tb.verilator.fst");
     //repeat (3) #(1000e3) ;
-    //#(700e3) ;
-    #(200e3) ;
-    $dumpvars();
+    //#(20e3) ;
+    #(86e3);
+    //$dumpvars();
 `endif
 end
 
@@ -150,7 +150,10 @@ pcfx_top #(.CLK_RAM_MHZ(CLK_RAM_MHZ)) pcfx_top
 
 	.R(r),
 	.G(g),
-	.B(b)
+	.B(b),
+
+    .AUD_SLOUT(),
+    .AUD_SROUT()
 );
 
 initial forever begin :clkgen_sys
@@ -515,9 +518,10 @@ end
 
 initial begin
     @(running) ;
+    repeat (8) #(1000e3) ;
+    #(700e3) ;
     //repeat (3) #(1000e3) ;
-    //#(719e3) ;
-    #(230e3) ;
+    //#(20e3) ;
 
 `ifdef SAVE_SRAMS
     if (bk_ena) begin

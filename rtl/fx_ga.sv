@@ -34,7 +34,7 @@ module fx_ga
    output        IO_CEn,
 
    output        FX_GA_CSn,
-   output        PSG_CSn,
+   output        APU_CSn,
    output        VPU_CSn,
    output        VCE_CSn,
    output        VDC0_CSn,
@@ -96,10 +96,10 @@ assign IO_CEn   = ~((MRQn | (A[31:28] == 4'h8)) & (~BCYSTn | ~DAn)
 assign unk_cen = ~(RAM_CEn & ROM_CEn & SRAM_CEn & MCP_CSn & IO_CEn);
 
 assign FX_GA_CSn = ~(~IO_CEn & (A[30:12] == 19'h00000)) |
-                   ~(PSG_CSn & VPU_CSn & VCE_CSn & VDC0_CSn &
+                   ~(APU_CSn & VPU_CSn & VCE_CSn & VDC0_CSn &
                      VDC1_CSn & MMC_CSn);
 
-assign PSG_CSn  = ~(~IO_CEn & (A[27:8] == 20'h00001)); // HuC6230
+assign APU_CSn  = ~(~IO_CEn & (A[27:8] == 20'h00001)); // HuC6230
 assign VPU_CSn  = ~(~IO_CEn & (A[27:8] == 20'h00002)); // HuC6271
 assign VCE_CSn  = ~(~IO_CEn & (A[27:8] == 20'h00003)); // HuC6261
 assign VDC0_CSn = ~(~IO_CEn & (A[27:8] == 20'h00004)); // HuC6270 #0

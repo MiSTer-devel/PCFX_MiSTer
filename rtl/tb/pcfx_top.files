@@ -10,6 +10,7 @@ dpram.sv
 ../fx_bmp.sv
 
 ../mach.sv
+../huc6230.sv
 ../huc6261.sv
 ../huc6270.sv
 ../huc6271.sv

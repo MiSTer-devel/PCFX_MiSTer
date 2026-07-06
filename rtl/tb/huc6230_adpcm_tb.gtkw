@@ -1,0 +1,89 @@
+[*]
+[*] GTKWave Analyzer v4.0.0-prealpha (8ba24ab+) (w)1999-2022 BSI
+[*] Mon Jul  6 06:18:13 2026
+[*]
+[dumpfile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/huc6230_adpcm_tb.vcd"
+[dumpfile_mtime] "Mon Jul  6 06:17:47 2026"
+[dumpfile_size] 50286649
+[savefile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/huc6230_adpcm_tb.gtkw"
+[timestart] 0
+[size] 1333 600
+[pos] -1 -1
+*-21.798429 474280 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+[markername] AA
+[markername] BB
+[markername] CC
+[markername] DD
+[markername] EE
+[markername] FF
+[markername] GG
+[markername] HH
+[markername] II
+[markername] JJ
+[markername] KK
+[markername] LL
+[markername] MM
+[markername] NN
+[markername] OO
+[markername] PP
+[markername] QQ
+[markername] RR
+[markername] SS
+[markername] TT
+[markername] UU
+[markername] VV
+[markername] WW
+[markername] XX
+[markername] YY
+[markername] ZZ
+[treeopen] huc6230_adpcm_tb.
+[treeopen] huc6230_adpcm_tb.apu.
+[sst_width] 255
+[signals_width] 180
+[sst_expanded] 1
+[sst_vpaned_height] 159
+@22
+huc6230_adpcm_tb.v_cnt[8:0]
+@420
+huc6230_adpcm_tb.hs_cnt
+@28
+huc6230_adpcm_tb.apu.HSYNC_NEGEDGE
+huc6230_adpcm_tb.apu.adpck
+huc6230_adpcm_tb.apu.pck
+huc6230_adpcm_tb.apu.p_wrap
+huc6230_adpcm_tb.apu.KBUS_CSn[1:0]
+@22
+huc6230_adpcm_tb.apu.KBUS_DI[7:0]
+@28
+huc6230_adpcm_tb.apu.KBUS_RHnL
+huc6230_adpcm_tb.apu.adpcm1.hold
+huc6230_adpcm_tb.apu.adpcm1.KBUS_CSn
+huc6230_adpcm_tb.apu.adpcm1.SCK
+@22
+huc6230_adpcm_tb.apu.adpcm1.kdin[15:0]
+@28
+huc6230_adpcm_tb.apu.adpcm1.kdinv[1:0]
+@22
+huc6230_adpcm_tb.apu.adpcm1.kbuf[15:0]
+huc6230_adpcm_tb.apu.adpcm1.kbufv[3:0]
+@23
+huc6230_adpcm_tb.apu.adpcm1.cs[3:0]
+@28
+huc6230_adpcm_tb.apu.adpcm1.c
+@24
+huc6230_adpcm_tb.apu.adpcm1.d[2:0]
+@28
+huc6230_adpcm_tb.apu.adpcm1.step[2:0]
+@24
+huc6230_adpcm_tb.apu.adpcm1.ss[10:0]
+@22
+huc6230_adpcm_tb.apu.adpcm1.p[17:0]
+huc6230_adpcm_tb.apu.adpcm1.dt[18:0]
+huc6230_adpcm_tb.apu.adpcm1.pa[18:0]
+huc6230_adpcm_tb.apu.adpcm1.sl[5:0]
+huc6230_adpcm_tb.apu.adpcm1.sla[6:0]
+huc6230_adpcm_tb.apu.adpcm1.SOUT[15:0]
+@8022
+huc6230_adpcm_tb.apu.adpcm1.SOUT[15:0]
+[pattern_trace] 1
+[pattern_trace] 0

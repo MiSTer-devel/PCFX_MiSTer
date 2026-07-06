@@ -74,7 +74,10 @@ module mach
    output        VID_VSn,
    output        VID_HSn,
    output        VID_VBL,
-   output        VID_HBL
+   output        VID_HBL,
+
+   output [15:0] AUD_SLOUT,
+   output [15:0] AUD_SROUT
    );
 
 wire [31:0]     cpu_a;
@@ -150,13 +153,18 @@ logic           dckkr, dckkr_negedge;
 logic           hs_posedge, hs_negedge;
 logic           vs_posedge, vs_negedge;
 
+wire            apu_csn;
+wire [15:0]     apu_slout, apu_srout;
+
 wire [15:0]     vpu_do;
 wire            vpu_csn;
 wire            vpu_vdmode;
 wire [23:0]     vpu_vd;
 
 wire [7:0]      kbus_di;
+wire            kbus_rhnl;
 wire            kbus_req_vpu, kbus_ack_vpu;
+wire [1:0]      kbus_csn_c30;
 
 wire [12:0]     rrama_a, rramb_a;
 wire [7:0]      rrama_di, rrama_do, rramb_di, rramb_do;
@@ -245,7 +253,7 @@ fx_ga ga
      .IO_CEn(io_cen),
 
      .FX_GA_CSn(ga_csn),
-     .PSG_CSn(),
+     .APU_CSn(apu_csn),
      .VPU_CSn(vpu_csn),
      .VCE_CSn(vce_csn),
      .VDC0_CSn(vdc0_csn),
@@ -546,9 +554,33 @@ huc6272 mmc
      .SCSI_IOn(scsi_ion),
 
      .KBUS_DO(kbus_di),
+     .KBUS_RHnL(kbus_rhnl),
      .KBUS_REQ_C71(kbus_req_vpu),
-     .KBUS_ACK_C71(kbus_ack_vpu)
+     .KBUS_ACK_C71(kbus_ack_vpu),
+     .KBUS_CSn_C30(kbus_csn_c30)
      );
+
+huc6230 apu
+   (
+    .CLK(CLK),
+    .RESn(RESn),
+    .CE(CE),
+
+    .A2(mem16_a[2]),
+    .DI(cpu_d_o[15:0]),
+    .CSn('1),
+    .WRn('1),
+
+    .KBUS_DI(kbus_di),
+    .KBUS_RHnL(kbus_rhnl),
+    .KBUS_CSn(kbus_csn_c30),
+
+    .DCK(dckkr),
+    .HSYNC_NEGEDGE(hs_negedge),
+
+    .SLOUT(apu_slout),
+    .SROUT(apu_srout)
+    );
 
 // SCSI <-> CD bridge
 scsi scsi_cd
@@ -693,6 +725,9 @@ hmi2kp hmi2kp
 
 assign A = cpu_a;
 assign VID_PCE = dck70;
+
+assign AUD_SLOUT = apu_slout;
+assign AUD_SROUT = apu_srout;
 
 //////////////////////////////////////////////////////////////////////
 

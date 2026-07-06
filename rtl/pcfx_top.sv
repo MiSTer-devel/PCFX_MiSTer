@@ -66,7 +66,10 @@ module pcfx_top
 
 	output [7:0]      R,
 	output [7:0]      G,
-	output [7:0]      B
+	output [7:0]      B,
+
+    output [15:0]     AUD_SLOUT,
+    output [15:0]     AUD_SROUT
 );
 
 reg [26:0]      romwr_a;
@@ -267,7 +270,10 @@ mach mach
    .VID_VSn(vid_vsn),
    .VID_HSn(vid_hsn),
    .VID_VBL(vid_vbl),
-   .VID_HBL(vid_hbl)
+   .VID_HBL(vid_hbl),
+
+   .AUD_SLOUT(AUD_SLOUT),
+   .AUD_SROUT(AUD_SROUT)
    );
 
 memif_sdram memif_sdram
