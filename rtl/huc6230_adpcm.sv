@@ -134,7 +134,7 @@ always @(posedge CLK) begin
             case (step)
                 3'd1: begin
                     dt <= 19'd8 * 4'(d + 4'd1) * ss;
-                    sla <= $signed(sl) + 6'(ltab[d]);
+                    sla <= $signed(7'(sl)) + 7'(ltab[d]);
                 end
                 3'd2: begin
                     pa <= $signed(19'(p)) + $signed(c ? -dt : dt);

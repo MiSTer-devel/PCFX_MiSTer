@@ -132,11 +132,12 @@ initial begin
     side = 0;
 end
 always @(posedge clk) if (dck & hsync_negedge) begin
-    if (apu_kbus_en)
+    if (apu_kbus_en) begin
         hs_cnt <= hs_cnt + 1;
-    if (hs_cnt == 1) begin
-        kbus_trg <= '1;
-        hs_cnt <= 0;
+        if (hs_cnt == 1) begin
+            kbus_trg <= '1;
+            hs_cnt <= 0;
+        end
     end
 end
 always @(posedge clk) if (ce) begin
@@ -149,6 +150,7 @@ integer code;
         if (~kbus_rhnl && side == 0) begin
             code = $fread(frbuf, fdat, 0, 2);
             if (code != 2) begin
+                kbus_trg <= '0;
                 apu_kbus_en <= '0;
                 $fclose(fdat);
                 fdat = -1;
