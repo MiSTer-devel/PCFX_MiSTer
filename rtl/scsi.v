@@ -43,6 +43,7 @@ output wire [79:0] DOUT,
 output wire DOUT_SEND,
 input wire [7:0] CD_DATA,
 input wire CD_WR,
+output wire CD_READY,
 output reg CD_DATA_END,
 output reg STOP_CD_SND,
 output wire [15:0] DBG_DATAIN_CNT
@@ -128,6 +129,8 @@ reg [16:0] DELAY_COUNT;
       //			end if;
     end
   end
+
+assign CD_READY = ~FULL;
 
 fifo1 #(.DSIZE(8), .ASIZE(12)) FIFO(
     .WRST_N(RESET_N),
@@ -406,5 +409,10 @@ fifo1 #(.DSIZE(8), .ASIZE(12)) FIFO(
   assign DOUT = {DATA_BUF[9],DATA_BUF[8],DATA_BUF[7],DATA_BUF[6],DATA_BUF[5],DATA_BUF[4],DATA_BUF[3],DATA_BUF[2],DATA_BUF[1],DATA_BUF[0]};
   assign DOUT_SEND = DATA_OUT;
   assign DBG_DATAIN_CNT = DATAIN_CNT;
+
+/* -----\/----- EXCLUDED -----\/-----
+always @(negedge REQ_Nr)
+    $display("MCI=%x%x%x DB=%x", ~MSG_N, ~CD_N, ~IO_N, IO_Nr ? DBI : DBO);
+ -----/\----- EXCLUDED -----/\----- */
 
 endmodule

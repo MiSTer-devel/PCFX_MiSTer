@@ -18,14 +18,17 @@ module pcfx_top
     input             img_readonly,
     input [63:0]      img_size,
 
-    output reg [31:0] sd_lba,
-    output reg [1:0]  sd_rd = 0,
-    output reg [1:0]  sd_wr = 0,
-    input [1:0]       sd_ack,
+    output reg [31:0] sd_lba_bk,
+    output reg [31:0] sd_lba_cd,
+    output [5:0]      sd_blk_cnt_bk,
+    output [5:0]      sd_blk_cnt_cd,
+    output [2:0]      sd_rd,
+    output [2:0]      sd_wr,
+    input [2:0]       sd_ack,
 
-    input [7:0]       sd_buff_addr,
+    input [12:0]      sd_buff_addr,
     input [15:0]      sd_buff_dout,
-    output [15:0]     sd_buff_din,
+    output [15:0]     sd_buff_din_bk,
     input             sd_buff_wr,
 
     input             ioctl_download,
@@ -177,6 +180,11 @@ wire [15:0] kramb_di, kramb_do;
 wire [1:0]  kramb_be;
 wire        kramb_wr, kramb_req, kramb_ack;
 
+wire        sd_rd_cd;
+wire        sd_ack_cd;
+wire [12:0] cd_sdbuf_addr;
+wire [15:0] cd_sdbuf_dout;
+
 wire        bmp_cfg_en;
 logic [2:0] bmp_cfg_size;
 wire [22:0] bmp_a;
@@ -257,6 +265,12 @@ mach mach
    .KRAMB_WR(kramb_wr),
    .KRAMB_REQ(kramb_req),
    .KRAMB_ACK(kramb_ack),
+
+   .CD_SD_LBA(sd_lba_cd),
+   .CD_SD_RD(sd_rd_cd),
+   .CD_SD_ACK(sd_ack_cd),
+   .CD_SDBUF_ADDR(cd_sdbuf_addr),
+   .CD_SDBUF_DOUT(cd_sdbuf_dout),
 
    .HMI(HMI),
 
@@ -490,7 +504,12 @@ logic           sd_vd; // volume select
 logic           bk_sdrd_copy_req = 0;
 logic           bk_sdrd_copy_ack = 0;
 
+logic [1:0]     sd_rd_bk = '0, sd_wr_bk = '0;
+wire [1:0]      sd_ack_bk = sd_ack[1:0];
 logic           sd_ack_d;
+
+assign sd_rd[1:0] = sd_rd_bk;
+assign sd_wr[1:0] = sd_wr_bk;
 
 assign bk_ena_img_mount[0] = '1; // SRAM
 assign bk_ena_img_mount[1] = ~bmp_rom_inserted; // BMP
@@ -505,10 +524,10 @@ end
 assign bk_ena = |bk_mounted;
 
 always @(posedge clk_sys) begin
-    sd_ack_d <= |sd_ack;
+    sd_ack_d <= |sd_ack_bk;
 
-    if (~sd_ack_d & |sd_ack)
-        {sd_rd, sd_wr} <= '0;
+    if (~sd_ack_d & |sd_ack_bk)
+        {sd_rd_bk, sd_wr_bk} <= '0;
 
     case (bk_state)
         BKST_IDLE: begin
@@ -528,23 +547,23 @@ always @(posedge clk_sys) begin
                 bk_state <= bkst_t'(bk_loading ? BKST_START_SD_RD : BKST_START_SDRAM_RD);
             else
                 bk_state <= BKST_NEXT_VD;
-            sd_lba <= 0;
+            sd_lba_bk <= 0;
         end
         BKST_START_SD_RD: begin
-            sd_rd[sd_vd] <= 1;
+            sd_rd_bk[sd_vd] <= 1;
             bk_state <= BKST_SD_RD;
         end
         BKST_SD_RD: begin
-            if (sd_ack_d & ~|sd_ack) begin
+            if (sd_ack_d & ~|sd_ack_bk) begin
                 bk_state <= BKST_START_SDRAM_WR;
             end
         end
         BKST_START_SD_WR: begin
-            sd_wr[sd_vd] <= 1;
+            sd_wr_bk[sd_vd] <= 1;
             bk_state <= BKST_SD_WR;
         end
         BKST_SD_WR: begin
-            if (sd_ack_d & ~|sd_ack) begin
+            if (sd_ack_d & ~|sd_ack_bk) begin
                 bk_state <= BKST_NEXT_LBA;
             end
         end
@@ -566,12 +585,12 @@ always @(posedge clk_sys) begin
                 bk_state <= bkst_t'(bk_loading ? BKST_START_SDRAM_WR : BKST_START_SD_WR);
         end
         BKST_NEXT_LBA: begin
-            if (sd_lba + 1'd1 == bk_sd_blk_cnt[sd_vd]) begin
+            if (sd_lba_bk + 1'd1 == bk_sd_blk_cnt[sd_vd]) begin
                 bk_state <= BKST_NEXT_VD;
-                sd_lba <= 0;
+                sd_lba_bk <= 0;
             end
             else begin
-                sd_lba <= sd_lba + 1'd1;
+                sd_lba_bk <= sd_lba_bk + 1'd1;
                 bk_state <= bkst_t'(bk_loading ? BKST_START_SD_RD : BKST_START_SDRAM_RD);
             end
         end
@@ -590,7 +609,7 @@ always @(posedge clk_sys) begin
 end
 
 //////////////////////////////////////////////////////////////////////
-// SD card transfer buffer
+// Backup RAM SD card transfer buffer
 
 logic           bk_sdrd_copying = 0;
 logic [26:0]    bk_sdrd_base_a;
@@ -601,12 +620,15 @@ logic [15:0]    sdbuf_din, sdbuf_dout, sdbuf_dout_d;
 logic           sdbuf_wren = 0;
 logic           sdbuf_rden = 0;
 
+assign sd_blk_cnt_bk = 6'(1-1); // 1x 512 block
+assign sd_blk_cnt_cd = 6'(8-1); // 8x 512 block = 4096B
+
 assign bk_sdrd_base_a = sd_vd ? BMP_BASE_A : SRAM_BASE_A;
 
 always @(posedge clk_sys) begin
     if (~bk_sdrd_copying & (bk_sdrd_copy_req != bk_sdrd_copy_ack)) begin
         bk_sdrd_copying <= 1;
-        bk_sdrd_a <= bk_sdrd_base_a + 27'({sd_lba, 9'b0});
+        bk_sdrd_a <= bk_sdrd_base_a + 27'({sd_lba_bk, 9'b0});
         sdbuf_a0 <= '0;
         if (bk_loading)
             sdbuf_rden <= 1;
@@ -659,18 +681,43 @@ assign bk_sdrd_dout = {sdbuf_dout, sdbuf_dout_d};
 dpram #(.addr_width(8), .data_width(16)) sdbuf
    (
     .clock(clk_sys),
-    .address_a(sd_buff_addr),
+    .address_a(sd_buff_addr[7:0]),
     .data_a(sd_buff_dout),
     .enable_a(1'b1),
     .wren_a(sd_buff_wr),
-    .q_a(sd_buff_din),
-    .cs_a(1'b1),
+    .q_a(sd_buff_din_bk),
+    .cs_a(|sd_ack_bk),
 
     .address_b(sdbuf_a),
     .data_b(sdbuf_din),
     .enable_b(1'b1),
     .wren_b(sdbuf_wren),
     .q_b(sdbuf_dout),
+    .cs_b(1'b1)
+    );
+
+//////////////////////////////////////////////////////////////////////
+// CD-ROM block transfer
+
+assign sd_rd[2] = sd_rd_cd;
+assign sd_wr[2] = '0;
+assign sd_ack_cd = sd_ack[2];
+
+dpram #(.addr_width(13), .data_width(16)) cdbuf
+   (
+    .clock(clk_sys),
+    .address_a(sd_buff_addr[12:0]),
+    .data_a(sd_buff_dout),
+    .enable_a(1'b1),
+    .wren_a(sd_buff_wr),
+    .q_a(),
+    .cs_a(sd_ack_cd),
+
+    .address_b(cd_sdbuf_addr),
+    .data_b('0),
+    .enable_b(1'b1),
+    .wren_b('0),
+    .q_b(cd_sdbuf_dout),
     .cs_b(1'b1)
     );
 

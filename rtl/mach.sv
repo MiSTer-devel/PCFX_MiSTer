@@ -62,6 +62,13 @@ module mach
    output        KRAMB_REQ,
    input         KRAMB_ACK,
 
+   // CD-ROM block transfer interface
+   output [31:0] CD_SD_LBA,
+   output        CD_SD_RD,
+   input         CD_SD_ACK,
+   output [12:0] CD_SDBUF_ADDR,
+   input [15:0]  CD_SDBUF_DOUT,
+
    input         hmi_t HMI,
 
    output [31:0] A,
@@ -191,6 +198,7 @@ logic [95:0]    scsi_cd_command;
 wire            scsi_cd_comm_send;
 logic [7:0]     scsi_cd_cd_data;
 logic           scsi_cd_cd_wr;
+logic           scsi_cd_cd_ready;
 logic           scsi_cd_cd_data_end;
 
 wire [1:0]      kp_latch;
@@ -607,6 +615,7 @@ scsi scsi_cd
      .DOUT_SEND(),
      .CD_DATA(scsi_cd_cd_data),
      .CD_WR(scsi_cd_cd_wr),
+     .CD_READY(scsi_cd_cd_ready),
      .CD_DATA_END(scsi_cd_cd_data_end),
      .STOP_CD_SND(),
      .DBG_DATAIN_CNT()
@@ -701,7 +710,14 @@ fake_cd fake_cd
      .COMM_SEND(scsi_cd_comm_send),
      .STATUS(scsi_cd_status),
      .CD_DATA(scsi_cd_cd_data),
-     .CD_WR(scsi_cd_cd_wr)
+     .CD_WR(scsi_cd_cd_wr),
+     .CD_READY(scsi_cd_cd_ready),
+
+     .SD_LBA(CD_SD_LBA),
+     .SD_RD(CD_SD_RD),
+     .SD_ACK(CD_SD_ACK),
+     .SDBUF_ADDR(CD_SDBUF_ADDR),
+     .SDBUF_DOUT(CD_SDBUF_DOUT)
      );
 
 //////////////////////////////////////////////////////////////////////
