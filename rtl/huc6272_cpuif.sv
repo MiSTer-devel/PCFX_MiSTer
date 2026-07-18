@@ -53,7 +53,9 @@ logic [6:0]     rsel;
 logic [31:0]    dout;
 logic           rbusy;
 
-logic           scsi_reset_int;
+logic           scsi_reset_int, scsi_reset_dma_end_int;
+logic           scsi_start_dma_tx, scsi_start_dma_rx;
+logic           scsi_rxbuf_rd, scsi_txbuf_wr;
 logic           c30xfer_ren_ws;
 logic           c30xfer_reset_int;
 
@@ -67,10 +69,6 @@ kradr_t         kra;
 logic           mpwr_pend;
 
 always @(posedge CLK) if (CE) begin
-    rf_scsi.start_dma_tx <= '0;
-    rf_scsi.start_dma_rx <= '0;
-    rf_scsi.rxbuf_rd <= '0;
-
     if (~RESn) begin
         rsel <= '0;
         rf_scsi <= '0;
@@ -85,6 +83,11 @@ always @(posedge CLK) if (CE) begin
         krrd_done <= '0;
         mpwr_pend <= '0;
         scsi_reset_int <= '0;
+        scsi_reset_dma_end_int <= '0;
+        scsi_start_dma_tx <= '0;
+        scsi_start_dma_rx <= '0;
+        scsi_rxbuf_rd <= '0;
+        scsi_txbuf_wr <= '0;
         c30xfer_ren_ws <= '0;
         c30xfer_reset_int <= '0;
     end
@@ -113,8 +116,14 @@ always @(posedge CLK) if (CE) begin
                             rf_scsi.assert_cd <= DI[1];
                             rf_scsi.assert_io <= DI[0];
                         end
-                        7'h05: rf_scsi.start_dma_tx <= '1;
-                        7'h07: rf_scsi.start_dma_rx <= '1;
+                        7'h05: scsi_start_dma_tx <= '1;
+                        7'h07: scsi_start_dma_rx <= '1;
+                        7'h09: rf_scsi.dma_ka[15:0] <= DI;
+                        7'h0a: rf_scsi.dma_byte_cnt[15:1] <= DI[15:1];
+                        7'h0b: begin
+                            rf_scsi.dma_en <= DI[0];
+                            rf_scsi.dma_int_en <= DI[1];
+                        end
                         7'h0c: krra[0+:16] <= DI;
                         7'h0d: krwa[0+:16] <= DI;
                         7'h0e: begin
@@ -219,7 +228,15 @@ always @(posedge CLK) if (CE) begin
                 end
                 2'b11: begin
                     case (rsel)
-                        7'h05: rf_scsi.txbuf <= DI[7:0];
+                        7'h05: begin
+                            rf_scsi.txbuf <= DI[7:0];
+                            scsi_txbuf_wr <= '1;
+                        end
+                        7'h09: begin
+                            rf_scsi.dma_kba <= DI[1];
+                            rf_scsi.dma_ka[16] <= DI[0];
+                        end
+                        7'h0a: rf_scsi.dma_byte_cnt[17:16] <= DI[1:0];
                         7'h0c: krra[16+:16] <= DI;
                         7'h0d: krwa[16+:16] <= DI;
                         7'h0e: begin
@@ -254,6 +271,15 @@ always @(posedge CLK) if (CE) begin
 
             c30xfer_ren_ws <= '0;
             rf_c30xfer.ren_ws <= c30xfer_ren_ws;
+
+            scsi_start_dma_tx <= '0;
+            rf_scsi.start_dma_tx <= scsi_start_dma_tx;
+
+            scsi_start_dma_rx <= '0;
+            rf_scsi.start_dma_rx <= scsi_start_dma_rx;
+
+            scsi_txbuf_wr <= '0;
+            rf_scsi.txbuf_wr <= scsi_txbuf_wr;
         end
 
         if (~CSn & ~RDn) begin
@@ -261,13 +287,14 @@ always @(posedge CLK) if (CE) begin
                 2'b10: begin
                     case (rsel)
                         7'h07: scsi_reset_int <= '1;
+                        7'h0b: scsi_reset_dma_end_int <= '1;
                         7'h53: c30xfer_reset_int <= '1;
                         default: ;
                     endcase
                 end
                 2'b11: begin
                     case (rsel)
-                        7'h05: rf_scsi.rxbuf_rd <= '1;
+                        7'h05: scsi_rxbuf_rd <= '1;
                         default: ;
                     endcase
                 end
@@ -279,6 +306,12 @@ always @(posedge CLK) if (CE) begin
 
             scsi_reset_int <= '0;
             rf_scsi.reset_int <= scsi_reset_int;
+
+            scsi_reset_dma_end_int <= '0;
+            rf_scsi.reset_dma_end_int <= scsi_reset_dma_end_int;
+
+            scsi_rxbuf_rd <= '0;
+            rf_scsi.rxbuf_rd <= scsi_rxbuf_rd;
 
             c30xfer_reset_int <= '0;
             rf_c30xfer.reset_int <= c30xfer_reset_int;
@@ -293,6 +326,10 @@ always @(posedge CLK) if (CE) begin
             krwr_act <= '0;
             krwa.addr += 16'(krwa.ainc);
         end
+        if (st_scsi.dma_next) begin
+            rf_scsi.dma_byte_cnt <= rf_scsi.dma_byte_cnt - 1'd1;
+            rf_scsi.dma_ka <= rf_scsi.dma_ka + 1'd1;
+        end        
     end
 end
 
@@ -350,12 +387,18 @@ always @* begin
                 7'h05: begin
                     dout[23:16] = st_scsi.rxbuf;
                     dout[6] = st_scsi.dma_req;
-                    dout[4] = rf_scsi.int_req_act;
+                    dout[4] = st_scsi.int_req_act;
                     dout[3] = rf_scsi.phase_match;
                     dout[1] = st_scsi.atn;
                     dout[0] = st_scsi.ack;
                 end
                 7'h06: dout[7:0] = st_scsi.rxbuf;
+                7'h09: begin
+                    dout[17] = rf_scsi.dma_kba;
+                    dout[16:0] = rf_scsi.dma_ka;
+                end
+                7'h0a: dout[17:1] = rf_scsi.dma_byte_cnt[17:1];
+                7'h0b: dout[0] = st_scsi.dma_end;
                 7'h0c: dout = krra;
                 7'h0d: begin
                     dout = krwa;

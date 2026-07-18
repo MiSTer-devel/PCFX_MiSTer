@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v4.0.0-prealpha (8ba24ab+) (w)1999-2022 BSI
-[*] Tue Jul 14 05:46:57 2026
+[*] Fri Jul 17 21:34:38 2026
 [*]
 [dumpfile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/pcfx_top_tb.verilator.fst"
-[dumpfile_mtime] "Tue Jul 14 05:35:53 2026"
-[dumpfile_size] 187827527
+[dumpfile_mtime] "Fri Jul 17 19:14:24 2026"
+[dumpfile_size] 6410469
 [savefile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/pcfx_top_tb.verilator.gtkw"
-[timestart] 4332194119
+[timestart] 1509247230
 [size] 1334 601
 [pos] -1 -1
-*-8.133059 4332194640 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+*-11.909883 1509254680 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 [markername] AA
 [markername] BB
 [markername] CC
@@ -40,15 +40,18 @@
 [treeopen] pcfx_top_tb.pcfx_top.
 [treeopen] pcfx_top_tb.pcfx_top.mach.
 [treeopen] pcfx_top_tb.pcfx_top.mach.fake_cd.
-[treeopen] pcfx_top_tb.pcfx_top.mach.mmc.fabric.
+[treeopen] pcfx_top_tb.pcfx_top.mach.mmc.
 [treeopen] pcfx_top_tb.pcfx_top.mach.mmc.video.
+[treeopen] pcfx_top_tb.pcfx_top.mach.mmc.video.vfeb.
+[treeopen] pcfx_top_tb.pcfx_top.mach.scsi_cd.
 [treeopen] pcfx_top_tb.pcfx_top.mach.vpu.idct_run__Vstatic__unnamedblk4.
 [treeopen] pcfx_top_tb.pcfx_top.mach.vpu.idct_run__Vstatic__unnamedblk8.
+[treeopen] pcfx_top_tb.pcfx_top.memif_sdram.
 [treeopen] pcfx_top_tb.unnamedblk2.
 [sst_width] 255
 [signals_width] 290
 [sst_expanded] 1
-[sst_vpaned_height] 159
+[sst_vpaned_height] 145
 @800200
 -pcfx_top
 @28
@@ -128,7 +131,7 @@ pcfx_top_tb.sdrb.u1a.DQML
 pcfx_top_tb.sdrb.u1a.cmd[3:0]
 @1401200
 -u1a
-@c00200
+@800200
 -memif_sdram
 @28
 pcfx_top_tb.pcfx_top.memif_sdram.SRAM_CEn
@@ -140,6 +143,7 @@ pcfx_top_tb.pcfx_top.memif_sdram.mem_pend_req
 pcfx_top_tb.pcfx_top.memif_sdram.mem_rdy
 @22
 pcfx_top_tb.pcfx_top.memif_sdram.KRAMA_DI[15:0]
+pcfx_top_tb.pcfx_top.memif_sdram.KRAMA_DO[15:0]
 @28
 pcfx_top_tb.pcfx_top.memif_sdram.KRAMA_WR
 pcfx_top_tb.pcfx_top.memif_sdram.KRAMA_REQ
@@ -156,7 +160,7 @@ pcfx_top_tb.pcfx_top.memif_sdram.KRAMB_DI[15:0]
 pcfx_top_tb.pcfx_top.memif_sdram.KRAMB_WR
 pcfx_top_tb.pcfx_top.memif_sdram.KRAMB_REQ
 pcfx_top_tb.pcfx_top.memif_sdram.KRAMB_ACK
-@1401200
+@1000200
 -memif_sdram
 @c00200
 -fx_bmp
@@ -178,7 +182,7 @@ pcfx_top_tb.pcfx_top.bmp.RAM_CEn
 pcfx_top_tb.pcfx_top.bmp.RAM_READYn
 @1401200
 -fx_bmp
-@800200
+@c00200
 -mach
 @28
 pcfx_top_tb.pcfx_top.mach.ERROR
@@ -200,9 +204,9 @@ pcfx_top_tb.pcfx_top.mach.mcp_csn
 pcfx_top_tb.pcfx_top.mach.io_cen
 pcfx_top_tb.pcfx_top.mach.ga_rdn
 pcfx_top_tb.pcfx_top.mach.ga_wrn
-@1000200
+@1401200
 -mach
-@800200
+@c00200
 -cpu
 @28
 pcfx_top_tb.pcfx_top.mach.cpu.INT
@@ -222,7 +226,7 @@ pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[12][31:0]
 pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[13][31:0]
 pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[14][31:0]
 pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[28][31:0]
-@1000200
+@1401200
 -cpu
 @800200
 -fake_cd
@@ -230,12 +234,14 @@ pcfx_top_tb.pcfx_top.mach.cpu.eu.rf.rmem[28][31:0]
 pcfx_top_tb.pcfx_top.mach.fake_cd.CD_DATA[7:0]
 @28
 pcfx_top_tb.pcfx_top.mach.fake_cd.CD_WR
+pcfx_top_tb.pcfx_top.mach.fake_cd.DOUT_REQ
+pcfx_top_tb.pcfx_top.mach.fake_cd.DOUT_SEND
 @22
 pcfx_top_tb.pcfx_top.mach.fake_cd.SD_LBA[31:0]
 pcfx_top_tb.pcfx_top.mach.fake_cd.SDBUF_ADDR[12:0]
 pcfx_top_tb.pcfx_top.mach.fake_cd.SDBUF_DOUT[15:0]
 @100000028
-pcfx_top_tb.pcfx_top.mach.fake_cd.tst[1:0]
+pcfx_top_tb.pcfx_top.mach.fake_cd.tst[2:0]
 @28
 pcfx_top_tb.pcfx_top.mach.fake_cd.cmd_start
 pcfx_top_tb.pcfx_top.mach.fake_cd.cmd_done
@@ -279,18 +285,36 @@ pcfx_top_tb.pcfx_top.mach.ga.kpc0.ios
 pcfx_top_tb.pcfx_top.mach.ga.kpc0.data_sr[31:0]
 @1401200
 -kpc0
-@c00200
+@800200
 -mmc
 @28
 pcfx_top_tb.pcfx_top.mach.mmc.CSn
 pcfx_top_tb.pcfx_top.mach.mmc.A[2:1]
 @22
 pcfx_top_tb.pcfx_top.mach.mmc.DI[15:0]
+pcfx_top_tb.pcfx_top.mach.mmc.DO[15:0]
 @28
 pcfx_top_tb.pcfx_top.mach.mmc.WRn
 pcfx_top_tb.pcfx_top.mach.mmc.BUSYn
 @22
 pcfx_top_tb.pcfx_top.mach.mmc.cpuif.rsel[6:0]
+@800200
+-vfea
+@28
+pcfx_top_tb.pcfx_top.mach.mmc.video.vfea.mtrg
+pcfx_top_tb.pcfx_top.mach.mmc.video.vfea.mtrg2
+pcfx_top_tb.pcfx_top.mach.mmc.video.vfea.mreq0
+pcfx_top_tb.pcfx_top.mach.mmc.video.vfea.mreq
+@22
+pcfx_top_tb.pcfx_top.mach.mmc.video.vfea.M_A[17:0]
+pcfx_top_tb.pcfx_top.mach.mmc.video.vfea.M_DI[15:0]
+@28
+pcfx_top_tb.pcfx_top.mach.mmc.video.vfea.M_REQ
+pcfx_top_tb.pcfx_top.mach.mmc.video.vfea.M_ACK
+@1000200
+-vfea
+@c00200
+-vfeb
 @28
 pcfx_top_tb.pcfx_top.mach.mmc.video.vfeb.mtrg
 pcfx_top_tb.pcfx_top.mach.mmc.video.vfeb.mtrg2
@@ -301,6 +325,16 @@ pcfx_top_tb.pcfx_top.mach.mmc.video.vfeb.M_A[17:0]
 @28
 pcfx_top_tb.pcfx_top.mach.mmc.video.vfeb.M_REQ
 pcfx_top_tb.pcfx_top.mach.mmc.video.vfeb.M_ACK
+@1401200
+-vfeb
+@22
+pcfx_top_tb.pcfx_top.mach.mmc.video.bg0.md[15:0]
+@28
+pcfx_top_tb.pcfx_top.mach.mmc.video.bg0.mdl[1:0]
+@22
+pcfx_top_tb.pcfx_top.mach.mmc.video.bg0.cgrd[31:0]
+@23
+pcfx_top_tb.pcfx_top.mach.mmc.video.bg0.rf_bgm[255:0]
 @22
 pcfx_top_tb.pcfx_top.mach.mmc.VD[23:0]
 @28
@@ -308,7 +342,7 @@ pcfx_top_tb.pcfx_top.mach.mmc.fabric.c71xfer_m_req
 pcfx_top_tb.pcfx_top.mach.mmc.fabric.cpuif_m_req
 pcfx_top_tb.pcfx_top.mach.mmc.fabric.vid_ma_req
 pcfx_top_tb.pcfx_top.mach.mmc.fabric.vid_mb_req
-@1401200
+@1000200
 -mmc
 @800200
 -scsi
@@ -330,6 +364,18 @@ pcfx_top_tb.pcfx_top.mach.mmc.SCSI_IOn
 -
 @28
 pcfx_top_tb.pcfx_top.mach.mmc.scsi.assert_ack_dma
+pcfx_top_tb.pcfx_top.mach.mmc.scsi.dma_req
+pcfx_top_tb.pcfx_top.mach.mmc.scsi.dma_req_set
+pcfx_top_tb.pcfx_top.mach.mmc.scsi.dma_req_clr
+pcfx_top_tb.pcfx_top.mach.mmc.scsi.dma_a0
+@22
+pcfx_top_tb.pcfx_top.mach.mmc.scsi.dma_rxbuf[7:0]
+@28
+pcfx_top_tb.pcfx_top.mach.mmc.scsi.dma_rxbuf_rd
+pcfx_top_tb.pcfx_top.mach.mmc.scsi.m_req
+pcfx_top_tb.pcfx_top.mach.mmc.scsi.M_ACK
+@22
+pcfx_top_tb.pcfx_top.mach.mmc.scsi.m_do[15:0]
 @200
 -scsi_cd
 @28
@@ -344,6 +390,7 @@ pcfx_top_tb.pcfx_top.mach.scsi_cd.COMMAND[95:0]
 @28
 pcfx_top_tb.pcfx_top.mach.scsi_cd.COMM_OUT
 @22
+pcfx_top_tb.pcfx_top.mach.scsi_cd.DATA_POS[3:0]
 pcfx_top_tb.pcfx_top.mach.scsi_cd.STATUS[7:0]
 @28
 pcfx_top_tb.pcfx_top.mach.scsi_cd.STAT_GET
@@ -352,7 +399,6 @@ pcfx_top_tb.pcfx_top.mach.scsi_cd.STAT_PEND
 pcfx_top_tb.pcfx_top.mach.scsi_cd.STAT_COUNT[15:0]
 @28
 pcfx_top_tb.pcfx_top.mach.scsi_cd.CD_WR
-@29
 pcfx_top_tb.pcfx_top.mach.scsi_cd.CD_READY
 @22
 pcfx_top_tb.pcfx_top.mach.scsi_cd.CD_DATA[7:0]

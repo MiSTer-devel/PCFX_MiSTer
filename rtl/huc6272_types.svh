@@ -20,12 +20,18 @@ typedef struct packed {
     logic           assert_msg;
     
     logic           dma_mode;
-    logic           start_dma_rx, start_dma_tx;
+    logic           dma_kba;
+    logic [16:0]    dma_ka;
+    logic [17:1]    dma_byte_cnt;
+    logic           dma_en;
+    logic           dma_int_en;
     logic           phase_match;
     
     logic           reset_int;
+    logic           reset_dma_end_int;
+    logic           start_dma_rx, start_dma_tx;
     logic           rxbuf_rd;
-    logic           int_req_act;
+    logic           txbuf_wr;
 } rf_scsi_t;
 
 typedef struct packed {
@@ -33,6 +39,9 @@ typedef struct packed {
     logic           atn, ack;
     logic [7:0]     din, rxbuf;
     logic           dma_req;
+    logic           int_req_act;
+    logic           dma_next;
+    logic           dma_end;
 } st_scsi_t;
 
 //////////////////////////////////////////////////////////////////////

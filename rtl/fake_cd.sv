@@ -16,6 +16,9 @@ module fake_cd
     output reg        STAT_GET,
     input [95:0]      COMMAND,
     input             COMM_SEND,
+    output reg        DOUT_REQ,
+    input [79:0]      DOUT,
+    input             DOUT_SEND,
     output reg [7:0]  STATUS,
     output reg [7:0]  CD_DATA,
     output reg        CD_WR,
@@ -34,6 +37,7 @@ typedef enum bit [7:0]
 {
     CMDOP_TEST_UNIT_READY = 8'h00,
     CMDOP_REQUEST_SENSE = 8'h03,
+    CMDOP_MODE_SELECT = 8'h15,
     CMDOP_PREVENT_ALLOW_MEDIUM_REMOVAL = 8'h1e,
     CMDOP_READ_10 = 8'h28,
     CMDOP_READ_TOC = 8'h43,
@@ -62,11 +66,12 @@ typedef enum bit [15:0]
     ASC_INVALID_COMMAND_OPERATION_CODE = 16'h0020
 } _asc_t;
 
-typedef enum bit [1:0]
+typedef enum bit [2:0]
 {
     TS_IDLE,
     TS_CMD,
-    TS_DATA,
+    TS_DATA_OUT, // initiator to target
+    TS_DATA_IN, // target to initiator
     TS_STAT
 } tst_t;
 
@@ -76,6 +81,7 @@ logic           medium_req;
 logic [7:0]     sense_key;
 logic [15:0]    asc; // additional sense code and code qualifier
 logic [7:0]     sense_do;
+logic           data_out;
 logic [11:0]    datalen, datapos, sdbuf_off;
 logic [15:0]    blkcnt;
 logic           dataloop;
@@ -131,7 +137,7 @@ end
 
 always @* begin
     CD_DATA = '0;
-    if (tst == TS_DATA) begin
+    if (tst == TS_DATA_IN) begin
         CD_DATA = sdbuf_dbout;
         case (COMMAND[0+:8])
             CMDOP_REQUEST_SENSE: begin
@@ -160,6 +166,7 @@ always @(posedge CLK) begin
     cmd_cont <= '0;
     cmd_done <= '0;
     STAT_GET <= '0;
+    DOUT_REQ <= '0;
     SD_RD <= '0;
     sd_ack_d <= SD_ACK;
     cd_wr_d <= CD_WR;
@@ -181,17 +188,28 @@ always @(posedge CLK) begin
                     $display("fake_cd: COMMAND=%x", COMMAND);
                     blkcnt <= '0;
                     datapos <= '0;
+                    data_out <= '0;
                     cmd_start <= '1;
                     tst <= TS_CMD;
                 end
             TS_CMD:
                 if (cmd_done) begin
-                    if (datalen != 0)
-                        tst <= TS_DATA;
+                    if (datalen != 0) begin
+                        if (data_out) begin
+                            DOUT_REQ <= '1;
+                            tst <= TS_DATA_OUT;
+                        end
+                        else
+                            tst <= TS_DATA_IN;
+                    end
                     else
                         tst <= TS_STAT;
                 end
-            TS_DATA:
+            TS_DATA_OUT: begin // initiator to target
+                if (DOUT_SEND)
+                    tst <= TS_STAT;
+            end
+            TS_DATA_IN: // target to initiator
                 if (CD_WR) begin
                     datapos <= datapos + 1'd1;
                     if (dataend) begin
@@ -210,6 +228,7 @@ always @(posedge CLK) begin
                 STAT_GET <= '1;
                 tst <= TS_IDLE;
             end
+            default: ;
         endcase
 
         if ((tst == TS_CMD) & cmd_start) begin
@@ -229,6 +248,11 @@ always @(posedge CLK) begin
                     end
                     CMDOP_REQUEST_SENSE: begin
                         datalen <= $size(datalen)'(COMMAND[32+:8]);
+                        cmd_done <= '1;
+                    end
+                    CMDOP_MODE_SELECT: begin
+                        data_out <= '1;
+                        datalen <= $size(datalen)'(COMMAND[4*8+:8]);
                         cmd_done <= '1;
                     end
                     CMDOP_PREVENT_ALLOW_MEDIUM_REMOVAL: begin
@@ -292,7 +316,17 @@ always @(posedge CLK) begin
             endcase
         end
 
-        if (tst == TS_DATA) begin
+        if ((tst == TS_DATA_OUT) & DOUT_SEND) begin
+            $display("fake_cd: DOUT=%x", DOUT);
+            case (COMMAND[0+:8])
+                CMDOP_MODE_SELECT: begin
+                    // TODO
+                end
+                default: ;
+            endcase
+        end
+
+        if (tst == TS_DATA_IN) begin
             // Due to FIFO pipeline delays in the SCSI module, CD_WR
             // must stay low for at least 2x clocks after falling.
             CD_WR <= ~(CD_WR | cd_wr_d) & CD_READY;
@@ -308,7 +342,7 @@ always @(posedge CLK) begin
             endcase
 
             if (CD_WR & (COMMAND[0+:8] != CMDOP_READ_10))
-                $display("fake_cd: TS_DATA: [%x] = %x", datapos, CD_DATA);
+                $display("fake_cd: TS_DATA_IN: [%x] = %x", datapos, CD_DATA);
         end
     end
 end

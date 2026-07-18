@@ -196,6 +196,9 @@ logic [7:0]     scsi_cd_status;
 logic           scsi_cd_stat_get;
 logic [95:0]    scsi_cd_command;
 wire            scsi_cd_comm_send;
+logic           scsi_cd_dout_req;
+logic [79:0]    scsi_cd_dout;
+logic           scsi_cd_dout_send;
 logic [7:0]     scsi_cd_cd_data;
 logic           scsi_cd_cd_wr;
 logic           scsi_cd_cd_ready;
@@ -610,9 +613,9 @@ scsi scsi_cd
      .STAT_GET(scsi_cd_stat_get),
      .COMMAND(scsi_cd_command),
      .COMM_SEND(scsi_cd_comm_send),
-     .DOUT_REQ('0),
-     .DOUT(),
-     .DOUT_SEND(),
+     .DOUT_REQ(scsi_cd_dout_req),
+     .DOUT(scsi_cd_dout),
+     .DOUT_SEND(scsi_cd_dout_send),
      .CD_DATA(scsi_cd_cd_data),
      .CD_WR(scsi_cd_cd_wr),
      .CD_READY(scsi_cd_cd_ready),
@@ -709,6 +712,9 @@ fake_cd fake_cd
      .COMMAND(scsi_cd_command),
      .COMM_SEND(scsi_cd_comm_send),
      .STATUS(scsi_cd_status),
+     .DOUT_REQ(scsi_cd_dout_req),
+     .DOUT(scsi_cd_dout),
+     .DOUT_SEND(scsi_cd_dout_send),
      .CD_DATA(scsi_cd_cd_data),
      .CD_WR(scsi_cd_cd_wr),
      .CD_READY(scsi_cd_cd_ready),

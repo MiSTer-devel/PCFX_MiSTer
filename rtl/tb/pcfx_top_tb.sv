@@ -590,6 +590,14 @@ initial #0 begin
     reset = 0;
     $display("Reset released.");
 
+    // Skip loading CD, resume at entry point
+    $readmemh("sdram_cd.hex", sdrb.u1a.mem);
+    force pcfx_top.mach.cpu.inex.ha = 32'h00008000;
+    while (pcfx_top.mach.cpu_a != 32'h00008000)
+        @(posedge clk_sys) ;
+    $display("Booted.");
+    release pcfx_top.mach.cpu.inex.ha;
+
 `ifdef LOAD_SRAMS
     mount_sram();
     mount_bmp();
@@ -624,6 +632,7 @@ initial begin
     $finish;
 end
 
+/* -----\/----- EXCLUDED -----\/-----
 initial if (0) begin
     @(running) ;
     #(216e3);
@@ -640,6 +649,7 @@ initial if (0) begin
     #(20e3) hmi.jp1.run = '0;
     #(20e3);
 end
+ -----/\----- EXCLUDED -----/\----- */
 
 endmodule
 

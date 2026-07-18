@@ -6,34 +6,50 @@
 
 module huc6272_scsi
    (
-    input        CLK,
-    input        CE,
-    input        RESn,
+    input         CLK,
+    input         CE,
+    input         RESn,
 
     // SCSI (CD-ROM) interface
-    input [7:0]  SCSI_DI,
-    output [7:0] SCSI_DO,
-    output       SCSI_DOE,
-    output       SCSI_ATNn,
-    input        SCSI_BSYn,
-    output       SCSI_ACKn,
-    output       SCSI_RSTn,
-    input        SCSI_MSGn,
-    output       SCSI_SELn,
-    input        SCSI_CDn,
-    input        SCSI_REQn,
-    input        SCSI_IOn,
+    input [7:0]   SCSI_DI,
+    output [7:0]  SCSI_DO,
+    output        SCSI_DOE,
+    output        SCSI_ATNn,
+    input         SCSI_BSYn,
+    output        SCSI_ACKn,
+    output        SCSI_RSTn,
+    input         SCSI_MSGn,
+    output        SCSI_SELn,
+    input         SCSI_CDn,
+    input         SCSI_REQn,
+    input         SCSI_IOn,
 
     // Register file and status
-    input        rf_scsi_t rf_scsi,
-    output       st_scsi_t st_scsi
+    input         rf_scsi_t rf_scsi,
+    output        st_scsi_t st_scsi,
+
+    // Memory client interface
+    output        M_BA,
+    output [17:0] M_A,
+    input [15:0]  M_DI,
+    output [15:0] M_DO,
+    output [1:0]  M_BE,
+    output        M_WR,
+    output        M_REQ,
+    input         M_ACK
     );
 
-logic [7:0]     rxbuf;
+logic [7:0]     rxbuf, dma_rxbuf;
 logic           dma_req, dma_req_set, dma_req_clr;
+logic           dma_a0;
+logic           dma_rxbuf_rd, dma_end;
+logic           dma_next_word;
 
 logic           reqn_d;
 logic           assert_ack_dma, assert_ack_cnt;
+
+logic           m_req;
+logic [15:0]    m_do;
 
 // Data transfer engine (for DMA)
 
@@ -51,11 +67,13 @@ always @(posedge CLK) if (CE) begin
     end
 end
 
-// REQn assertion or REG.7L write sets REG.5H[6].
-// RX buffer readout triggers ACKn pulse and clears REG.5H[6].
+// REQn assertion or REG.5L write or REG.7L write sets REG.5H[6] .
+// RX buffer readout or TX buffer write triggers ACKn pulse and clears REG.5H[6].
 
-assign dma_req_set = rf_scsi.dma_mode & (req_posedge | rf_scsi.start_dma_rx);
-assign dma_req_clr = rf_scsi.dma_mode & rf_scsi.rxbuf_rd;
+assign dma_req_set = rf_scsi.dma_mode & (req_posedge | rf_scsi.start_dma_rx | 
+                                         rf_scsi.start_dma_tx);
+assign dma_req_clr = rf_scsi.dma_mode & (dma_rxbuf_rd | rf_scsi.rxbuf_rd |
+                                         rf_scsi.txbuf_wr);
 
 always @(posedge CLK) if (CE) begin
     if (~RESn) begin
@@ -63,6 +81,46 @@ always @(posedge CLK) if (CE) begin
     end
     else begin
         dma_req <= (dma_req & ~dma_req_clr) | dma_req_set;
+    end
+end
+
+// Buffer RX buffer input for word DMA transfer to KRAM
+always @(posedge CLK) begin
+    dma_next_word <= '0;
+
+    if (~RESn) begin
+        dma_a0 <= '0;
+        dma_rxbuf <= '0;
+        dma_rxbuf_rd <= '0;
+        dma_end <= '0;
+        m_do <= '0;
+        m_req <= '0;
+    end
+    else begin
+        if (CE) begin
+            dma_rxbuf_rd <= '0;
+
+            if (rf_scsi.dma_en & dma_req_set) begin
+                dma_a0 <= ~dma_a0;
+                if (~dma_a0) begin
+                    dma_rxbuf <= rxbuf;
+                    dma_rxbuf_rd <= '1;
+                end
+                else begin
+                    m_do <= {rxbuf, dma_rxbuf};
+                    m_req <= '1;
+                end
+            end
+            if (rf_scsi.reset_dma_end_int)
+                dma_end <= '0;
+        end
+
+        if (m_req & M_ACK) begin
+            m_req <= '0;
+            dma_rxbuf_rd <= '1;
+            dma_next_word <= '1;
+            dma_end <= (rf_scsi.dma_byte_cnt == 17'd1);
+        end
     end
 end
 
@@ -104,5 +162,18 @@ assign st_scsi.ack = ~SCSI_ACKn;
 assign st_scsi.din = SCSI_DI;
 assign st_scsi.rxbuf = rxbuf;
 assign st_scsi.dma_req = dma_req;
+assign st_scsi.int_req_act = '0; // TODO
+assign st_scsi.dma_next = dma_next_word;
+assign st_scsi.dma_end = dma_end;
+
+// KRAM memory client interface
+wire page = 1'b0; // TODO: wire up to R.0F
+
+assign M_BA = rf_scsi.dma_kba;
+assign M_A = {page, rf_scsi.dma_ka};
+assign M_DO = m_do;
+assign M_BE = '1;
+assign M_WR = '1;
+assign M_REQ = m_req;
 
 endmodule

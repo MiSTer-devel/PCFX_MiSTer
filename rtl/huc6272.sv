@@ -132,6 +132,12 @@ wire [15:0]     dmcb_m_di, dmcb_m_do;
 wire [1:0]      dmcb_m_be;
 wire            dmcb_m_wr, dmcb_m_req, dmcb_m_ack;
 
+wire            scsi_m_ba;
+wire [17:0]     scsi_m_a;
+wire [15:0]     scsi_m_di, scsi_m_do;
+wire [1:0]      scsi_m_be;
+wire            scsi_m_wr, scsi_m_req, scsi_m_ack;
+
 wire            c71xfer_m_ba;
 wire [17:0]     c71xfer_m_a;
 wire [15:0]     c71xfer_m_di, c71xfer_m_do;
@@ -247,7 +253,16 @@ huc6272_fabric fabric
 
 huc6272_scsi scsi
    (
-    .*
+    .*,
+
+    .M_BA(scsi_m_ba),
+    .M_A(scsi_m_a),
+    .M_DI(scsi_m_di),
+    .M_DO(scsi_m_do),
+    .M_BE(scsi_m_be),
+    .M_WR(scsi_m_wr),
+    .M_REQ(scsi_m_req),
+    .M_ACK(scsi_m_ack)
     );
 
 //////////////////////////////////////////////////////////////////////
