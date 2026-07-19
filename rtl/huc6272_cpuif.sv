@@ -280,6 +280,9 @@ always @(posedge CLK) if (CE) begin
 
             scsi_txbuf_wr <= '0;
             rf_scsi.txbuf_wr <= scsi_txbuf_wr;
+
+            if (st_scsi.dma_end)
+                rf_scsi.dma_en <= '0;
         end
 
         if (~CSn & ~RDn) begin
@@ -329,7 +332,7 @@ always @(posedge CLK) if (CE) begin
         if (st_scsi.dma_next) begin
             rf_scsi.dma_byte_cnt <= rf_scsi.dma_byte_cnt - 1'd1;
             rf_scsi.dma_ka <= rf_scsi.dma_ka + 1'd1;
-        end        
+        end
     end
 end
 
@@ -388,7 +391,7 @@ always @* begin
                     dout[23:16] = st_scsi.rxbuf;
                     dout[6] = st_scsi.dma_req;
                     dout[4] = st_scsi.int_req_act;
-                    dout[3] = rf_scsi.phase_match;
+                    dout[3] = st_scsi.phase_match;
                     dout[1] = st_scsi.atn;
                     dout[0] = st_scsi.ack;
                 end

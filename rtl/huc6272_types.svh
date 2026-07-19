@@ -25,7 +25,6 @@ typedef struct packed {
     logic [17:1]    dma_byte_cnt;
     logic           dma_en;
     logic           dma_int_en;
-    logic           phase_match;
     
     logic           reset_int;
     logic           reset_dma_end_int;
@@ -36,6 +35,7 @@ typedef struct packed {
 
 typedef struct packed {
     logic [7:0]     cur_bus_stat;
+    logic           phase_match;
     logic           atn, ack;
     logic [7:0]     din, rxbuf;
     logic           dma_req;
