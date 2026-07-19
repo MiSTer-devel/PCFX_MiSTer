@@ -27,11 +27,14 @@ module huc6272_bgm
     input [1:0]   MDLB,
     input [15:0]  MDB,
 
+    output        PDMODE,
     output [23:0] PD,
     output        PDE
     );
 
 wire cgbank = rf_bgm.bgp[LAYER].cg[7];
+wire format_clr_256 = ((rf_bgm.bgp[LAYER].format == BGF_INT_DOT_256) |
+                       (rf_bgm.bgp[LAYER].format == BGF_EXT_BLK_256));
 wire format_clr_16m = ((rf_bgm.bgp[LAYER].format == BGF_INT_DOT_16M) |
                        (rf_bgm.bgp[LAYER].format == BGF_EXT_BLK_16M) |
                        (rf_bgm.bgp[LAYER].format == BGF_EXT_DOT_16M));
@@ -48,13 +51,13 @@ logic               cgfce;
 logic [15:0]        cgrd_in;
 logic [31:0]        cgrd;
 logic               cgra;
+logic               cgpdm, cgpdmo;
 logic [23:0]        cgpd, cgpdo; // {Y,U,V}
 logic               cgpdeo;
 
 wire cgrce = DCK;
 
-always @(posedge CLK)
-    cgfce <= mds & (mdl == LAYER);
+assign cgfce = mds & (mdl == LAYER);
 
 always @(posedge CLK) begin
     if (~RESn) begin
@@ -80,9 +83,14 @@ end
 // Use U/V=128, because yuv2rgb converts all zeros to green.
 localparam [23:0] PD_BLACK = {8'd0, 8'd128, 8'd128};
 
+assign cgpdm = format_clr_16m; // 0=palette, 1=YUV
+
 always @* begin
-    cgpd = PD_BLACK;
+    cgpd = cgpdm ? PD_BLACK : '0;
     if (RENDER) begin
+        if (format_clr_256) begin
+            cgpd[0+:8] = ~RENDER_BG_COL[0] ? cgrd[8+:8] : cgrd[0+:8];
+        end
         if (format_clr_16m) begin
             // 16M CG is ordered in KRAM as {Y0,Y1,U,V}.
             cgpd[16+:8] = ~RENDER_BG_COL[0] ? cgrd[24+:8] : cgrd[16+:8];
@@ -93,15 +101,18 @@ end
 
 always @(posedge CLK) begin
     if (~RESn) begin
+        cgpdmo <= '1;
         cgpdo <= PD_BLACK;
         cgpdeo <= '0;
     end
     else if (cgrce) begin
+        cgpdmo <= cgpdm;
         cgpdo <= cgpd;
         cgpdeo <= RENDER;
     end
 end
 
+assign PDMODE = cgpdmo;
 assign PD = cgpdo;
 assign PDE = cgpdeo;
 

@@ -80,8 +80,8 @@ task load_kreg();
     reg_write(7'h2f, 16'h0000); // Size
     reg_write(7'h2a, 16'h0000); // BAT
     reg_write(7'h2b, 16'h0000); // CG
-    reg_write(7'h34, 16'h0000); // XScr
-    reg_write(7'h35, 16'h0000); // YScr
+    reg_write(7'h36, 16'h0000); // XScr
+    reg_write(7'h37, 16'h0000); // YScr
     // AFFIN
     reg_write(7'h38, 16'h0000); // A
     reg_write(7'h39, 16'h0000); // B

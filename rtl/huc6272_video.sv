@@ -42,6 +42,7 @@ module huc6272_video
     input         HSYNC_NEGEDGE,
     input         VSYNC_POSEDGE,
     input         VSYNC_NEGEDGE,
+    output        VDMODE, // 0=palette, 1=YUV
     output [23:0] VD, // [7:0] = palette data / [23:0] = {Y,U,V}
     output        VDE
     );
@@ -90,25 +91,34 @@ assign COL = col;
 //////////////////////////////////////////////////////////////////////
 // Active fetch / render windows
 
-localparam [9:0] FETCH_ROW_START = 10'd21;
-localparam [9:0] FETCH_ROW_END = FETCH_ROW_START + 10'd240 - 10'd1;
-localparam [9:0] FETCH_COL_START = 10'd60;
-localparam [9:0] FETCH_COL_END = FETCH_COL_START + 10'd256 - 10'd1;
+logic           render_row, render_col;
+logic           fetch;
 
-wire fetch_row = (row >= FETCH_ROW_START) & (row <= FETCH_ROW_END);
-wire fetch_col = (col >= FETCH_COL_START) & (col <= FETCH_COL_END);
-wire fetch = fetch_row & fetch_col;
+localparam [9:0] RENDER_ROW_START = 10'd21;
+localparam [9:0] RENDER_ROW_END = RENDER_ROW_START + 10'd240 - 10'd1;
+localparam [9:0] RENDER_COL_START = 10'd63;
+localparam [9:0] RENDER_COL_END = RENDER_COL_START + 10'd256 - 10'd1;
 
-wire [9:0] fetch_bg_row = row - FETCH_ROW_START;
-wire [9:0] fetch_bg_col = col - FETCH_COL_START;
+localparam [9:0] FETCH_CG_COL_START = RENDER_COL_START - 10'd3;
+localparam [9:0] FETCH_CG_COL_END = FETCH_CG_COL_START + 10'd256 - 10'd1;
 
-localparam [9:0] RENDER_ROW_START = FETCH_ROW_START;
-localparam [9:0] RENDER_ROW_END = FETCH_ROW_END;
-localparam [9:0] RENDER_COL_START = FETCH_COL_START + 10'd3;
-localparam [9:0] RENDER_COL_END = FETCH_COL_END + 10'd3;
+localparam [9:0] FETCH_BAT_COL_START = FETCH_CG_COL_START - 10'd2;
+localparam [9:0] FETCH_BAT_COL_END = FETCH_BAT_COL_START + 10'd256 - 10'd1;
 
-wire render_row = (row >= RENDER_ROW_START) & (row <= RENDER_ROW_END);
-wire render_col = (col >= RENDER_COL_START) & (col <= RENDER_COL_END);
+wire fetch_bat_col = (col >= FETCH_BAT_COL_START) & (col <= FETCH_BAT_COL_END);
+wire fetch_bat = render_row & fetch_bat_col;
+
+wire [9:0] fetch_bat_bg_col = col - FETCH_BAT_COL_START;
+
+wire fetch_cg_col = (col >= FETCH_CG_COL_START) & (col <= FETCH_CG_COL_END);
+wire fetch_cg = render_row & fetch_cg_col;
+
+wire [9:0] fetch_cg_bg_col = col - FETCH_CG_COL_START;
+
+assign fetch = fetch_bat | fetch_cg;
+
+assign render_row = (row >= RENDER_ROW_START) & (row <= RENDER_ROW_END);
+assign render_col = (col >= RENDER_COL_START) & (col <= RENDER_COL_END);
 wire render = render_row & render_col;
 
 wire [9:0] render_bg_row = row - RENDER_ROW_START;
@@ -119,9 +129,11 @@ wire [9:0] render_bg_col = col - RENDER_COL_START;
 
 mpd_t               mpd [2][8];
 mpd_t               mprbufa, mprbufb;
+logic               mprs;
+mpd_t               mprda, mprdb;
 logic [2:0]         mpra;
 
-assign mpra = fetch ? fetch_bg_col[2:0] : '0;
+assign mpra = fetch_cg_bg_col[2:0] + 3'd1;
 
 always @(posedge CLK) begin
     if (rf_bgm.mpsw) begin
@@ -130,6 +142,13 @@ always @(posedge CLK) begin
     end
     else if (rf_bgm.mpwr)
         mpd[rf_bgm.mpwa[3]][rf_bgm.mpwa[2:0]] <= rf_bgm.mpwd;
+
+    mprs <= '0;
+    if (DCK) begin
+        mprs <= '1;
+        mprda <= mprbufa;
+        mprdb <= mprbufb;
+    end
 end
 
 //////////////////////////////////////////////////////////////////////
@@ -137,7 +156,9 @@ end
 
 logic               mdsa, mdsb;
 logic [1:0]         mdla, mdlb;
+logic               mdbnca, mdbncb;
 logic [15:0]        mda, mdb;
+logic [15:0]        mdbatd;
 
 huc6272_fetch vfea
    (
@@ -149,10 +170,14 @@ huc6272_fetch vfea
 
     .DCK(DCK),
     .FETCH(fetch),
-    .FETCH_BG_ROW(fetch_bg_row),
-    .FETCH_BG_COL(fetch_bg_col),
+    .FETCH_BAT(fetch_bat),
+    .FETCH_CG(fetch_cg),
+    .FETCH_BG_ROW(render_bg_row),
+    .FETCH_BAT_BG_COL(fetch_bat_bg_col),
+    .FETCH_CG_BG_COL(fetch_cg_bg_col),
 
-    .MPRBUF(mprbufa),
+    .MPR(mprda),
+    .MPRS(mprs),
 
     .M_A(MA_A),
     .M_DI(MA_DI),
@@ -162,8 +187,11 @@ huc6272_fetch vfea
     .M_REQ(MA_REQ),
     .M_ACK(MA_ACK),
 
+    .BATD(mdbatd),
+
     .MDS(mdsa),
     .MDL(mdla),
+    .MDBnC(mdbnca),
     .MD(mda)
     );
 
@@ -177,10 +205,14 @@ huc6272_fetch vfeb
 
     .DCK(DCK),
     .FETCH(fetch),
-    .FETCH_BG_ROW(fetch_bg_row),
-    .FETCH_BG_COL(fetch_bg_col),
+    .FETCH_BAT(fetch_bat),
+    .FETCH_CG(fetch_cg),
+    .FETCH_BG_ROW(render_bg_row),
+    .FETCH_BAT_BG_COL(fetch_bat_bg_col),
+    .FETCH_CG_BG_COL(fetch_cg_bg_col),
 
-    .MPRBUF(mprbufb),
+    .MPR(mprdb),
+    .MPRS(mprs),
 
     .M_A(MB_A),
     .M_DI(MB_DI),
@@ -190,14 +222,29 @@ huc6272_fetch vfeb
     .M_REQ(MB_REQ),
     .M_ACK(MB_ACK),
 
+    .BATD(mdbatd),
+
     .MDS(mdsb),
     .MDL(mdlb),
+    .MDBnC(mdbncb),
     .MD(mdb)
     );
+
+wire mdbds = (mdsa & mdbnca) | (mdsb & mdbncb); // BAT data strobe
+
+// Store BAT data for palette bank and character code
+always @(posedge CLK) begin
+    if (~RESn)
+        mdbatd <= '0;
+    else if (mdbds) begin
+        mdbatd <= mdbnca ? mda : mdb;
+    end
+end
 
 //////////////////////////////////////////////////////////////////////
 // BG pipelines
 
+logic               bg0_pdmode;
 logic [23:0]        bg0_pd;
 logic               bg0_pde;
 
@@ -210,7 +257,7 @@ huc6272_bgm #(0) bg0
     .rf_bgm(rf_bgm),
 
     .DCK(DCK),
-    .FETCH(fetch),
+    .FETCH(fetch_cg),
     .RENDER(render),
     .RENDER_BG_COL(render_bg_col),
 
@@ -221,6 +268,7 @@ huc6272_bgm #(0) bg0
     .MDLB(mdlb),
     .MDB(mdb),
 
+    .PDMODE(bg0_pdmode),
     .PD(bg0_pd),
     .PDE(bg0_pde)
     );
@@ -228,6 +276,7 @@ huc6272_bgm #(0) bg0
 //////////////////////////////////////////////////////////////////////
 // Final video output
 
+assign VDMODE = bg0_pdmode;
 assign VD = bg0_pd;
 assign VDE = bg0_pde;
 

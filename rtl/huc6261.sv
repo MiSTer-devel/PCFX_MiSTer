@@ -36,6 +36,7 @@ module huc6261
      // MMC (HuC6272 KING) and VPU (HuC6271 RAINBOW) video interface
      output           DCKKR, // pixel clock enable
      output           DCKKR_NEGEDGE,
+     input            MMC_VDMODE,
      input [23:0]     MMC_VD,
      input            VPU_VDMODE,
      input [23:0]     VPU_VD,
@@ -359,6 +360,22 @@ always @(posedge CLK) begin
     end
 end
 
+task dump_regs();
+    $display("HuC6261 register dump");
+    $display("  00=%x 04=%x 05=%x 06=%x 07=%x",
+             cr,
+             {vdc_sp_cpao, vdc_bg_cpao},
+             {mmc_bg1_cpao, mmc_bg0_cpao},
+             {mmc_bg3_cpao, mmc_bg2_cpao},
+             {8'b0, vpu_cpao});
+    $display("  08=%x 09=%x 0d=%x 0e=%x 0f=%x",
+             {5'b0, pri_vpu, 1'b0, pri_vdc_sp, 1'b0, pri_vdc_bg},
+             {1'b0, pri_mmc_bg3, 1'b0, pri_mmc_bg2, 1'b0, pri_mmc_bg1, 1'b0, pri_mmc_bg0},
+             ccr, ble, spbl);
+    $display("  10=%x 11=%x 12=%x 13=%x 14=%x 15=%x",
+             bl1a, bl1b, bl2a, bl2b, bl3a, bl3b);
+endtask
+
 //////////////////////////////////////////////////////////////////////
 // "Fast" (dot processing) clock generator
 //
@@ -485,16 +502,30 @@ assign layers[0].cpe = ble_cpe_t'(vdc_spbg ? (ble.vdc_sp & {2{vdc_cce}})
 //////////////////////////////////////////////////////////////////////
 // MMC (KING) video input
 
+logic [8:0]     mmc_cpa;
+logic [23:0]    mmc_vd;
 logic           mmc_en, mmc_key;
 
 assign mmc_en = cr.bmg[0];
-assign mmc_key = mmc_en & |MMC_VD[16+:8];
+
+assign mmc_cpa = {mmc_bg0_cpao, 1'b0} + {1'b0, MMC_VD[7:0]};
+
+always @* begin
+    if (~MMC_VDMODE) begin // palette
+        mmc_key = mmc_en & |MMC_VD[0+:8];
+        mmc_vd = 24'(mmc_cpa);
+    end
+    else begin // YUV
+        mmc_key = mmc_en & |MMC_VD[16+:8];
+        mmc_vd = MMC_VD;
+    end
+end
 
 // MMC BG0
 assign layers[1].pri = pri_mmc_bg0;
 assign layers[1].key = mmc_key;
-assign layers[1].vd  = MMC_VD;
-assign layers[1].pal = '0;
+assign layers[1].vd  = mmc_vd;
+assign layers[1].pal = ~MMC_VDMODE;
 assign layers[1].cpe = ble.mmc_bg0;
 
 //////////////////////////////////////////////////////////////////////

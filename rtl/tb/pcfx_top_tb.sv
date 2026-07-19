@@ -31,14 +31,12 @@ initial begin
     $timeformat(-6, 0, " us", 1);
 
 `ifndef VERILATOR
-    $dumpfile("pcfx_top_tb.vcd");
+    //$dumpfile("pcfx_top_tb.vcd");
     $dumpvars();
 `else
     $dumpfile("pcfx_top_tb.verilator.fst");
-    repeat (4) #(1000e3) ;
-    #(322e3) ;
-    while (pcfx_top.mach.cpu_a != 32'hfff00192)
-        @(posedge clk_sys) ;
+    repeat (1) #(1000e3) ;
+    #(537e3) ;
     $dumpvars();
 `endif
 end
@@ -623,10 +621,9 @@ end
 
 initial begin
     @(running) ;
-    repeat (8) #(1000e3) ;
-    #(700e3) ;
-    //repeat (3) #(1000e3) ;
-    //#(20e3) ;
+    
+    repeat (1) #(1000e3) ;
+    #(554e3) ;
 
 `ifdef SAVE_SRAMS
     if (bk_ena) begin
@@ -635,10 +632,12 @@ initial begin
     end
 `endif
 
-    //$writememh("sdram.hex", sdrb.u1a.mem);
+    $writememh("sdram.hex", sdrb.u1a.mem);
     //$writememh("vram0.hex", pcfx_top.mach.vram0.mem);
     //$writememh("vram1.hex", pcfx_top.mach.vram1.mem);
-    //$writememh("vce_cp.hex", pcfx_top.mach.vce.cpram.mem);
+    $writememh("vce_cp.hex", pcfx_top.mach.vce.cpram.mem);
+    pcfx_top.mach.vce.dump_regs();
+    pcfx_top.mach.mmc.dump_regs();
 
     $finish;
 end
