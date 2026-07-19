@@ -64,7 +64,7 @@ sdram_xsds #(.CLK_MHZ(CLK_RAM_MHZ)) sdrb (.*);
 
 //////////////////////////////////////////////////////////////////////
 
-logic [1:0] img_mounted = 0;
+logic [2:0] img_mounted = 0;
 logic       img_readonly = 0;
 logic [63:0] img_size = 0;
 
@@ -299,14 +299,25 @@ localparam CDI_SUBCHANNEL_LEN = ((12+96)*2);
 localparam CDI_CDIC_BUFFER_SIZE = (CDI_SECTOR_LEN + CDI_SUBCHANNEL_LEN);
 
 bit [7:0]       cd_rbuf [CDI_CDIC_BUFFER_SIZE];
+event           mount_cd;
 
 task load_cd;
 bit mounted;
     mounted = pcfx_mount_cd();
-    pcfx_top.mach.fake_cd.medium_empty = ~mounted;
-    if (mounted)
+    if (mounted) begin
+        -> mount_cd;
+        repeat (3) @(posedge clk_sys) ; // wait for mount completion
         $display("CD loaded.");
+    end
 endtask
+
+always @mount_cd begin
+    img_size <= 64'd407024064;
+    @(posedge clk_sys) ;
+    img_mounted[2] <= '1;
+    @(posedge clk_sys) ;
+    img_mounted <= '0;
+end
 
 task read_cd(input int lba);
     pcfx_read_cd(cd_rbuf, lba, 1);

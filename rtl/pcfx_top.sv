@@ -14,7 +14,7 @@ module pcfx_top
 	input             reset,
     input             pll_locked,
 	
-    input [1:0]       img_mounted,
+    input [2:0]       img_mounted,
     input             img_readonly,
     input [63:0]      img_size,
 
@@ -85,6 +85,7 @@ logic           bk_sdrd_we_req = 0, bk_sdrd_rd_req = 0;
 logic           bk_sdrd_we_ack, bk_sdrd_rd_ack;
 logic [31:0]    bk_sd_blk_cnt [2];
 logic [1:0]     bk_mounted;
+logic           cd_mounted = 0;
 
 //////////////////////////////////////////////////////////////////////
 // SDRAM controller
@@ -266,6 +267,7 @@ mach mach
    .KRAMB_REQ(kramb_req),
    .KRAMB_ACK(kramb_ack),
 
+   .CD_EN(cd_mounted),
    .CD_SD_LBA(sd_lba_cd),
    .CD_SD_RD(sd_rd_cd),
    .CD_SD_ACK(sd_ack_cd),
@@ -515,10 +517,12 @@ assign bk_ena_img_mount[0] = '1; // SRAM
 assign bk_ena_img_mount[1] = ~bmp_rom_inserted; // BMP
 
 always @(posedge clk_sys) begin
-    if (img_mounted != 0) begin
+    if (img_mounted[1:0] != 0) begin
         bk_mounted[img_mounted[1]] <= |img_size;
         bk_sd_blk_cnt[img_mounted[1]] <= img_size[9+:32];
     end
+    if (img_mounted[2])
+        cd_mounted <= |img_size;
 end
 
 assign bk_ena = |bk_mounted;

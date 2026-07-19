@@ -24,14 +24,13 @@ module fake_cd
     output reg        CD_WR,
     input             CD_READY,
 
+    input             MEDIUM_EMPTY,
     output reg [31:0] SD_LBA,
     output reg        SD_RD,
     input             SD_ACK,
     output [12:0]     SDBUF_ADDR,
     input [15:0]      SDBUF_DOUT
     );
-
-bit medium_empty = 1;
 
 typedef enum bit [7:0]
 {
@@ -167,7 +166,6 @@ always @(posedge CLK) begin
     cmd_done <= '0;
     STAT_GET <= '0;
     DOUT_REQ <= '0;
-    SD_RD <= '0;
     sd_ack_d <= SD_ACK;
     cd_wr_d <= CD_WR;
 
@@ -175,6 +173,7 @@ always @(posedge CLK) begin
         STATUS <= '0;
         CD_WR <= '0;
         SD_LBA <= '0;
+        SD_RD <= '0;
 
         tst <= TS_IDLE;
         datalen <= '0;
@@ -182,6 +181,9 @@ always @(posedge CLK) begin
         asc <= ASC_NO_ADDITIONAL_SENSE_CODE;
     end
     else begin
+        if (~sd_ack_d & SD_ACK)
+            SD_RD <= '0;
+
         case (tst)
             TS_IDLE:
                 if (COMM_SEND) begin
@@ -235,7 +237,7 @@ always @(posedge CLK) begin
             STATUS <= STATUS_GOOD;
             datalen <= '0;
 
-            if (medium_req & medium_empty) begin
+            if (medium_req & MEDIUM_EMPTY) begin
                 STATUS <= STATUS_CHECK_CONDITION;
                 sense_key <= SENSE_KEY_NOT_READY;
                 asc <= ASC_NO_DISC;

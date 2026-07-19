@@ -218,6 +218,8 @@ localparam CONF_STR = {
 	"-;",
 	"O[22:21],Aspect ratio,Original,Full Screen,[ARC1],[ARC2];",
 	"-;",
+    "S2,CUECHD,Load CD;",
+	"-;",
     "D0S0,SAVBIN,Mount int. backup RAM;",
     "D1S1,FXBBIN,Mount FX-BMP backup RAM;",
     "D2R7,Load backup RAM;",
@@ -241,16 +243,17 @@ wire   [1:0] buttons;
 wire [127:0] status;
 wire [31:0]  joystick_0, joystick_1;
 wire  [10:0] ps2_key;
-wire   [1:0] img_mounted;
+wire   [2:0] img_mounted;
 wire        img_readonly;
 wire [63:0] img_size;
-wire [31:0] sd_lba;
-wire  [1:0] sd_rd;
-wire  [1:0] sd_wr;
-wire  [1:0] sd_ack;
-wire  [7:0] sd_buff_addr;
+wire [31:0] sd_lba_bk, sd_lba_cd;
+wire  [5:0] sd_blk_cnt_bk, sd_blk_cnt_cd;
+wire  [2:0] sd_rd;
+wire  [2:0] sd_wr;
+wire  [2:0] sd_ack;
+wire [12:0] sd_buff_addr;
 wire [15:0] sd_buff_dout;
-wire [15:0] sd_buff_din;
+wire [15:0] sd_buff_din_bk;
 wire        sd_buff_wr;
 wire        ioctl_download;
 wire  [7:0] ioctl_index;
@@ -262,7 +265,7 @@ wire        bk_ena;
 wire [1:0]  bk_ena_img_mount;
 wire        bmp_rom_inserted;
 
-hps_io #(.CONF_STR(CONF_STR), .WIDE(1), .VDNUM(2)) hps_io
+hps_io #(.CONF_STR(CONF_STR), .WIDE(1), .VDNUM(3)) hps_io
 (
 	.clk_sys(clk_sys),
 	.HPS_BUS(HPS_BUS),
@@ -283,14 +286,15 @@ hps_io #(.CONF_STR(CONF_STR), .WIDE(1), .VDNUM(2)) hps_io
 	.img_readonly(img_readonly),
 	.img_size(img_size),
 
-	.sd_lba('{sd_lba, sd_lba}),
+	.sd_lba('{sd_lba_bk, sd_lba_bk, sd_lba_cd}),
+    .sd_blk_cnt('{sd_blk_cnt_bk, sd_blk_cnt_bk, sd_blk_cnt_cd}),
 	.sd_rd(sd_rd),
 	.sd_wr(sd_wr),
 	.sd_ack(sd_ack),
 
 	.sd_buff_addr(sd_buff_addr),
 	.sd_buff_dout(sd_buff_dout),
-	.sd_buff_din('{sd_buff_din, sd_buff_din}),
+	.sd_buff_din('{sd_buff_din_bk, sd_buff_din_bk, 16'b0}),
 	.sd_buff_wr(sd_buff_wr),
 
 	.ioctl_download(ioctl_download),
@@ -360,14 +364,17 @@ pcfx_top #(.CLK_RAM_MHZ(CLK_RAM_MHZ))  pcfx_top
 	.img_readonly(img_readonly),
 	.img_size(img_size),
 
-	.sd_lba(sd_lba),
+	.sd_lba_bk(sd_lba_bk),
+	.sd_lba_cd(sd_lba_cd),
+    .sd_blk_cnt_bk(sd_blk_cnt_bk),
+    .sd_blk_cnt_cd(sd_blk_cnt_cd),
 	.sd_rd(sd_rd),
 	.sd_wr(sd_wr),
 	.sd_ack(sd_ack),
 
 	.sd_buff_addr(sd_buff_addr),
 	.sd_buff_dout(sd_buff_dout),
-	.sd_buff_din(sd_buff_din),
+	.sd_buff_din_bk(sd_buff_din_bk),
 	.sd_buff_wr(sd_buff_wr),
 
 	.ioctl_download(ioctl_download),

@@ -63,6 +63,7 @@ module mach
    input         KRAMB_ACK,
 
    // CD-ROM block transfer interface
+   input         CD_EN,
    output [31:0] CD_SD_LBA,
    output        CD_SD_RD,
    input         CD_SD_ACK,
@@ -719,6 +720,7 @@ fake_cd fake_cd
      .CD_WR(scsi_cd_cd_wr),
      .CD_READY(scsi_cd_cd_ready),
 
+     .MEDIUM_EMPTY(~CD_EN),
      .SD_LBA(CD_SD_LBA),
      .SD_RD(CD_SD_RD),
      .SD_ACK(CD_SD_ACK),
