@@ -16,7 +16,7 @@ initial begin
 end
 
 `include "mmc_kram_vce.svh"
-`include "video_rtz0.svh"
+`include "video_rtz1.svh"
 
 //////////////////////////////////////////////////////////////////////
 
@@ -28,9 +28,19 @@ initial begin
     pice = 0;
 end
 always @(posedge clk) begin
+logic [23:0] out;
+logic [15:0] cp_out;
     if (dck) begin
         if (mmc_vde) begin
-            $fwrite(fpic, "%x", mmc_vd);
+            if (~mmc_vdmode) begin
+                cp_out = vce.cpram.mem[mmc_vd[7:0]];
+                out = {cp_out[8+:8], 
+                       {cp_out[7:4], cp_out[6:4], cp_out[6]},
+                       {cp_out[3:0], cp_out[2:0], cp_out[2]}};
+            end
+            else
+                out = mmc_vd;
+            $fwrite(fpic, "%x", out);
             pice = 1;
         end
         else if (pice) begin

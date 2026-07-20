@@ -92,16 +92,32 @@ endfunction
 
 function [16:0] mpe_cgaddr(mpd_t mpd);
 logic [9:0]  row, col;
+logic [2:0]  cgoff;
 logic [17:0] size_off;
     row = FETCH_BG_ROW;
     col = FETCH_CG_BG_COL;
     size_off = bg_size_off(row, col);
+    cgoff = mpd.cgoff[2:0];
+    if (mpd.rotate) begin
+        cgoff = '0;
+        case (mpe_bgp.format)
+            BGF_INT_DOT_4:   ;
+            BGF_INT_DOT_16,
+            BGF_EXT_BLK_16:  cgoff[0] = col[2];
+            BGF_INT_DOT_256,
+            BGF_EXT_BLK_256: cgoff[1:0] = col[2:1];
+            BGF_INT_DOT_64K,
+            BGF_INT_DOT_16M,
+            BGF_EXT_BLK_64K,
+            BGF_EXT_DOT_16M: cgoff[2:0] = col[2:0];
+            default: ;
+        endcase
+    end
     mpe_cgaddr = '0;
     case (mpe_bgp.format)
-        BGF_INT_DOT_16M:
-            mpe_cgaddr[16:0] = {size_off[16:3], mpd.cgoff[2:0]};
-        BGF_EXT_BLK_256:
-            mpe_cgaddr[16:0] = {BATD[11:0], row[2:0], col[2:1]};
+        BGF_INT_DOT_256: mpe_cgaddr[16:0] = {size_off[17:3], cgoff[1:0]};
+        BGF_INT_DOT_16M: mpe_cgaddr[16:0] = {size_off[16:3], cgoff[2:0]};
+        BGF_EXT_BLK_256: mpe_cgaddr[16:0] = {BATD[11:0], row[2:0], cgoff[1:0]};
         default: ;
     endcase
 endfunction

@@ -96,10 +96,10 @@ logic           fetch;
 
 localparam [9:0] RENDER_ROW_START = 10'd21;
 localparam [9:0] RENDER_ROW_END = RENDER_ROW_START + 10'd240 - 10'd1;
-localparam [9:0] RENDER_COL_START = 10'd63;
+localparam [9:0] RENDER_COL_START = 10'd61;
 localparam [9:0] RENDER_COL_END = RENDER_COL_START + 10'd256 - 10'd1;
 
-localparam [9:0] FETCH_CG_COL_START = RENDER_COL_START - 10'd3;
+localparam [9:0] FETCH_CG_COL_START = RENDER_COL_START - 10'd8;
 localparam [9:0] FETCH_CG_COL_END = FETCH_CG_COL_START + 10'd256 - 10'd1;
 
 localparam [9:0] FETCH_BAT_COL_START = FETCH_CG_COL_START - 10'd2;
@@ -257,6 +257,7 @@ huc6272_bgm #(0) bg0
     .rf_bgm(rf_bgm),
 
     .DCK(DCK),
+    .HSYNC_NEGEDGE(HSYNC_NEGEDGE),
     .FETCH(fetch_cg),
     .RENDER(render),
     .RENDER_BG_COL(render_bg_col),

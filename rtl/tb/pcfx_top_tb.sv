@@ -8,7 +8,7 @@
 
 //`define USE_IOCTL_FOR_LOAD_ROMBIOS 1
 //`define LOAD_BMP_ROM 1
-//`define LOAD_SRAMS 1
+`define LOAD_SRAMS 1
 //`define SAVE_SRAMS 1
 `define VERIFY_SRAM_LOAD 1
 `define SAVE_FRAMES 1

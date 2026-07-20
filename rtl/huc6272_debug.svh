@@ -8,7 +8,7 @@ task dump_regs();
     $display("HuC6272 register dump");
     $display("  KING BG:  10=%x 12=%x 16=%x",
              {rf_bgm.bgp[3].format, rf_bgm.bgp[2].format, rf_bgm.bgp[1].format, rf_bgm.bgp[0].format}, 
-             {1'b0, rf_bgm.bgp[3].prio, 1'b0, rf_bgm.bgp[2].prio, 1'b0, rf_bgm.bgp[1].prio, 1'b0, rf_bgm.bgp[0].prio}, 
+             {3'b0, rf_bgm.rsw, rf_bgm.bgp[3].prio, rf_bgm.bgp[2].prio, rf_bgm.bgp[1].prio, rf_bgm.bgp[0].prio}, 
              {12'b0, rf_bgm.sub_wrap});
     $display("  KBG0:     2c=%x 20=%x 21=%x 22=%x 23=%x 30=%x 31=%x",
              {rf_bgm.size_sub_n0, rf_bgm.size_sub_m0, rf_bgm.bgp[0].size_n, rf_bgm.bgp[0].size_m},

@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v4.0.0-prealpha (8ba24ab+) (w)1999-2022 BSI
-[*] Mon Jul 20 01:20:50 2026
+[*] Mon Jul 20 20:15:41 2026
 [*]
 [dumpfile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/huc6272_video_render_tb.vcd"
-[dumpfile_mtime] "Mon Jul 20 01:19:51 2026"
-[dumpfile_size] 310010318
+[dumpfile_mtime] "Mon Jul 20 20:14:58 2026"
+[dumpfile_size] 22102533
 [savefile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/huc6272_video_render_tb.gtkw"
-[timestart] 1343000
+[timestart] 182910
 [size] 1334 601
 [pos] -1 -1
-*-11.898551 1349120 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+*-9.164783 184060 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 [markername] AA
 [markername] BB
 [markername] CC
@@ -41,9 +41,7 @@
 [treeopen] huc6272_video_render_tb.mmc.dmca.
 [treeopen] huc6272_video_render_tb.mmc.dmcb.
 [treeopen] huc6272_video_render_tb.mmc.video.
-[treeopen] huc6272_video_render_tb.mmc.video.vfea.
 [treeopen] huc6272_video_render_tb.mmc.video.vfea.mpe_cgaddr.
-[treeopen] huc6272_video_render_tb.mmc.video.vfeb.
 [sst_width] 255
 [signals_width] 260
 [sst_expanded] 1
@@ -85,7 +83,7 @@ huc6272_video_render_tb.mmc.video.vfea.MDS
 -vfea
 @800200
 -vfeb
-@23
+@22
 huc6272_video_render_tb.mmc.video.vfeb.mpe_ra[17:0]
 @28
 huc6272_video_render_tb.mmc.video.vfeb.mpe_ren
@@ -109,19 +107,27 @@ huc6272_video_render_tb.mmc.video.mdbatd[15:0]
 huc6272_video_render_tb.mmc.video.render_row
 @24
 huc6272_video_render_tb.mmc.video.render_bg_row[9:0]
+@28
+huc6272_video_render_tb.mmc.video.render
+@24
 huc6272_video_render_tb.mmc.video.render_bg_col[9:0]
 @800200
 -bg0
 @28
 huc6272_video_render_tb.mmc.video.bg0.cgfce
+huc6272_video_render_tb.mmc.video.bg0.pdcc[2:0]
+huc6272_video_render_tb.mmc.video.bg0.pdwa[2:0]
+huc6272_video_render_tb.mmc.video.bg0.pdra[2:0]
+@22
+huc6272_video_render_tb.mmc.video.bg0.pdrout[15:0]
+@28
 huc6272_video_render_tb.mmc.video.bg0.cgra
+@23
+huc6272_video_render_tb.mmc.video.bg0.cgrd_in[15:0]
 @22
 huc6272_video_render_tb.mmc.video.bg0.cgrd[31:0]
 @28
-huc6272_video_render_tb.mmc.video.render
-@24
-huc6272_video_render_tb.mmc.video.render_bg_row[9:0]
-huc6272_video_render_tb.mmc.video.render_bg_col[9:0]
+huc6272_video_render_tb.mmc.video.bg0.cgcc[2:0]
 @22
 huc6272_video_render_tb.mmc.video.bg0.cgpd[23:0]
 @28
