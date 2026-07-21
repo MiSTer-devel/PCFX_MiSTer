@@ -12,6 +12,7 @@ module huc6272_c71xfer
 
     // Register file
     input         rf_c71xfer_t rf_c71xfer,
+    output        st_c71xfer_t st_c71xfer,
 
     // Video status
     input [9:0]   ROW,
@@ -35,12 +36,13 @@ module huc6272_c71xfer
     );
 
 logic           row_start, row_start_d, row_start_trig;
-logic           start_raster_match;
+logic           start_raster_match, raster_mon_match;
 logic           start;
 logic           act;
 logic [3:0]     row_cnt; // down counter
 logic [4:0]     block_cnt; // up counter
 logic [16:0]    addr;
+logic           rm_int;
 logic           kbus_ack;
 logic [15:0]    m_di;
 logic           m_req, m_a0, m_ready;
@@ -53,6 +55,7 @@ string          fname;
 assign row_start = (COL == '0);
 assign row_start_trig = row_start & ~row_start_d;
 assign start_raster_match = (ROW[8:0] == rf_c71xfer.tsr);
+assign raster_mon_match = (ROW[8:0] == rf_c71xfer.rm);
 assign start = row_start_trig & start_raster_match;
 
 always @(posedge CLK) if (CE) begin
@@ -62,6 +65,7 @@ always @(posedge CLK) if (CE) begin
         row_cnt <= '0;
         block_cnt <= '0;
         addr <= '0;
+        rm_int <= '0;
     end
     else begin
         row_start_d <= row_start;
@@ -92,6 +96,11 @@ always @(posedge CLK) if (CE) begin
             if (KBUS_ACK & m_a0)
                 addr <= addr + 1'd1;
         end
+
+        if (rf_c71xfer.rint & row_start_trig & raster_mon_match)
+            rm_int <= '1;
+        else if (~rf_c71xfer.rint)
+            rm_int <= '0;
     end
 end
 
@@ -127,6 +136,8 @@ always @(posedge CLK) begin
         end
     end
 end
+
+assign st_c71xfer.rm_int = rm_int;
 
 wire page = 1'b0; // TODO: wire up to R.0F
 wire [7:0] kbus_do = ~m_a0 ? m_di[0+:8] : m_di[8+:8];

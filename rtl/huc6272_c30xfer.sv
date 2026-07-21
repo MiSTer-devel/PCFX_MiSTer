@@ -40,6 +40,7 @@ logic           csel; // select ADPCM #1/#2
 logic [2:0]     row_cnt; // up counter
 logic           row_cnt_wrap;
 logic [16:0]    addr1, addr2;
+logic [2:1]     send, shlf;
 logic           kbus_ack;
 logic [15:0]    m_di;
 logic           m_req, m_a0, m_ready;
@@ -61,11 +62,17 @@ always @(posedge CLK) if (CE) begin
         row_cnt <= '0;
         addr1 <= '0;
         addr2 <= '0;
+        send <= '0;
+        shlf <= '0;
     end
     else begin
         row_start_d <= row_start;
         row_cnt <= row_cnt_wrap ? '0 : row_cnt + 1'd1;
 
+        if (rf_c30xfer.reset_int) begin
+            send <= '0;
+            shlf <= '0;
+        end
         if (rf_c30xfer.ren_ws) begin
             ren <= rf_c30xfer.ren;
             if (~ren[1] & rf_c30xfer.ren[1])
@@ -83,8 +90,12 @@ always @(posedge CLK) if (CE) begin
         end
         if (act[1]) begin
             if (~KBUS_CSn[0] & KBUS_RHnL) begin
-                if (addr1 == rf_c30xfer.kaend1)
+                if (addr1 == {rf_c30xfer.kahlf1, 6'b0})
+                    shlf[1] <= '1;
+                if (addr1 == rf_c30xfer.kaend1) begin
                     ren[1] <= '0;
+                    send[1] <= '1;
+                end
                 addr1 <= addr1 + 1'd1;
                 act[1] <= '0;
                 csel <= '1;
@@ -92,8 +103,12 @@ always @(posedge CLK) if (CE) begin
         end
         if (act[2]) begin
             if (~KBUS_CSn[1] & KBUS_RHnL) begin
-                if (addr2 == rf_c30xfer.kaend2)
+                if (addr2 == {rf_c30xfer.kahlf2, 6'b0})
+                    shlf[2] <= '1;
+                if (addr2 == rf_c30xfer.kaend2) begin
                     ren[2] <= '0;
+                    send[2] <= '1;
+                end
                 addr2 <= addr2 + 1'd1;
                 act[2] <= '0;
             end
@@ -101,8 +116,12 @@ always @(posedge CLK) if (CE) begin
     end
 end
 
-// TODO: interrupt flags
-assign st_c30xfer = '0;
+// Interrupt flags
+wire [3:0] isr = {send, shlf};
+wire [3:0] imr = {rf_c30xfer.bend, rf_c30xfer.bhlf};
+assign st_c30xfer.send = send;
+assign st_c30xfer.shlf = shlf;
+assign st_c30xfer.act_int = |(isr & imr);
 
 always @(posedge CLK) begin
     if (~RESn) begin

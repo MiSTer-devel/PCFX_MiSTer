@@ -48,7 +48,8 @@ logic           dma_next_word;
 
 logic           reqn_d;
 logic           assert_ack_dma, assert_ack_cnt;
-logic           phase_match;
+logic           phase_match, phase_match_d;
+logic           block_int;
 
 logic           m_req;
 logic [15:0]    m_do;
@@ -108,8 +109,8 @@ always @(posedge CLK) begin
             end
             else if (rf_scsi.dma_en & dma_req_set) begin
                 if (rf_scsi.start_dma_rx | rf_scsi.start_dma_tx)
-                    $display("huc6272_scsi: rf_scsi.dma_kba=%x, .dma_ka=%x, .dma_byte_cnt=%x", 
-                             rf_scsi.dma_kba, rf_scsi.dma_ka, rf_scsi.dma_byte_cnt);
+                    $display("huc6272_scsi: rf_scsi.dma_kba=%x, .dma_ka=%x, .dma_byte_cnt=%x, .dma_int_en=%x", 
+                             rf_scsi.dma_kba, rf_scsi.dma_ka, rf_scsi.dma_byte_cnt, rf_scsi.dma_int_en);
                 dma_a0 <= ~dma_a0;
                 if (~dma_a0) begin
                     dma_rxbuf <= rxbuf;
@@ -161,6 +162,21 @@ end
 assign phase_match = (~SCSI_IOn == rf_scsi.assert_io) &
                      (~SCSI_CDn == rf_scsi.assert_cd) &
                      (~SCSI_MSGn == rf_scsi.assert_msg);
+wire phase_mismatch = req_posedge & (~phase_match & phase_match_d);
+
+always @(posedge CLK) if (CE) begin
+    phase_match_d <= phase_match;
+
+    if (~RESn) begin
+        block_int <= '0;
+    end
+    else begin
+        if (~SCSI_RSTn | phase_mismatch)
+            block_int <= '1;
+        else if (rf_scsi.reset_int)
+            block_int <= '0;
+    end
+end
 
 // Bus hookups
 assign SCSI_DO = rf_scsi.dout;
@@ -178,10 +194,11 @@ assign st_scsi.ack = ~SCSI_ACKn;
 assign st_scsi.din = SCSI_DI;
 assign st_scsi.rxbuf = rxbuf;
 assign st_scsi.dma_req = dma_req;
-assign st_scsi.int_req_act = '0; // TODO
+assign st_scsi.int_req_act = dma_end | block_int;
 assign st_scsi.dma_next = dma_next_word;
 assign st_scsi.dma_end = dma_end;
 assign st_scsi.phase_match = phase_match;
+assign st_scsi.block_int = block_int;
 
 // KRAM memory client interface
 wire page = 1'b0; // TODO: wire up to R.0F

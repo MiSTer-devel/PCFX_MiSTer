@@ -36,6 +36,7 @@ typedef struct packed {
 typedef struct packed {
     logic [7:0]     cur_bus_stat;
     logic           phase_match;
+    logic           block_int;
     logic           atn, ack;
     logic [7:0]     din, rxbuf;
     logic           dma_req;
@@ -105,6 +106,10 @@ typedef struct packed {
     logic [8:0]    rm; // raster monitor
 } rf_c71xfer_t;
 
+typedef struct packed {
+    logic          rm_int;
+} st_c71xfer_t;
+
 //////////////////////////////////////////////////////////////////////
 // HuC6230 data transfer
 
@@ -130,4 +135,5 @@ typedef struct packed {
 typedef struct packed {
     logic [2:1]     send;
     logic [2:1]     shlf;
+    logic           act_int;
 } st_c30xfer_t;

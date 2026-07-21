@@ -28,6 +28,7 @@ module huc6272_cpuif
 
     // Status
     input         st_scsi_t st_scsi,
+    input         st_c71xfer_t st_c71xfer,
     input         st_c30xfer_t st_c30xfer,
 
     // Memory client interface
@@ -52,6 +53,7 @@ typedef struct packed {
 logic [6:0]     rsel;
 logic [31:0]    dout;
 logic           rbusy;
+logic [7:0]     isr, imr;
 
 logic           scsi_reset_int, scsi_reset_dma_end_int;
 logic           scsi_start_dma_tx, scsi_start_dma_rx;
@@ -365,8 +367,9 @@ always @* begin
     rbusy = '0;
     case (A[2])
         1'b0: begin
-            dout[6:0] = rsel;
             dout[23:16] = st_scsi.cur_bus_stat;
+            dout[15:8] = isr;
+            dout[6:0] = rsel;
         end
         1'b1: begin
             case (rsel)
@@ -382,9 +385,9 @@ always @* begin
                     dout[1] = rf_scsi.dma_mode;
                 end
                 7'h03: begin
-                    dout[2] = rf_scsi.assert_io;
+                    dout[2] = rf_scsi.assert_msg;
                     dout[1] = rf_scsi.assert_cd;
-                    dout[0] = rf_scsi.assert_msg;
+                    dout[0] = rf_scsi.assert_io;
                 end
                 7'h04: dout[7:0] = st_scsi.cur_bus_stat;
                 7'h05: begin
@@ -426,7 +429,23 @@ end
 assign DO = (~CSn & ~RDn) ? (A[1] ? dout[31:16] : dout[15:0]) : '0;
 
 assign BUSYn = ~((~CSn & (~RDn | ~WRn)) & rbusy & (krrd_act | krwr_act));
-assign IRQn = '1; // TODO
+
+wire scsibk_if = st_scsi.block_int;
+wire scdma_if = st_scsi.dma_end;
+wire sbcode_if = '0;
+wire raster_if = st_c71xfer.rm_int;
+wire sound_if = st_c30xfer.act_int;
+wire busy_if = krwr_act;
+
+wire scsibk_im = 1'b1;
+wire scdma_im = rf_scsi.dma_int_en;
+wire sbcode_im = '0;
+wire raster_im = rf_c71xfer.rint;
+wire sound_im = 1'b1; // multiple sources are individually masked
+
+assign isr = {1'b0, scsibk_if, scdma_if, sbcode_if, raster_if, sound_if, busy_if, 1'b0};
+assign imr = {1'b0, scsibk_im, scdma_im, sbcode_im, raster_im, sound_im, 1'b0, 1'b0};
+assign IRQn = ~|(isr & imr);
 
 always @* begin
     kra = '0;

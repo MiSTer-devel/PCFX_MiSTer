@@ -105,6 +105,7 @@ rf_c71xfer_t    rf_c71xfer;
 rf_c30xfer_t    rf_c30xfer;
 
 st_scsi_t       st_scsi;
+st_c71xfer_t    st_c71xfer;
 st_c30xfer_t    st_c30xfer;
 
 wire [9:0]      ROW, COL;
