@@ -90,26 +90,32 @@ always @(posedge CLK) if (CE) begin
         end
         if (act[1]) begin
             if (~KBUS_CSn[0] & KBUS_RHnL) begin
+                addr1 <= addr1 + 1'd1;
                 if (addr1 == {rf_c30xfer.kahlf1, 6'b0})
                     shlf[1] <= '1;
                 if (addr1 == rf_c30xfer.kaend1) begin
-                    ren[1] <= '0;
                     send[1] <= '1;
+                    if (rf_c30xfer.rng[1])
+                        addr1 <= {rf_c30xfer.kasta1, 8'b0};
+                    else
+                        ren[1] <= '0;
                 end
-                addr1 <= addr1 + 1'd1;
                 act[1] <= '0;
                 csel <= '1;
             end
         end
         if (act[2]) begin
             if (~KBUS_CSn[1] & KBUS_RHnL) begin
+                addr2 <= addr2 + 1'd1;
                 if (addr2 == {rf_c30xfer.kahlf2, 6'b0})
                     shlf[2] <= '1;
                 if (addr2 == rf_c30xfer.kaend2) begin
-                    ren[2] <= '0;
                     send[2] <= '1;
+                    if (rf_c30xfer.rng[2])
+                        addr2 <= {rf_c30xfer.kasta2, 8'b0};
+                    else
+                        ren[2] <= '0;
                 end
-                addr2 <= addr2 + 1'd1;
                 act[2] <= '0;
             end
         end
