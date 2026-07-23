@@ -124,7 +124,7 @@ endfunction
 
 function [17:0] mpe_addr(mpd_t mpd);
     mpe_addr = '0;
-    // TODO: mpe_addr[17] = REG.0F[4];
+    mpe_addr[17] = rf_bgm.kpage;
     if (~mpd.nop) begin
         if (mpd.bat) begin
             mpe_addr[16:0] = mpe_bataddr(mpd);

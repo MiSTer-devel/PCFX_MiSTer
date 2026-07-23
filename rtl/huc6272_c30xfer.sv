@@ -156,7 +156,6 @@ always @(posedge CLK) begin
     end
 end
 
-wire page = 1'b0; // TODO: wire up to R.0F
 wire [7:0] kbus_do = ~m_a0 ? m_di[0+:8] : m_di[8+:8];
 wire kbus_doe = kbus_ack;
 
@@ -165,7 +164,7 @@ assign KBUS_RHnL = kbus_doe & m_a0;
 assign KBUS_CSn = ~({2{kbus_doe}} & {csel, ~csel});
 
 assign M_BA = csel ? rf_c30xfer.kba2 : rf_c30xfer.kba1;
-assign M_A = {page, csel ? addr2 : addr1};
+assign M_A = {rf_c30xfer.kpage, csel ? addr2 : addr1};
 assign M_DO = '0;
 assign M_BE = '1;
 assign M_WR = '0;

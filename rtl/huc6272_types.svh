@@ -21,6 +21,7 @@ typedef struct packed {
     
     logic           dma_mode;
     logic           dma_kba;
+    logic           dma_kpage;
     logic [16:0]    dma_ka;
     logic [17:1]    dma_byte_cnt;
     logic           dma_en;
@@ -77,6 +78,7 @@ typedef struct packed {
     logic [8:0]     mpwd;
     logic           mpwr;
     logic           mpsw;
+    logic           kpage;
     rf_bgp_t [3:0]  bgp;
     logic           rsw;
     logic [3:0]     sub_wrap;
@@ -99,6 +101,7 @@ typedef struct packed {
 typedef struct packed {
     logic          ren;
     logic          rint;
+    logic          kpage;
     logic          kba;
     logic [16:0]   ka; // data start addr.
     logic [8:0]    tsr; // transfer start raster
@@ -119,6 +122,7 @@ typedef struct packed {
     logic [2:1]     rng;
     logic [2:1]     bend;
     logic [2:1]     bhlf;
+    logic           kpage;
     logic           kba1;
     logic [16:8]    kasta1;
     logic [16:0]    kaend1;

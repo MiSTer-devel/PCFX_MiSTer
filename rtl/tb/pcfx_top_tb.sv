@@ -35,8 +35,8 @@ initial begin
     $dumpvars();
 `else
     $dumpfile("pcfx_top_tb.verilator.fst");
-    repeat (1) #(1000e3) ;
-    #(537e3) ;
+    repeat (5) #(1000e3) ;
+    #(572e3) ;
     $dumpvars();
 `endif
 end
@@ -575,6 +575,12 @@ always @(posedge clk_sys) begin
   end
 end
 
+`else
+integer frame = 0;
+always @(negedge vs) begin
+  $display("%t: Frame %03d  A=%x", $time, frame, pcfx_top.mach.cpu_a);
+  frame = frame + 1;
+end
 `endif
 
 //////////////////////////////////////////////////////////////////////
@@ -607,6 +613,10 @@ initial #0 begin
     $display("Booted.");
     release pcfx_top.mach.cpu.inex.ha;
 
+    // RTZ: Skip the startup splash screens: replace "JAL 000141CE" with NOPs
+    sdram_write(pcfx_top.memif_sdram.RAM_BASE_A + 27'h00013ce2, 0);
+    sdram_write(pcfx_top.memif_sdram.RAM_BASE_A + 27'h00013ce4, 0);
+
 `ifdef LOAD_SRAMS
     mount_sram();
     mount_bmp();
@@ -622,8 +632,8 @@ end
 initial begin
     @(running) ;
     
-    repeat (1) #(1000e3) ;
-    #(554e3) ;
+    repeat (5) #(1000e3) ;
+    #(600e3) ;
 
 `ifdef SAVE_SRAMS
     if (bk_ena) begin

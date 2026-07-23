@@ -201,10 +201,8 @@ assign st_scsi.phase_match = phase_match;
 assign st_scsi.block_int = block_int;
 
 // KRAM memory client interface
-wire page = 1'b0; // TODO: wire up to R.0F
-
 assign M_BA = rf_scsi.dma_kba;
-assign M_A = {page, rf_scsi.dma_ka};
+assign M_A = {rf_scsi.dma_kpage, rf_scsi.dma_ka};
 assign M_DO = m_do;
 assign M_BE = '1;
 assign M_WR = '1;

@@ -132,6 +132,12 @@ always @(posedge CLK) if (CE) begin
                             krd <= DI;
                             krwr_pend <= '1;
                         end
+                        7'h0f: begin
+                            rf_c71xfer.kpage <= DI[12];
+                            rf_c30xfer.kpage <= DI[8];
+                            rf_bgm.kpage <= DI[4];
+                            rf_scsi.dma_kpage <= DI[0];
+                        end
                         7'h10: begin
                             rf_bgm.bgp[0].format <= bg_format_t'(DI[00+:4]);
                             rf_bgm.bgp[1].format <= bg_format_t'(DI[04+:4]);
@@ -409,6 +415,12 @@ always @* begin
                 7'h0d: begin
                     dout = krwa;
                     rbusy = '1;
+                end
+                7'h0f: begin
+                    dout[12] = rf_c71xfer.kpage;
+                    dout[8] = rf_c30xfer.kpage;
+                    dout[4] = rf_bgm.kpage;
+                    dout[0] = rf_scsi.dma_kpage;
                 end
                 7'h0e: begin
                     dout = {2{krd}};

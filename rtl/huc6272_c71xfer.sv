@@ -139,7 +139,6 @@ end
 
 assign st_c71xfer.rm_int = rm_int;
 
-wire page = 1'b0; // TODO: wire up to R.0F
 wire [7:0] kbus_do = ~m_a0 ? m_di[0+:8] : m_di[8+:8];
 wire kbus_doe = kbus_ack & KBUS_HOLDn;
 
@@ -147,7 +146,7 @@ assign KBUS_DO = kbus_doe ? kbus_do : '0;
 assign KBUS_ACK = kbus_doe;
 
 assign M_BA = rf_c71xfer.kba;
-assign M_A = {page, addr};
+assign M_A = {rf_c71xfer.kpage, addr};
 assign M_DO = '0;
 assign M_BE = '1;
 assign M_WR = '0;
