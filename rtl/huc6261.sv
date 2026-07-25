@@ -644,8 +644,8 @@ end
 always @* begin
     if (vmux.pal) begin
         mix_out.y = cp_out[8+:8];
-        mix_out.u = {cp_out[7:4], cp_out[6:4], cp_out[6]};
-        mix_out.v = {cp_out[3:0], cp_out[2:0], cp_out[2]};
+        mix_out.u = {cp_out[7:4], 4'b0000};
+        mix_out.v = {cp_out[3:0], 4'b0000};
     end
     else
         mix_out = yuv888_t'(mix_vd);
@@ -739,8 +739,8 @@ always @* begin
     ccdp_sel1 = yuv888_t'(mix.vd);
     if (ccdp_sel1_ccr) begin
         ccdp_sel1.y = ccr[8+:8];
-        ccdp_sel1.u = {ccr[7:4], ccr[6:4], ccr[6]};
-        ccdp_sel1.v = {ccr[3:0], ccr[2:0], ccr[2]};
+        ccdp_sel1.u = {ccr[7:4], 4'b0000};
+        ccdp_sel1.v = {ccr[3:0], 4'b0000};
     end
 end
 
