@@ -52,7 +52,7 @@
 [signals_width] 290
 [sst_expanded] 1
 [sst_vpaned_height] 145
-@c00200
+@800200
 -pcfx_top
 @28
 pcfx_top_tb.ioctl_download
@@ -98,7 +98,7 @@ pcfx_top_tb.pcfx_top.bmp_rom_inserted
 @22
 pcfx_top_tb.pcfx_top.bmp_ioctl_blk_cnt[31:0]
 pcfx_top_tb.pcfx_top.bmp_sd_blk_cnt[31:0]
-@1401200
+@1000200
 -pcfx_top
 @c00200
 -sdram

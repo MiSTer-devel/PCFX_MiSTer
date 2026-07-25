@@ -28,6 +28,7 @@ output reg [7:0] DBO,
 input wire SEL_N,
 input wire ACK_N,
 input wire RST_N,
+input wire ATN_N,
 output wire BSY_N,
 output wire REQ_N,
 output wire MSG_N,
@@ -46,6 +47,9 @@ input wire CD_WR,
 output wire CD_READY,
 output reg CD_DATA_END,
 output reg STOP_CD_SND,
+output wire MSGOUT_PEND,
+output reg [7:0] MSGOUT,
+output wire MSGOUT_SEND,
 output wire [15:0] DBG_DATAIN_CNT
 );
 
@@ -67,7 +71,9 @@ parameter [3:0]
   SP_DATAIN_START = 10,
   SP_DATAIN_END = 11,
   SP_DATAOUT_START = 12,
-  SP_DATAOUT_END = 13;
+  SP_DATAOUT_END = 13,
+  SP_MSGOUT_START = 14,
+  SP_MSGOUT_END = 15;
 
 reg [3:0] SP;
 reg BSY_Nr;
@@ -86,6 +92,7 @@ reg [3:0] COMM_LEN;
 reg [7:0] DATA_BUF[0:9];
 reg [3:0] DATA_POS;
 reg DATA_OUT;
+reg MSGOUT_OUT;
 wire FULL;
 wire EMPTY;
 reg FIFO_RD_REQ;
@@ -132,7 +139,8 @@ reg [16:0] DELAY_COUNT;
 
 assign CD_READY = ~FULL;
 
-fifo1 #(.DSIZE(8), .ASIZE(12)) FIFO(
+// Keep this small to speed up ATN response.
+fifo1 #(.DSIZE(8), .ASIZE(6)) FIFO(
     .WRST_N(RESET_N),
     .WCLK(CLK),
     .WDATA(FIFO_D),
@@ -176,10 +184,12 @@ fifo1 #(.DSIZE(8), .ASIZE(12)) FIFO(
       DATA_BUF[8] <= 8'b0;
       DATA_BUF[9] <= 8'b0;
       DATA_POS <= {4{1'b0}};
+      MSGOUT <= 8'b0;
       SP <= SP_FREE;
       STOP_CD_SND <= 1'b0;
       COMM_OUT <= 1'b0;
       DATA_OUT <= 1'b0;
+      MSGOUT_OUT <= 1'b0;
       CD_DATA_END <= 1'b0;
       STAT_PEND <= 1'b0;
       DOUT_PEND <= 1'b0;
@@ -196,6 +206,7 @@ fifo1 #(.DSIZE(8), .ASIZE(12)) FIFO(
       end
       COMM_OUT <= 1'b0;
       DATA_OUT <= 1'b0;
+      MSGOUT_OUT <= 1'b0;
       CD_DATA_END <= 1'b0;
       FIFO_RD_REQ <= 1'b0;
       if(RST_N == 1'b0) begin
@@ -217,6 +228,14 @@ fifo1 #(.DSIZE(8), .ASIZE(12)) FIFO(
             DELAY_COUNT <= 1700;
             // Wait 40 microseconds after control signals are set up, before triggering REQ in COMMAND phase
             DATAIN_CNT <= {16{1'b0}};
+          end
+          else if(ATN_N == 1'b0) begin
+            BSY_Nr <= 1'b0;
+            MSG_Nr <= 1'b0;
+            CD_Nr <= 1'b0;
+            IO_Nr <= 1'b1;
+            REQ_Nr <= 1'b0;
+            SP <= SP_MSGOUT_START;
           end
           else if(STAT_PEND == 1'b1) begin
             STAT_COUNT <= STAT_COUNT + 1;
@@ -392,6 +411,31 @@ fifo1 #(.DSIZE(8), .ASIZE(12)) FIFO(
             end
           end
         end
+        SP_MSGOUT_START : begin
+          if(REQ_Nr == 1'b0 && ACK_N == 1'b0) begin
+            REQ_Nr <= 1'b1;
+            MSGOUT <= DBI;
+            SP <= SP_MSGOUT_END;
+          end
+        end
+        SP_MSGOUT_END : begin
+          if(REQ_Nr == 1'b1 && ACK_N == 1'b1) begin
+            if(ATN_N == 1'b1) begin
+              // Treat all messages as ABORT.
+              BSY_Nr <= 1'b1;
+              MSG_Nr <= 1'b1;
+              CD_Nr <= 1'b1;
+              IO_Nr <= 1'b1;
+              REQ_Nr <= 1'b1;
+              MSGOUT_OUT <= 1'b1;
+              SP <= SP_FREE;
+            end
+            else begin
+              REQ_Nr <= 1'b0;
+              SP <= SP_MSGOUT_START;
+            end
+          end
+        end
         default : begin
         end
         endcase
@@ -408,6 +452,8 @@ fifo1 #(.DSIZE(8), .ASIZE(12)) FIFO(
   assign COMM_SEND = COMM_OUT;
   assign DOUT = {DATA_BUF[9],DATA_BUF[8],DATA_BUF[7],DATA_BUF[6],DATA_BUF[5],DATA_BUF[4],DATA_BUF[3],DATA_BUF[2],DATA_BUF[1],DATA_BUF[0]};
   assign DOUT_SEND = DATA_OUT;
+  assign MSGOUT_SEND = MSGOUT_OUT;
+  assign MSGOUT_PEND = ~ATN_N;
   assign DBG_DATAIN_CNT = DATAIN_CNT;
 
 /* -----\/----- EXCLUDED -----\/-----

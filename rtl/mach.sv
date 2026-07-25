@@ -205,6 +205,9 @@ logic [7:0]     scsi_cd_cd_data;
 logic           scsi_cd_cd_wr;
 logic           scsi_cd_cd_ready;
 logic           scsi_cd_cd_data_end;
+logic           scsi_cd_msgout_pend;
+logic [7:0]     scsi_cd_msgout;
+logic           scsi_cd_msgout_send;
 
 wire [1:0]      kp_latch;
 wire [1:0]      kp_clk;
@@ -607,6 +610,7 @@ scsi scsi_cd
      .SEL_N(scsi_seln),
      .ACK_N(scsi_ackn),
      .RST_N(scsi_rstn),
+     .ATN_N(scsi_atnn),
      .BSY_N(scsi_bsyn),
      .REQ_N(scsi_reqn),
      .MSG_N(scsi_msgn),
@@ -624,6 +628,9 @@ scsi scsi_cd
      .CD_WR(scsi_cd_cd_wr),
      .CD_READY(scsi_cd_cd_ready),
      .CD_DATA_END(scsi_cd_cd_data_end),
+     .MSGOUT_PEND(scsi_cd_msgout_pend),
+     .MSGOUT(scsi_cd_msgout),
+     .MSGOUT_SEND(scsi_cd_msgout_send),
      .STOP_CD_SND(),
      .DBG_DATAIN_CNT()
      );
@@ -722,6 +729,10 @@ fake_cd fake_cd
      .CD_DATA(scsi_cd_cd_data),
      .CD_WR(scsi_cd_cd_wr),
      .CD_READY(scsi_cd_cd_ready),
+     .CD_DATA_END(scsi_cd_cd_data_end),
+     .MSGOUT_PEND(scsi_cd_msgout_pend),
+     .MSGOUT(scsi_cd_msgout),
+     .MSGOUT_SEND(scsi_cd_msgout_send),
 
      .MEDIUM_EMPTY(~CD_EN),
      .SD_LBA(CD_SD_LBA),

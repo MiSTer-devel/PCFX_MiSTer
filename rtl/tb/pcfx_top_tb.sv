@@ -35,8 +35,8 @@ initial begin
     $dumpvars();
 `else
     $dumpfile("pcfx_top_tb.verilator.fst");
-    repeat (5) #(1000e3) ;
-    #(572e3) ;
+    repeat (6) #(1000e3) ;
+    #(289e3) ;
     $dumpvars();
 `endif
 end
@@ -632,8 +632,8 @@ end
 initial begin
     @(running) ;
     
-    repeat (5) #(1000e3) ;
-    #(600e3) ;
+    repeat (6) #(1000e3) ;
+    #(335e3) ;
 
 `ifdef SAVE_SRAMS
     if (bk_ena) begin
@@ -642,7 +642,7 @@ initial begin
     end
 `endif
 
-    $writememh("sdram.hex", sdrb.u1a.mem);
+    //$writememh("sdram.hex", sdrb.u1a.mem);
     //$writememh("vram0.hex", pcfx_top.mach.vram0.mem);
     //$writememh("vram1.hex", pcfx_top.mach.vram1.mem);
     $writememh("vce_cp.hex", pcfx_top.mach.vce.cpram.mem);
@@ -652,24 +652,16 @@ initial begin
     $finish;
 end
 
-/* -----\/----- EXCLUDED -----\/-----
-initial if (0) begin
+initial if (1) begin
     @(running) ;
-    #(216e3);
+    repeat (6) #(1000e3) ;
+    #(292e3) ;
 
-    repeat (4) begin
-        $display("Pressing JP1.Select...");
-        hmi.jp1.select = '1;
-        #(20e3) hmi.jp1.select = '0;
-        #(20e3) ;
-    end
-
-    $display("Pressing JP1.Run...");
-    hmi.jp1.run = '1;
-    #(20e3) hmi.jp1.run = '0;
+    $display("Pressing JP1.B1....");
+    hmi.jp1.b[1] = '1;
+    #(20e3) hmi.jp1.b[1] = '0;
     #(20e3);
 end
- -----/\----- EXCLUDED -----/\----- */
 
 endmodule
 

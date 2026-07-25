@@ -23,6 +23,10 @@ module fake_cd
     output reg [7:0]  CD_DATA,
     output reg        CD_WR,
     input             CD_READY,
+    input             CD_DATA_END,
+    input             MSGOUT_PEND,
+    input [7:0]       MSGOUT,
+    input             MSGOUT_SEND,
 
     input             MEDIUM_EMPTY,
     output reg [31:0] SD_LBA,
@@ -71,7 +75,9 @@ typedef enum bit [2:0]
     TS_CMD,
     TS_DATA_OUT, // initiator to target
     TS_DATA_IN, // target to initiator
-    TS_STAT
+    TS_DATA_IN_END,
+    TS_STAT,
+    TS_MSG_OUT // initiator to target
 } tst_t;
 
 tst_t           tst;
@@ -211,8 +217,10 @@ always @(posedge CLK) begin
                 if (DOUT_SEND)
                     tst <= TS_STAT;
             end
-            TS_DATA_IN: // target to initiator
-                if (CD_WR) begin
+            TS_DATA_IN: begin // target to initiator
+                if (MSGOUT_PEND) // early termination by ATN
+                    tst <= TS_MSG_OUT;
+                else if (CD_WR) begin
                     datapos <= datapos + 1'd1;
                     if (dataend) begin
                         if (~blkend) begin
@@ -222,13 +230,33 @@ always @(posedge CLK) begin
                             tst <= TS_CMD;
                         end
                         else begin
-                            tst <= TS_STAT;
+                            tst <= TS_DATA_IN_END;
                         end
                     end
                 end
+            end
+            TS_DATA_IN_END: begin
+                // To close a race between us finishing sending data
+                // to the SCSI bridge and the initiator asserting ATN,
+                // we wait here for the bridge to finish sending data
+                // to the initiator.
+                if (CD_DATA_END) begin
+                    if (MSGOUT_PEND) // early termination by ATN
+                        tst <= TS_MSG_OUT;
+                    else // normal completion
+                        tst <= TS_STAT;
+                end
+            end
             TS_STAT: begin
                 STAT_GET <= '1;
                 tst <= TS_IDLE;
+            end
+            TS_MSG_OUT: begin
+                if (MSGOUT_SEND) begin
+                    // Error handling (ie retry) would go here.
+                    $display("fake_cd: MSGOUT=%x", MSGOUT);
+                    tst <= TS_IDLE;
+                end
             end
             default: ;
         endcase
@@ -346,6 +374,8 @@ always @(posedge CLK) begin
             if (CD_WR & (COMMAND[0+:8] != CMDOP_READ_10))
                 $display("fake_cd: TS_DATA_IN: [%x] = %x", datapos, CD_DATA);
         end
+        else
+            CD_WR <= '0;
     end
 end
 
