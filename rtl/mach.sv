@@ -584,10 +584,10 @@ huc6230 apu
     .RESn(RESn),
     .CE(CE),
 
-    .A2(mem16_a[2]),
-    .DI(cpu_d_o[15:0]),
-    .CSn('1),
-    .WRn('1),
+    .A(mem16_a[5:1]),
+    .DI(cpu_d_o[7:0]),
+    .CSn(apu_csn),
+    .WRn(ga_wrn),
 
     .KBUS_DI(kbus_di),
     .KBUS_RHnL(kbus_rhnl),

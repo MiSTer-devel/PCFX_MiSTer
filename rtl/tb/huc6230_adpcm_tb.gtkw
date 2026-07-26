@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v4.0.0-prealpha (8ba24ab+) (w)1999-2022 BSI
-[*] Mon Jul  6 06:18:13 2026
+[*] Sun Jul 26 06:22:33 2026
 [*]
 [dumpfile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/huc6230_adpcm_tb.vcd"
-[dumpfile_mtime] "Mon Jul  6 06:17:47 2026"
-[dumpfile_size] 50286649
+[dumpfile_mtime] "Sun Jul 26 06:20:19 2026"
+[dumpfile_size] 50359401
 [savefile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/huc6230_adpcm_tb.gtkw"
 [timestart] 0
 [size] 1333 600
 [pos] -1 -1
-*-21.798429 474280 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+*-21.798443 8036460 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 [markername] AA
 [markername] BB
 [markername] CC
@@ -42,23 +42,34 @@
 [signals_width] 180
 [sst_expanded] 1
 [sst_vpaned_height] 159
+@28
+huc6230_adpcm_tb.apu.RESn
+huc6230_adpcm_tb.apu.CSn
 @22
 huc6230_adpcm_tb.v_cnt[8:0]
 @420
 huc6230_adpcm_tb.hs_cnt
 @28
 huc6230_adpcm_tb.apu.HSYNC_NEGEDGE
-huc6230_adpcm_tb.apu.adpck
+huc6230_adpcm_tb.apu.res_hsync
+huc6230_adpcm_tb.apu.hsync_negedge
 huc6230_adpcm_tb.apu.pck
-huc6230_adpcm_tb.apu.p_wrap
+@22
+huc6230_adpcm_tb.apu.adp_cnt[3:0]
+@28
+huc6230_adpcm_tb.apu.adpck
+huc6230_adpcm_tb.apu.adpck_div2
 huc6230_adpcm_tb.apu.KBUS_CSn[1:0]
 @22
 huc6230_adpcm_tb.apu.KBUS_DI[7:0]
 @28
 huc6230_adpcm_tb.apu.KBUS_RHnL
 huc6230_adpcm_tb.apu.adpcm1.hold
+@29
 huc6230_adpcm_tb.apu.adpcm1.KBUS_CSn
-huc6230_adpcm_tb.apu.adpcm1.SCK
+@28
+huc6230_adpcm_tb.apu.adpcm1.SCK_ADPCM
+huc6230_adpcm_tb.apu.adpcm1.SCK_PCM
 @22
 huc6230_adpcm_tb.apu.adpcm1.kdin[15:0]
 @28
@@ -66,7 +77,6 @@ huc6230_adpcm_tb.apu.adpcm1.kdinv[1:0]
 @22
 huc6230_adpcm_tb.apu.adpcm1.kbuf[15:0]
 huc6230_adpcm_tb.apu.adpcm1.kbufv[3:0]
-@23
 huc6230_adpcm_tb.apu.adpcm1.cs[3:0]
 @28
 huc6230_adpcm_tb.apu.adpcm1.c
@@ -79,7 +89,7 @@ huc6230_adpcm_tb.apu.adpcm1.ss[10:0]
 @22
 huc6230_adpcm_tb.apu.adpcm1.p[17:0]
 huc6230_adpcm_tb.apu.adpcm1.dt[18:0]
-huc6230_adpcm_tb.apu.adpcm1.pa[18:0]
+huc6230_adpcm_tb.apu.adpcm1.pa[19:0]
 huc6230_adpcm_tb.apu.adpcm1.sl[5:0]
 huc6230_adpcm_tb.apu.adpcm1.sla[6:0]
 huc6230_adpcm_tb.apu.adpcm1.SOUT[15:0]

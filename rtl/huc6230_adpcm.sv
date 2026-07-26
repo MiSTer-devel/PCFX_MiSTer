@@ -12,14 +12,17 @@ module huc6230_adpcm
     input         CLK,
     input         RESn,
 
+    input         SRES,
+    input         INTERP,
+    input [1:0]   DIV,
+
     input [7:0]   KBUS_DI,
     input         KBUS_RHnL,
     input         KBUS_CSn,
 
-    input         DCK, // pixel clock enable
-    input         HSYNC_NEGEDGE,
-
-    input         SCK, // ADPCM sample clock
+    input         SCK_ADPCM_DIV2, // input sample clock / 2
+    input         SCK_ADPCM, // ADPCM (input) sample clock
+    input         SCK_PCM, // PCM (output) sample clock
     output [15:0] SOUT
     );
 
@@ -35,7 +38,7 @@ logic           hold;
 
 always @* begin
     kbufv_next = kbufv;
-    if (SCK)
+    if (SCK_ADPCM)
         kbufv_next = kbufv >> 1;
 end
 
@@ -48,7 +51,7 @@ always @(posedge CLK) begin
     end
     else begin
         // Parcel out coded samples
-        if (SCK) begin
+        if (SCK_ADPCM) begin
             if (|kbufv)
                 kbufv <= kbufv_next;
         end
@@ -62,8 +65,8 @@ always @(posedge CLK) begin
             kdinv[KBUS_RHnL] <= '1;
         end
 
-        // On the next HSYNC, refill coded sample buffer or assert hold
-        if (~|kbufv_next & DCK & HSYNC_NEGEDGE) begin
+        // Refill coded sample buffer or assert hold
+        if (~|kbufv_next & SCK_ADPCM_DIV2) begin
             if (&kdinv) begin
                 kbuf <= kdin;
                 kbufv <= '1;
@@ -105,53 +108,85 @@ const static logic [10:0] stab [49] =
     11'd1552
 };
 
+logic               interp;
 logic [2:0]         step;
+logic               dec_adpcm, dec_pcm;
 
 logic               c; // code: step sign
 logic [2:0]         d; // data: step magnitude
+logic [3:0]         dtm;
 logic [18:0]        dt;
 logic [17:0]        p;
-logic signed [18:0] pa;
+logic signed [19:0] pa;
 logic [5:0]         sl;
 logic signed [6:0]  sla;
 logic [10:0]        ss;
 
+assign interp = INTERP & |DIV;
+
+// dt multiplier is inversely proportional to interpolation (output :
+// input sample rate) ratio.
+always @* begin
+    dtm = 4'd8;                 // 1:1 - 31.47 kHz
+    if (interp)
+        case (DIV)
+            2'b01: dtm = 4'd4;  // 2:1 - 15.73 kHz
+            2'b10: dtm = 4'd2;  // 4:1 -  7.84 kHz
+            2'b11: dtm = 4'd1;  // 8:1 -  3.93 kHz
+            default: ;
+        endcase
+end
+
 always @(posedge CLK) begin
     ss <= stab[sl];
 
-    if (~RESn) begin
+    if (~RESn | SRES) begin
         step <= '0;
         p <= 18'h20000;
         sl <= '0;
+        dt <= '0;
+        sla <= '0;
+        {c, d} <= '0;
     end
     else begin
-        if (SCK & ~hold) begin
+        if ((SCK_ADPCM | SCK_PCM) & ~hold) begin
             step <= 3'd1;
-            {c, d} <= cs;
+            dec_adpcm <= SCK_ADPCM;
+            dec_pcm <= SCK_PCM | ~INTERP;
+
+            if (SCK_ADPCM)
+                {c, d} <= cs;
         end
         else if (step != 0) begin
             step <= step + 1'd1;
             case (step)
                 3'd1: begin
-                    dt <= 19'd8 * 4'(d + 4'd1) * ss;
-                    sla <= $signed(7'(sl)) + 7'(ltab[d]);
+                    if (dec_adpcm) begin
+                        dt <= 19'(dtm) * 4'(d + 4'd1) * ss;
+                        sla <= $signed(7'(sl)) + 7'(ltab[d]);
+                    end
                 end
                 3'd2: begin
-                    pa <= $signed(19'(p)) + $signed(c ? -dt : dt);
-                    if (sla > 7'sd48)
-                        sl <= 6'd48;
-                    else if (sla < 7'sd0)
-                        sl <= 6'd0;
-                    else
-                        sl <= 6'(sla);
+                    if (dec_pcm)
+                        pa <= $signed(20'(p)) + $signed(c ? -dt : dt);
+                    if (dec_adpcm) begin
+                        if (sla > 7'sd48)
+                            sl <= 6'd48;
+                        else if (sla < 7'sd0)
+                            sl <= 6'd0;
+                        else
+                            sl <= 6'(sla);
+                    end
                 end
                 3'd3: begin
-                    if (pa > 19'sh3ffff)
-                        p <= 18'sh3ffff;
-                    else if (pa < 19'sh0)
-                        p <= 18'sh0;
-                    else
-                        p <= 18'(pa);
+                    if (dec_pcm) begin
+                        if (pa > 20'sh3ffff)
+                            p <= 18'h3ffff;
+                        else if (pa < 20'sh0)
+                            p <= 18'h0;
+                        else
+                            p <= 18'(pa);
+                    end
                     step <= '0;
                 end
                 default: ;

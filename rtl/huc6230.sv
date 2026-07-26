@@ -15,8 +15,8 @@ module huc6230
     input         RESn,
 
     // CPU memory / I/O bus interface
-    input         A2,
-    input [15:0]  DI,
+    input [5:1]   A,
+    input [7:0]   DI,
     input         CSn,
     input         WRn,
 
@@ -34,10 +34,42 @@ module huc6230
     output [15:0] SROUT // right channel
     );
 
+typedef struct packed {
+    logic [2:1]    sres;
+    logic [2:1]    interp;
+    logic [1:0]    div;
+} adp_cr_t;
+
+logic               hsync_negedge, hsync_negedge_d;
+
+adp_cr_t            adp_cr, adp_cr_next;
+
 //////////////////////////////////////////////////////////////////////
-// I/O bus interface
-//
-// TODO
+// I/O bus / Register interface
+
+always @(posedge CLK) if (CE) begin
+    if (~RESn) begin
+        adp_cr_next <= '0;
+    end
+    else begin
+        if (~CSn & ~WRn) begin
+            case (A)
+                5'h10: adp_cr_next <= DI[5:0];
+                default: ;
+            endcase
+        end
+    end
+end
+
+always @(posedge CLK) begin
+    if (~RESn) begin
+        adp_cr <= '0;
+    end
+    else if (hsync_negedge) begin
+        // This register becomes effective on -HSYNC.
+        adp_cr <= adp_cr_next;
+    end
+end
 
 //////////////////////////////////////////////////////////////////////
 // ADPCM sample clock generator
@@ -45,30 +77,36 @@ module huc6230
 // Assumes CLK = 2 * 21.48 MHz
 localparam [11:0] PCM_CLOCKS = 12'(2730 / 2); // 31.75 kHz
 
+logic           res_hsync;
 logic [11:0]    p_cnt;
 logic           pck;
-logic [1:0]     adp_cnt;
-logic           adpck;
+logic [3:0]     adp_cnt;
+logic           adpck, adpck_div2;
+
+assign hsync_negedge = DCK & HSYNC_NEGEDGE;
 
 wire p_wrap = p_cnt == (PCM_CLOCKS - 1'd1);
 
-always @(posedge CLK)
-    p_cnt <= (~RESn | pck) ? '0 : p_cnt + 1'd1;
-
-assign pck = (DCK & HSYNC_NEGEDGE) | p_wrap;
-
-// adpck = pck / 2^DIV
-localparam div = 2'b00; // TODO
-wire adp_wrap = adp_cnt == 2'((1 << div) - 1);
-
 always @(posedge CLK) begin
-    if (~RESn)
-        adp_cnt <= '0;
-    else if (pck)
-        adp_cnt <= adp_wrap ? '0 : adp_cnt + 1'd1;
+    hsync_negedge_d <= hsync_negedge;
+    res_hsync <= (res_hsync & ~hsync_negedge_d) | ~RESn;
+    p_cnt <= (res_hsync | pck) ? '0 : p_cnt + 1'd1;
+    pck <= hsync_negedge | p_wrap;
 end
 
-assign adpck = pck & adp_wrap;
+always @(posedge CLK) begin
+    if (res_hsync)
+        adp_cnt <= '0;
+    else if (pck)
+        adp_cnt <= adp_cnt + 1'd1;
+end
+
+// adpck = pck / 2^DIV
+wire [3:0] adp_mask = 4'((2 << adp_cr.div) - 1);
+assign adpck = pck & ({adp_cnt[2:0], 1'b1} & adp_mask) == adp_mask;
+
+// adpck_div2 = adpck / 2
+assign adpck_div2 = pck & (adp_cnt & adp_mask) == adp_mask;
 
 //////////////////////////////////////////////////////////////////////
 // ADPCM decoders
@@ -83,14 +121,17 @@ huc6230_adpcm adpcm1
     .CLK(CLK),
     .RESn(RESn),
 
+    .SRES(adp_cr.sres[1]),
+    .INTERP(adp_cr.interp[1]),
+    .DIV(adp_cr.div),
+
     .KBUS_DI(KBUS_DI),
     .KBUS_RHnL(KBUS_RHnL),
     .KBUS_CSn(adpcm1_csn),
 
-    .DCK(DCK),
-    .HSYNC_NEGEDGE(HSYNC_NEGEDGE),
-
-    .SCK(adpck),
+    .SCK_ADPCM_DIV2(adpck_div2),
+    .SCK_ADPCM(adpck),
+    .SCK_PCM(pck),
     .SOUT(adpcm1_sout)
     );
 
@@ -99,14 +140,17 @@ huc6230_adpcm adpcm2
     .CLK(CLK),
     .RESn(RESn),
 
+    .SRES(adp_cr.sres[2]),
+    .INTERP(adp_cr.interp[2]),
+    .DIV(adp_cr.div),
+
     .KBUS_DI(KBUS_DI),
     .KBUS_RHnL(KBUS_RHnL),
     .KBUS_CSn(adpcm2_csn),
 
-    .DCK(DCK),
-    .HSYNC_NEGEDGE(HSYNC_NEGEDGE),
-
-    .SCK(adpck),
+    .SCK_ADPCM_DIV2(adpck_div2),
+    .SCK_ADPCM(adpck),
+    .SCK_PCM(pck),
     .SOUT(adpcm2_sout)
     );
 

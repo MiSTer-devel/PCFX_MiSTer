@@ -84,6 +84,11 @@ assign dck = ckenkr;
 
 //////////////////////////////////////////////////////////////////////
 
+logic [5:1]     a;
+logic [7:0]     io_din;
+logic           io_csn = '1;
+logic           io_wrn = '1;
+
 logic [7:0]     kbus_di;
 logic           kbus_rhnl;
 logic [1:0]     kbus_csn;
@@ -94,10 +99,10 @@ huc6230 apu
     .CE(ce),
     .RESn(~reset),
 
-    .A2('0),
-    .DI('0),
-    .CSn('1),
-    .WRn('1),
+    .A(a),
+    .DI(io_din),
+    .CSn(io_csn),
+    .WRn(io_wrn),
 
     .KBUS_DI(kbus_di),
     .KBUS_RHnL(kbus_rhnl),
@@ -118,6 +123,7 @@ logic apu_kbus_en = '0;
 integer hs_cnt = 0;
 logic   kbus_trg = '0;
 logic   side = 0;
+wire [1:0] adpcm_div = 2'b01;
 
 always @(posedge clk) if (dck) begin
     if (fdat != -1 && v_cnt == 9'd6)
@@ -125,7 +131,7 @@ always @(posedge clk) if (dck) begin
 end
 
 initial begin
-    fdat = $fopen("bootsnd.bin", "r");
+    fdat = $fopen("adpcm.bin", "r");
     kbus_di = '0;
     kbus_csn = '1;
     kbus_rhnl = '0;
@@ -134,7 +140,7 @@ end
 always @(posedge clk) if (dck & hsync_negedge) begin
     if (apu_kbus_en) begin
         hs_cnt <= hs_cnt + 1;
-        if (hs_cnt == 1) begin
+        if (hs_cnt == (2 ** (adpcm_div + 1) - 1)) begin
             kbus_trg <= '1;
             hs_cnt <= 0;
         end
@@ -174,9 +180,30 @@ end
 
 //////////////////////////////////////////////////////////////////////
 
+task reg_write(input [4:0] rs, input [7:0] v);
+    @(posedge clk) ;
+    while (!ce)
+        @(posedge clk) ;
+    a[5:1] <= rs;
+    io_din <= v;
+    io_wrn <= 0;
+    io_csn <= 0;
+
+    @(posedge clk) ;
+    while (!ce)
+        @(posedge clk) ;
+    io_din <= 'X;
+    io_wrn <= 1;
+    io_csn <= 1;
+endtask
+
+//////////////////////////////////////////////////////////////////////
+
 initial #0 begin
     #10 @(posedge clk) reset <= 0;
     #2 @(posedge clk) ;
+
+    reg_write(5'h10, {6'b000011, adpcm_div});
 
     #(16e3) $finish;
 end
