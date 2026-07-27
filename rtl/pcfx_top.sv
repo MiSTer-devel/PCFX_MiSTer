@@ -90,6 +90,7 @@ logic           cd_mounted = 0;
 //////////////////////////////////////////////////////////////////////
 // SDRAM controller
 
+wire        sdram_hblank;
 wire [26:0] sdram_ch1_addr;
 wire [31:0] sdram_ch1_din, sdram_ch1_dout;
 wire [3:0]  sdram_ch1_be;
@@ -107,7 +108,7 @@ sdram #(.CLK_MHZ(CLK_RAM_MHZ)) sdram
 
     .init(~pll_locked),
     .clk(clk_ram),
-    .hblank(HBlank),
+    .hblank(sdram_hblank),
 
     .ch1_addr(sdram_ch1_addr),
     .ch1_dout(sdram_ch1_dout),
@@ -221,6 +222,7 @@ mach mach
    .CE(cpu_ce),
    .RESn(cpu_resn),
 
+   .SDRAM_HBLANK(sdram_hblank),
    .CPU_BCYSTn(cpu_bcystn),
 
    .ROM_A(rom_a),

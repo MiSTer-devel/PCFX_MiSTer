@@ -14,6 +14,7 @@ module mach
    input         CE,
    input         RESn,
 
+   output        SDRAM_HBLANK,
    output        CPU_BCYSTn,
 
    output [19:0] ROM_A,
@@ -313,6 +314,8 @@ huc6261 vce
      .A2(mem16_a[2]),
      .DI(cpu_d_o[15:0]),
      .DO(vce_do),
+
+     .SDRAM_HBLANK(SDRAM_HBLANK),
 
      .DCK70(dck70),
      .DCK70_NEGEDGE(dck70_negedge),

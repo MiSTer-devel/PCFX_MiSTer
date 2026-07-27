@@ -22,6 +22,9 @@ module huc6261
      input [15:0]     DI,
      output [15:0]    DO,
 
+     // SDRAM refresh timing
+     output reg       SDRAM_HBLANK,
+
      // VDC interface
      output           DCK70, // pixel clock enable
      output           DCK70_NEGEDGE,
@@ -56,6 +59,7 @@ localparam [11:0] DISP_CLOCKS = 12'd2160;
 localparam [11:0] LINE_CLOCKS = 12'd2730;
 localparam [11:0] HS_CLOCKS = 12'd192;
 localparam [11:0] HS_OFF = 12'd47;
+localparam [11:0] SDRAM_HBL_OFF = 12'd100; // passes the eyeball test
 
 localparam [8:0] TOTAL_LINES = 9'd263;
 localparam [8:0] VS_LINES = 9'd3;
@@ -799,6 +803,7 @@ assign vmux_low_chroma = ccdp_low_chroma;
 
 logic [11:0]    hsync_start_pos, hsync_end_pos;
 logic           hbl_ff = '1, vbl_ff = '1;
+logic           sdram_hbl_ff = '1;
 
 always @* begin
     hsync_start_pos = (cr.dc7 ? (LINE_CLOCKS - 12'd6) : 12'd8) - 1'd1;
@@ -839,12 +844,23 @@ always @(posedge CLK) begin
         vbl_ff <= '1;
 end
 
+// Generate an early H-Blank to drive SDRAM refresh.  This is much
+// earlier than true hbl, to ensure that the end of refresh doesn't
+// overlap with the start of HuC6272 BG fetch.
+always @(posedge CLK) begin
+    if (h_cnt == (LEFT_BL_CLOCKS - SDRAM_HBL_OFF))
+        sdram_hbl_ff <= '0;
+    else if (h_cnt == (LEFT_BL_CLOCKS - SDRAM_HBL_OFF) + DISP_CLOCKS)
+        sdram_hbl_ff <= '1;
+end
+
 //////////////////////////////////////////////////////////////////////
 // Final output
 
 always @(posedge CLK) if (DCK70) begin
     VBL <= vbl_ff;
     HBL <= hbl_ff;
+    SDRAM_HBLANK <= sdram_hbl_ff;
 
     Y <= ccdp_reg2.y;
     U <= ccdp_reg2.u;
