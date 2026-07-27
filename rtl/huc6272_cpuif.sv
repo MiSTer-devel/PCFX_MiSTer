@@ -196,6 +196,12 @@ always @(posedge CLK) if (CE) begin
                         7'h35: rf_bgm.bgp[2].bsy <= {1'b0, DI[9:0]};
                         7'h36: rf_bgm.bgp[3].bsx <= {1'b0, DI[9:0]};
                         7'h37: rf_bgm.bgp[3].bsy <= {1'b0, DI[9:0]};
+                        7'h38: rf_bgm.bg0at.a <= DI[15:0];
+                        7'h39: rf_bgm.bg0at.b <= DI[15:0];
+                        7'h3a: rf_bgm.bg0at.c <= DI[15:0];
+                        7'h3b: rf_bgm.bg0at.d <= DI[15:0];
+                        7'h3c: rf_bgm.bg0at.x0 <= DI[15:0];
+                        7'h3d: rf_bgm.bg0at.y0 <= DI[15:0];
                         7'h40: begin
                             rf_c71xfer.ren <= DI[0];
                             rf_c71xfer.rint <= DI[1];

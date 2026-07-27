@@ -368,6 +368,7 @@ endmodule
 `include "huc6272_fabric_bank.sv"
 `include "huc6272_scsi.sv"
 `include "huc6272_video.sv"
+`include "huc6272_rsag.sv"
 `include "huc6272_fetch.sv"
 `include "huc6272_bgm.sv"
 `include "huc6272_c71xfer.sv"

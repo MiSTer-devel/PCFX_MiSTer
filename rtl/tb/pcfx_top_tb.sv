@@ -35,9 +35,6 @@ initial begin
     $dumpvars();
 `else
     $dumpfile("pcfx_top_tb.verilator.fst");
-    repeat (6) #(1000e3) ;
-    #(289e3) ;
-    $dumpvars();
 `endif
 end
 
@@ -613,9 +610,11 @@ initial #0 begin
     $display("Booted.");
     release pcfx_top.mach.cpu.inex.ha;
 
+/* -----\/----- EXCLUDED -----\/-----
     // RTZ: Skip the startup splash screens: replace "JAL 000141CE" with NOPs
     sdram_write(pcfx_top.memif_sdram.RAM_BASE_A + 27'h00013ce2, 0);
     sdram_write(pcfx_top.memif_sdram.RAM_BASE_A + 27'h00013ce4, 0);
+ -----/\----- EXCLUDED -----/\----- */
 
 `ifdef LOAD_SRAMS
     mount_sram();
@@ -632,8 +631,11 @@ end
 initial begin
     @(running) ;
     
-    repeat (6) #(1000e3) ;
-    #(335e3) ;
+    //repeat (3) #(1000e3) ;
+    //#(762e3) ;
+    #(689e3) ;
+    $dumpvars();
+    #(15e3) ;
 
 `ifdef SAVE_SRAMS
     if (bk_ena) begin
@@ -642,7 +644,7 @@ initial begin
     end
 `endif
 
-    //$writememh("sdram.hex", sdrb.u1a.mem);
+    $writememh("sdram.hex", sdrb.u1a.mem);
     //$writememh("vram0.hex", pcfx_top.mach.vram0.mem);
     //$writememh("vram1.hex", pcfx_top.mach.vram1.mem);
     $writememh("vce_cp.hex", pcfx_top.mach.vce.cpram.mem);
@@ -654,8 +656,9 @@ end
 
 initial if (1) begin
     @(running) ;
-    repeat (6) #(1000e3) ;
-    #(292e3) ;
+    // RTZ: Skip the startup splashes and video
+    repeat (1) #(1000e3) ;
+    #(500e3) ;
 
     $display("Pressing JP1.B1....");
     hmi.jp1.b[1] = '1;

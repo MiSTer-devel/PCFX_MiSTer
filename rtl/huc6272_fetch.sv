@@ -21,6 +21,8 @@ module huc6272_fetch
     input [9:0]   FETCH_BG_ROW,
     input [9:0]   FETCH_BAT_BG_COL,
     input [9:0]   FETCH_CG_BG_COL,
+    input [9:0]   FETCH_BAT_BG0_ROT_ROW,
+    input [9:0]   FETCH_BAT_BG0_ROT_COL,
 
     // Microprogram data store interface
     input         mpd_t MPR,
@@ -42,8 +44,11 @@ module huc6272_fetch
     output        MDS,
     output [1:0]  MDL,
     output        MDBnC,
+    output [2:0]  MDCC,
     output [15:0] MD
     );
+
+mpd_t               mpe_d;
 
 function rf_bgp_t get_bgp(input [1:0] layer);
     case (layer)
@@ -56,15 +61,46 @@ function rf_bgp_t get_bgp(input [1:0] layer);
 endfunction
 
 //////////////////////////////////////////////////////////////////////
+// Screen address generator
+
+logic [9:0]         sag_row, sag_col;
+logic [9:0]         sag_bat_bg0_rot_row_d, sag_bat_bg0_rot_col_d;
+logic [9:0]         sag_cg_bg0_rot_row, sag_cg_bg0_rot_col;
+
+always @(posedge CLK) begin
+    if (~RESn) begin
+        sag_bat_bg0_rot_row_d <= '0;
+        sag_bat_bg0_rot_col_d <= '0;
+        sag_cg_bg0_rot_row <= '0;
+        sag_cg_bg0_rot_col <= '0;
+    end
+    else if (DCK) begin
+        sag_bat_bg0_rot_row_d <= FETCH_BAT_BG0_ROT_ROW;
+        sag_bat_bg0_rot_col_d <= FETCH_BAT_BG0_ROT_COL;
+        sag_cg_bg0_rot_row <= sag_bat_bg0_rot_row_d;
+        sag_cg_bg0_rot_col <= sag_bat_bg0_rot_col_d;
+    end    
+end
+
+always @* begin
+    sag_row = FETCH_BG_ROW;
+    sag_col = mpe_d.bat ? FETCH_BAT_BG_COL : FETCH_CG_BG_COL;
+    if (mpe_d.rotate) begin
+        sag_row = mpe_d.bat ? FETCH_BAT_BG0_ROT_ROW : sag_cg_bg0_rot_row;
+        sag_col = mpe_d.bat ? FETCH_BAT_BG0_ROT_COL : sag_cg_bg0_rot_col;
+    end
+end
+
+//////////////////////////////////////////////////////////////////////
 // Microprogram engine
 
-mpd_t               mpe_d;
 rf_bgp_t            mpe_bgp;
 logic [17:0]        mpe_ra;
 logic               mpe_rs;
 logic               mpe_ren;
 logic [1:0]         mpe_layer;
 logic               mpe_bnc;
+logic [2:0]         mpe_cgcol;
 
 assign mpe_d = (rf_bgm.mpsw & FETCH) ? MPR : 9'h100;
 always @*
@@ -83,8 +119,8 @@ endfunction
 function [16:0] mpe_bataddr(mpd_t mpd);
 logic [9:0]  row, col;
 logic [17:0] size_off;
-    row = FETCH_BG_ROW >> 3;
-    col = FETCH_BAT_BG_COL;
+    row = sag_row >> 3;
+    col = sag_col;
     size_off = bg_size_off(row, col);
     mpe_bataddr = '0;
     mpe_bataddr[11:0] = size_off[14:3];
@@ -94,8 +130,8 @@ function [16:0] mpe_cgaddr(mpd_t mpd);
 logic [9:0]  row, col;
 logic [2:0]  cgoff;
 logic [17:0] size_off;
-    row = FETCH_BG_ROW;
-    col = FETCH_CG_BG_COL;
+    row = sag_row;
+    col = sag_col;
     size_off = bg_size_off(row, col);
     cgoff = mpd.cgoff[2:0];
     if (mpd.rotate) begin
@@ -149,6 +185,7 @@ always @(posedge CLK) begin
         // complete data fetch.  We need more time to compensate for
         // SDRAM delays, and so we keep compute time to a minimum.
         mpe_ra <= mpe_addr(mpe_d);
+        mpe_cgcol <= sag_col[2:0];
     end
 end
 
@@ -161,6 +198,7 @@ logic               mtrg, mtrg2, mreq0, mreq, mack;
 logic               mdspp, mdsp, mds;
 logic [1:0]         mdlp, mdl;
 logic               mdbncp, mdbnc;
+logic [2:0]         mdcgcolp, mdcgcol;
 logic [17:0]        ma;
 logic [15:0]        mdp, md;
 
@@ -194,6 +232,7 @@ always @(posedge CLK) begin
             ma <= mpe_ra;
             mdlp <= mpe_layer;
             mdbncp <= mpe_bnc;
+            mdcgcolp <= mpe_cgcol;
         end
         else if (mreq) begin
             mtrg2 <= mtrg;
@@ -204,6 +243,7 @@ always @(posedge CLK) begin
             md <= M_DI;
             mdl <= mdlp;
             mdbnc <= mdbncp;
+            mdcgcol <= mdcgcolp;
         end
         if (mrcke) begin
             mdspp <= mtrg;
@@ -220,6 +260,7 @@ assign M_REQ = mreq;
 assign MDS = mds;
 assign MDL = mdl;
 assign MDBnC = mdbnc;
+assign MDCC = mdcgcol;
 assign MD = md;
 
 endmodule

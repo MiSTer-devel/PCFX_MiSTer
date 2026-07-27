@@ -105,9 +105,12 @@ localparam [9:0] FETCH_CG_COL_END = FETCH_CG_COL_START + 10'd256 - 10'd1;
 localparam [9:0] FETCH_BAT_COL_START = FETCH_CG_COL_START - 10'd2;
 localparam [9:0] FETCH_BAT_COL_END = FETCH_BAT_COL_START + 10'd256 - 10'd1;
 
+localparam [9:0] FETCH_RSAG_BG0_COL_START = FETCH_BAT_COL_START - 10'd2;
+
 wire fetch_bat_col = (col >= FETCH_BAT_COL_START) & (col <= FETCH_BAT_COL_END);
 wire fetch_bat = render_row & fetch_bat_col;
 
+wire [9:0] fetch_rsag_bg0_col = col - FETCH_RSAG_BG0_COL_START;
 wire [9:0] fetch_bat_bg_col = col - FETCH_BAT_COL_START;
 
 wire fetch_cg_col = (col >= FETCH_CG_COL_START) & (col <= FETCH_CG_COL_END);
@@ -152,11 +155,32 @@ always @(posedge CLK) begin
 end
 
 //////////////////////////////////////////////////////////////////////
+// BG0 rotated screen address generator
+
+logic [9:0]         bg0_rot_row, bg0_rot_col;
+
+huc6272_rsag rsag
+   (
+    .CLK(CLK),
+    .RESn(RESn),
+
+    .rf_bgm(rf_bgm),
+
+    .DCK(DCK),
+    .FETCH_BG_ROW(render_bg_row),
+    .FETCH_RSAG_BG0_COL(fetch_rsag_bg0_col),
+
+    .ROW(bg0_rot_row),
+    .COL(bg0_rot_col)
+    );
+
+//////////////////////////////////////////////////////////////////////
 // Bank A/B microprogram engine and memory client interfaces
 
 logic               mdsa, mdsb;
 logic [1:0]         mdla, mdlb;
 logic               mdbnca, mdbncb;
+logic [2:0]         mdcca, mdccb;
 logic [15:0]        mda, mdb;
 logic [15:0]        mdbatd;
 
@@ -175,6 +199,8 @@ huc6272_fetch vfea
     .FETCH_BG_ROW(render_bg_row),
     .FETCH_BAT_BG_COL(fetch_bat_bg_col),
     .FETCH_CG_BG_COL(fetch_cg_bg_col),
+    .FETCH_BAT_BG0_ROT_ROW(bg0_rot_row),
+    .FETCH_BAT_BG0_ROT_COL(bg0_rot_col),
 
     .MPR(mprda),
     .MPRS(mprs),
@@ -192,6 +218,7 @@ huc6272_fetch vfea
     .MDS(mdsa),
     .MDL(mdla),
     .MDBnC(mdbnca),
+    .MDCC(mdcca),
     .MD(mda)
     );
 
@@ -210,6 +237,8 @@ huc6272_fetch vfeb
     .FETCH_BG_ROW(render_bg_row),
     .FETCH_BAT_BG_COL(fetch_bat_bg_col),
     .FETCH_CG_BG_COL(fetch_cg_bg_col),
+    .FETCH_BAT_BG0_ROT_ROW(bg0_rot_row),
+    .FETCH_BAT_BG0_ROT_COL(bg0_rot_col),
 
     .MPR(mprdb),
     .MPRS(mprs),
@@ -227,6 +256,7 @@ huc6272_fetch vfeb
     .MDS(mdsb),
     .MDL(mdlb),
     .MDBnC(mdbncb),
+    .MDCC(mdccb),
     .MD(mdb)
     );
 
@@ -264,9 +294,11 @@ huc6272_bgm #(0) bg0
 
     .MDSA(mdsa),
     .MDLA(mdla),
+    .MDCCA(mdcca),
     .MDA(mda),
     .MDSB(mdsb),
     .MDLB(mdlb),
+    .MDCCB(mdccb),
     .MDB(mdb),
 
     .PDMODE(bg0_pdmode),

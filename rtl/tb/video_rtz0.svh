@@ -83,10 +83,10 @@ task load_kreg();
     reg_write(7'h36, 16'h0000); // XScr
     reg_write(7'h37, 16'h0000); // YScr
     // AFFIN
-    reg_write(7'h38, 16'h0000); // A
+    reg_write(7'h38, 16'h0100); // A
     reg_write(7'h39, 16'h0000); // B
     reg_write(7'h3a, 16'h0000); // C
-    reg_write(7'h3b, 16'h0000); // D
+    reg_write(7'h3b, 16'h0100); // D
     reg_write(7'h3c, 16'h0000); // X
     reg_write(7'h3d, 16'h0000); // Y
     // RAINBOW

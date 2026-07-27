@@ -23,9 +23,11 @@ module huc6272_bgm
 
     input         MDSA,
     input [1:0]   MDLA,
+    input [2:0]   MDCCA,
     input [15:0]  MDA,
     input         MDSB,
     input [1:0]   MDLB,
+    input [2:0]   MDCCB,
     input [15:0]  MDB,
 
     output        PDMODE,
@@ -33,7 +35,7 @@ module huc6272_bgm
     output        PDE
     );
 
-wire rotate = rf_bgm.rsw;
+wire rotate = rf_bgm.rsw & (LAYER == 0);
 
 wire cgbank = rf_bgm.bgp[LAYER].cg[7];
 
@@ -52,18 +54,20 @@ wire format_clr_16m = ((rf_bgm.bgp[LAYER].format == BGF_INT_DOT_16M) |
 
 logic               mds;
 logic [1:0]         mdl;
+logic [2:0]         mdcc;
 logic [15:0]        md;
 
 assign mds = cgbank ? MDSB : MDSA;
 assign mdl = cgbank ? MDLB : MDLA;
+assign mdcc = cgbank ? MDCCB : MDCCA;
 assign md = cgbank ? MDB : MDA;
 
 logic               cgfce;
 logic [2:0]         pdwa, pdra;
-logic [15:0]        pdrout;
+logic [18:0]        pdrout;
 logic [2:0]         pdcc;
-logic [15:0]        cgrd_in;
-logic [2:0]         cgcc;
+logic [18:0]        cgrd_in;
+logic [2:0]         cgcol, cgccnt, cgcc;
 logic [31:0]        cgrd;
 logic               cgra;
 logic               render_d, render_dd;
@@ -78,13 +82,14 @@ assign cgfce = mds & (mdl == LAYER);
 // Pixel data buffer
 // Up to 8x 16-bit words arrive every 8x pixel clocks.
 // To align BG layers, all 8 pixels are buffered.
-// For rotated BG0, words arrive pixel clock.
+// For rotated BG0, words arrive every pixel clock.
+// CG column (valid for rotated) is paired with the pixel data.
 //
-dpram #(.addr_width(3), .data_width(16)) pdram
+dpram #(.addr_width(3), .data_width(19)) pdram
    (
     .clock(CLK),
     .address_a(pdwa),
-    .data_a(md),
+    .data_a({mdcc, md}),
     .enable_a(1'b1),
     .wren_a(cgfce),
     .q_a(),
@@ -133,17 +138,18 @@ always @(posedge CLK) begin
             if (format_clr_16m) begin
                 // Each 16M YUV pixel spans two 16-bit words
                 if (cgra)
-                    cgrd <= {cgrd_in, pdrout};
+                    cgrd <= {cgrd_in[15:0], pdrout[15:0]};
             end
-            else
-                cgrd <= {16'b0, cgrd_in};
+            else begin
+                cgrd <= {16'b0, cgrd_in[15:0]};
+                // CG column is split out here
+                cgcol <= cgrd_in[18:16];
+            end
         end
     end
 end
 
-always @* begin
-    cgra = pdcc[0];
-end
+assign cgra = pdcc[0];
 
 // Use U/V=128, because yuv2rgb converts all zeros to green.
 localparam [23:0] PD_BLACK = {8'd0, 8'd128, 8'd128};
@@ -153,14 +159,16 @@ assign cgpdm = format_clr_16m; // 0=palette, 1=YUV
 always @(posedge CLK) begin
     if (~RESn | HSYNC_NEGEDGE) begin
         render_dd <= '0;
-        cgcc <= '0;
+        cgccnt <= '0;
     end
     else if (cgrce) begin
         render_dd <= render_d;
         if (render_dd)
-            cgcc <= cgcc + 1'd1;
+            cgccnt <= cgccnt + 1'd1;
     end
 end
+
+assign cgcc = rotate ? cgcol : cgccnt;
 
 always @* begin
     cgpd = cgpdm ? PD_BLACK : '0;

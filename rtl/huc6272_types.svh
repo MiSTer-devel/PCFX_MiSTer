@@ -74,6 +74,11 @@ typedef struct packed {
 } rf_bgp_t;
 
 typedef struct packed {
+    logic signed [15:0] a, b, c, d; // signed fixed-point 8.8
+    logic signed [15:0] x0, y0;     // transformation center
+} rf_bg0at_t;
+
+typedef struct packed {
     logic [3:0]     mpwa;
     logic [8:0]     mpwd;
     logic           mpwr;
@@ -84,6 +89,7 @@ typedef struct packed {
     logic [3:0]     sub_wrap;
     logic [7:0]     sub_bat0, sub_cg0;
     logic [3:0]     size_sub_m0, size_sub_n0;
+    rf_bg0at_t      bg0at;
 } rf_bgm_t;
 
 typedef struct packed {

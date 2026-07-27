@@ -16,7 +16,7 @@ initial begin
 end
 
 `include "mmc_kram_vce.svh"
-`include "video_rtz1.svh"
+`include "video_rtz2.svh"
 
 //////////////////////////////////////////////////////////////////////
 
@@ -34,9 +34,9 @@ logic [15:0] cp_out;
         if (mmc_vde) begin
             if (~mmc_vdmode) begin
                 cp_out = vce.cpram.mem[mmc_vd[7:0]];
-                out = {cp_out[8+:8], 
-                       {cp_out[7:4], cp_out[6:4], cp_out[6]},
-                       {cp_out[3:0], cp_out[2:0], cp_out[2]}};
+                out = {cp_out[8+:8],
+                       {cp_out[7:4], 4'b0000},
+                       {cp_out[3:0], 4'b0000}};
             end
             else
                 out = mmc_vd;
