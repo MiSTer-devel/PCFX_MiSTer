@@ -16,7 +16,7 @@ initial begin
 end
 
 `include "mmc_kram_vce.svh"
-`include "video_rtz2.svh"
+`include "video_rtz3.svh"
 
 //////////////////////////////////////////////////////////////////////
 
@@ -75,5 +75,5 @@ endmodule
 
 
 // Local Variables:
-// compile-command: "iverilog -g2012 -grelative-include -s huc6261_video_render_tb -DHUC6272_DMC_ENABLE -DTB_VDC -DTB_VPU -o huc6261_video_render_tb.vvp ../huc6272.sv ../huc6261.sv ../huc6270.sv ../huc6271.sv dpram.sv pd424260.sv huc6261_video_render_tb.sv && ./huc6261_video_render_tb.vvp && python3 yuv_render2png.py huc6261_video_render.hex huc6261_video_render.png 360 242"
+// compile-command: "iverilog -g2012 -grelative-include -s huc6261_video_render_tb -DHUC6272_DMC_ENABLE -DTB_VDC -DTB_VPU -o huc6261_video_render_tb.vvp ../fifo/fifo1.v ../huc6272.sv ../huc6261.sv ../huc6270.sv ../huc6271.sv dpram.sv pd424260.sv huc6261_video_render_tb.sv && ./huc6261_video_render_tb.vvp && python3 yuv_render2png.py huc6261_video_render.hex huc6261_video_render.png 360 242"
 // End:
