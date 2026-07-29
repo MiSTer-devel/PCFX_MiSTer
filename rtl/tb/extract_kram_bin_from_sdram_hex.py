@@ -4,7 +4,7 @@ def do_page(page):
     for k in range(2):
         fin = open("sdram.hex", "r")
 
-        start = 0x1000000 * (k + 1) + 0x40000 * page
+        start = 0x1000000 * (k + 1) + 0x80000 * page
         for i in range(start // 2):
             fin.readline()
     

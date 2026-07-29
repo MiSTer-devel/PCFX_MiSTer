@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v4.0.0-prealpha (8ba24ab+) (w)1999-2022 BSI
-[*] Mon Jun 29 06:21:38 2026
+[*] Wed Jul 29 16:11:05 2026
 [*]
 [dumpfile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/huc6271_render_tb.vcd"
-[dumpfile_mtime] "Mon Jun 29 06:17:17 2026"
-[dumpfile_size] 274229516
+[dumpfile_mtime] "Wed Jul 29 16:10:31 2026"
+[dumpfile_size] 31086993
 [savefile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/huc6271_render_tb.gtkw"
 [timestart] 0
 [size] 1333 600
 [pos] -1 -1
-*-21.956560 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+*-18.969685 349120 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 [markername] AA
 [markername] BB
 [markername] CC
@@ -37,6 +37,7 @@
 [markername] YY
 [markername] ZZ
 [treeopen] huc6271_render_tb.
+[treeopen] huc6271_render_tb.vpu.
 [sst_width] 255
 [signals_width] 271
 [sst_expanded] 1
@@ -79,8 +80,22 @@ huc6271_render_tb.vpu.si_hdr_det
 huc6271_render_tb.vpu.si_hdr[3:0]
 @28
 huc6271_render_tb.vpu.si_ready
+huc6271_render_tb.vpu.si_block_req
 @22
 huc6271_render_tb.vpu.si_len[15:0]
+@28
+huc6271_render_tb.vpu.si_len_end
+@29
+huc6271_render_tb.vpu.sbuf_empty
+@28
+huc6271_render_tb.vpu.sbuf_full
+huc6271_render_tb.vpu.sbuf_din
+@22
+huc6271_render_tb.vpu.sbuf_dout[7:0]
+@28
+huc6271_render_tb.vpu.sbuf_busy
+huc6271_render_tb.vpu.sbuf_ready
+huc6271_render_tb.vpu.sbuf_req
 @24
 huc6271_render_tb.vpu.rles[1:0]
 @22
@@ -103,8 +118,8 @@ huc6271_render_tb.vpu.dct_bits_buf[22:0]
 huc6271_render_tb.vpu.dct_bits_cnt[5:0]
 huc6271_render_tb.vpu.dct_bits_pop_cnt[5:0]
 @22
-huc6271_render_tb.vpu.dct_bits_pop[15:0]
-huc6271_render_tb.vpu.dct_bits_pop_mse[15:0]
+huc6271_render_tb.vpu.dct_bits_pop[11:0]
+huc6271_render_tb.vpu.dct_bits_pop_mse[11:0]
 @28
 huc6271_render_tb.vpu.dct_bits_full
 huc6271_render_tb.vpu.dct_bits_ready
@@ -112,21 +127,21 @@ huc6271_render_tb.vpu.dct_bits_ready
 huc6271_render_tb.vpu.dct_bits_code[7:0]
 huc6271_render_tb.vpu.dct_bits_code_d[7:0]
 huc6271_render_tb.vpu.dct_qc[3:0]
-huc6271_render_tb.vpu.dct_dc_y[15:0]
-huc6271_render_tb.vpu.dct_dc_u[15:0]
-huc6271_render_tb.vpu.dct_dc_v[15:0]
+huc6271_render_tb.vpu.dct_dc_y[8:0]
+huc6271_render_tb.vpu.dct_dc_u[8:0]
+huc6271_render_tb.vpu.dct_dc_v[8:0]
 @24
 huc6271_render_tb.vpu.dct_ac_zeros[3:0]
 @28
 huc6271_render_tb.vpu.dct_ac_zero
 @22
-huc6271_render_tb.vpu.dct_ac_val[15:0]
-huc6271_render_tb.vpu.dct_acdc[15:0]
+huc6271_render_tb.vpu.dct_ac_val[8:0]
+huc6271_render_tb.vpu.dct_acdc[8:0]
 @24
 huc6271_render_tb.vpu.dct_iq[7:0]
 huc6271_render_tb.vpu.dct_ictbl_widx[5:0]
-@420
-huc6271_render_tb.vpu.dct_ictbl_wd[31:0]
+@22
+huc6271_render_tb.vpu.dct_ictbl_wd[15:0]
 @28
 huc6271_render_tb.vpu.dct_ictbl_we
 @22
@@ -139,7 +154,6 @@ huc6271_render_tb.vpu.dct_idy[2:0]
 huc6271_render_tb.vpu.dct_idx[2:0]
 @22
 huc6271_render_tb.vpu.dct_raddr[12:0]
-@23
 huc6271_render_tb.vpu.dct_rdata[7:0]
 @28
 huc6271_render_tb.vpu.dct_rwe

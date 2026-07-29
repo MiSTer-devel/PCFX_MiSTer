@@ -52,7 +52,6 @@ module huc6271
     );
 
 logic           si_hdr_det, si_block, si_end;
-wor             si_busy_rle, si_busy_dct;
 logic           si_hdr_dct;
 wor             si_dec_blk_done;
 
@@ -114,6 +113,7 @@ typedef enum bit [2:0] {
     SIS_HDR_LEN1,
     SIS_HDR_LEN2,
     SIS_BLOCK,
+    SIS_BLOCK_DONE,
     SIS_END
 } sis_t;
 
@@ -122,10 +122,17 @@ sis_t           sist;
 logic           si_din_ones, si_din_zeros;
 logic [3:0]     si_hdr;
 logic [15:0]    si_len;
-logic           si_ready;
+logic           si_ready, si_block_req;
 
 wire si_din = kbus_req & KBUS_ACK;
-wire si_len_end = si_len < 16'd2; // include 2 length bytes
+
+// The 2-byte block length field is included in the length of the
+// block.  RLE blocks ends precisely at the end of the block.  DCT
+// blocks, however, sometimes extend one byte (maybe two) past the
+// end.  Additionally, sending those trailing bytes to the DCT
+// bitstream decoder buffer simplifies its design.
+wire si_len_end = si_len <= 16'd2; // include 2 length bytes
+wire si_len_end_tail = si_len == '0;
 
 always @(posedge CLK) if (CE) begin
     if (~RESn) begin
@@ -167,11 +174,16 @@ always @(posedge CLK) if (CE) begin
                     sist <= SIS_BLOCK;
                 end
             SIS_BLOCK:
-                if (~si_len_end) begin
-                    if (si_din)
-                        si_len <= si_len - 1'd1;
+                // Read trailing zeros after block end to set
+                // si_din_zeros, so the next block header is
+                // recognized.
+                if (si_din) begin
+                    si_len <= si_len - 1'd1;
+                    if (si_len_end_tail)
+                        sist <= SIS_BLOCK_DONE;
                 end
-                else if (si_dec_blk_done)
+            SIS_BLOCK_DONE:
+                if (si_dec_blk_done)
                     sist <= SIS_END;
             default: ;
         endcase
@@ -181,16 +193,17 @@ always @(posedge CLK) if (CE) begin
     end
 end
 
-wire si_busy = si_hdr_dct ? si_busy_dct : si_busy_rle;
-
 always @* begin
     kbus_req = RESn;
     si_ready = si_din;
     case (sist)
         SIS_BLOCK: begin
-            kbus_req = ~si_busy & ~si_len_end;
+            kbus_req = si_block_req;
             si_ready &= ~si_din_ones;
+            // Cut off the block ending based on block type.
+            si_ready &= (si_hdr_dct | ~si_len_end);
         end
+        SIS_BLOCK_DONE,
         SIS_END:
             kbus_req = '0;
         default: ;
@@ -200,9 +213,50 @@ end
 assign KBUS_REQ = kbus_req;
 
 assign si_hdr_det = (sist == SIS_HDR_LEN1);
-assign si_block = (sist == SIS_BLOCK) & ~si_len_end;
+assign si_block = ((sist == SIS_BLOCK) | (sist == SIS_BLOCK_DONE));
 assign si_end = (sist == SIS_END);
 assign si_hdr_dct = si_hdr[3];
+
+//////////////////////////////////////////////////////////////////////
+// Block data buffer
+//
+// This is a solution to a problem seen when KING video fetch is fully
+// utilizing all KRAM bandwidth during active render, leaving only the
+// H-Blank region for us to read KRAM over K-BUS.  In that situation,
+// read stalls (si_busy) rapidly eat up our real-time bandwidth budget
+// and can ultimately lead to decoder timeout.  This small buffer
+// ensures that what little usable K-BUS time we have is fully
+// utilized.
+
+logic           sbuf_din, sbuf_en, sbuf_req, sbuf_ready, sbuf_rinc, sbuf_end_zero;
+wor             sbuf_busy_rle, sbuf_busy_dct;
+logic           sbuf_full, sbuf_empty;
+logic [7:0]     sbuf_rdata, sbuf_dout;
+
+fifo1 #(.DSIZE(8), .ASIZE(7)) sbuf_fifo
+   (
+    .WRST_N(RESn),
+    .WCLK(CLK),
+    .WDATA(KBUS_DI),
+    .WINC(sbuf_din & CE),
+    .WFULL(sbuf_full),
+    .RRST_N(RESn),
+    .RCLK(CLK),
+    .RINC(sbuf_rinc & CE),
+    .REMPTY(sbuf_empty),
+    .RDATA(sbuf_rdata)
+    );
+
+assign si_block_req = ~sbuf_full;
+
+wire sbuf_busy = si_hdr_dct ? sbuf_busy_dct : sbuf_busy_rle;
+
+assign sbuf_din = si_block & si_block_req & si_ready;
+// The second term empties the FIFO between blocks
+assign sbuf_req = si_block ? ~sbuf_busy : ~sbuf_empty;
+assign sbuf_rinc = sbuf_req & ~sbuf_empty;
+assign sbuf_ready = sbuf_rinc;
+assign sbuf_dout = sbuf_rdata;
 
 //////////////////////////////////////////////////////////////////////
 // RLE block decoder
@@ -225,10 +279,10 @@ always @* begin
     rle_in1_run = '0;
     rle_in1_cnt = '0;
     case (si_hdr[1:0])
-        2'd0: {rle_in1_run[3:0], rle_in1_cnt[3:0]} = KBUS_DI;
-        2'd1: {rle_in1_run[4:0], rle_in1_cnt[2:0]} = KBUS_DI;
-        2'd2: {rle_in1_run[5:0], rle_in1_cnt[1:0]} = KBUS_DI;
-        2'd3: {rle_in1_run[6:0], rle_in1_cnt[0:0]} = KBUS_DI;
+        2'd0: {rle_in1_run[3:0], rle_in1_cnt[3:0]} = sbuf_dout;
+        2'd1: {rle_in1_run[4:0], rle_in1_cnt[2:0]} = sbuf_dout;
+        2'd2: {rle_in1_run[5:0], rle_in1_cnt[1:0]} = sbuf_dout;
+        2'd3: {rle_in1_run[6:0], rle_in1_cnt[0:0]} = sbuf_dout;
         default: ;
     endcase
 end
@@ -247,7 +301,7 @@ always @(posedge CLK) if (CE) begin
                     rles <= RLES_IN1;
             end
             RLES_IN1:
-                if (si_ready) begin
+                if (sbuf_ready) begin
                     rle_run <= rle_in1_run;
                     rle_cnt <= rle_in1_cnt - 1'd1;
                     rles <= RLES_FILL;
@@ -255,8 +309,8 @@ always @(posedge CLK) if (CE) begin
                         rles <= RLES_IN2;
                 end
             RLES_IN2:
-                if (si_ready) begin
-                    rle_cnt <= KBUS_DI;
+                if (sbuf_ready) begin
+                    rle_cnt <= sbuf_dout;
                     rles <= RLES_FILL;
                 end
             RLES_FILL: begin
@@ -279,8 +333,8 @@ always @* begin
         rle_rdata = rle_run;
 end
 
-assign si_busy_rle = (rles == RLES_FILL);
-assign si_dec_blk_done = ~si_hdr_dct;
+assign sbuf_busy_rle = (rles == RLES_FILL);
+assign si_dec_blk_done = &rle_raddr;
 
 //////////////////////////////////////////////////////////////////////
 // DCT block decoder
@@ -384,8 +438,8 @@ always @(posedge CLK) if (CE) begin
             end
         end
         DCTS_IQTBL:
-            if (si_ready) begin
-                dct_iqtbl[dct_iqtbl_widx] <= KBUS_DI;
+            if (sbuf_ready) begin
+                dct_iqtbl[dct_iqtbl_widx] <= sbuf_dout;
                 dct_iqtbl_widx <= dct_iqtbl_widx + 1'd1;
                 if (dct_iqtbl_widx == 7'd127)
                     dcts <= DCTS_Y00;
@@ -503,7 +557,7 @@ always @(posedge CLK) if (CE) begin
     end
 end
 
-assign si_busy_dct = (dcts == DCTS_INIT) | 
+assign sbuf_busy_dct = (dcts == DCTS_INIT) | 
                      ((dcts >= DCTS_Y00) & (dcts < DCTS_BLK_DONE) &
                       (dctds == DCTDS_INIT));
 assign si_dec_blk_done = (dcts == DCTS_BLK_DONE);
@@ -539,8 +593,8 @@ always @(posedge CLK) if (CE) begin
         if (dct_bits_ready) begin
             cnt -= dct_bits_pop_cnt;
         end
-        if (si_ready) begin
-            dct_bits_buf <= {dct_bits_buf[$left(dct_bits_buf)-8:0], KBUS_DI};
+        if (sbuf_ready) begin
+            dct_bits_buf <= {dct_bits_buf[$left(dct_bits_buf)-8:0], sbuf_dout};
             cnt += 6'd8;
         end
         dct_bits_cnt <= cnt;
@@ -548,7 +602,7 @@ always @(posedge CLK) if (CE) begin
 end
 
 wire dct_bits_full = dct_bits_cnt > 6'($size(dct_bits_buf) - 8);
-assign si_busy_dct = (dctds != DCTDS_INIT) & dct_bits_full;
+assign sbuf_busy_dct = (dctds != DCTDS_INIT) & dct_bits_full;
 
 task dct_bits_get(input [5:0] cnt, output [11:0] pbuf);
     pbuf = $size(pbuf)'(dct_bits_buf >> (dct_bits_cnt - cnt));

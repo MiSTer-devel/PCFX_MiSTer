@@ -117,5 +117,5 @@ endmodule
 
 
 // Local Variables:
-// compile-command: "iverilog -g2012 -grelative-include -s huc6271_render_tb -DTB_VPU -DTB_NO_MMC -o huc6271_render_tb.vvp ../huc6271.sv ../huc6261.sv dpram.sv huc6271_render_tb.sv && ./huc6271_render_tb.vvp && python3 yuv_render2png.py huc6271_render.hex huc6271_render.png 256 242"
+// compile-command: "iverilog -g2012 -grelative-include -s huc6271_render_tb -DTB_VPU -DTB_NO_MMC -o huc6271_render_tb.vvp ../fifo/fifo1.v ../huc6271.sv ../huc6261.sv dpram.sv huc6271_render_tb.sv && ./huc6271_render_tb.vvp && python3 yuv_render2png.py huc6271_render.hex huc6271_render.png 256 242"
 // End:
