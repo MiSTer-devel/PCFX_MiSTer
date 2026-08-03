@@ -17,5 +17,5 @@ localparam [26:0] BMP_BASE_A   = 27'h080_0000; // ..0FF_FFFF
 // Bank 1: KING RAM A
 localparam [26:0] KRAMA_BASE_A = 27'h100_0000; // ..107_FFFF
 
-// Bank 2: KING RAM A
+// Bank 2: KING RAM B
 localparam [26:0] KRAMB_BASE_A = 27'h200_0000; // ..207_FFFF

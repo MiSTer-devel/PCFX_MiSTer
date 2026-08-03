@@ -1,0 +1,302 @@
+[*]
+[*] GTKWave Analyzer v4.0.0-prealpha (8ba24ab+) (w)1999-2022 BSI
+[*] Sun Aug  2 22:55:19 2026
+[*]
+[dumpfile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/pcfx_render_tb.verilator.fst"
+[dumpfile_mtime] "Sun Aug  2 22:52:50 2026"
+[dumpfile_size] 8630680
+[savefile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/pcfx_render_tb.verilator.gtkw"
+[timestart] 0
+[size] 1334 601
+[pos] -1 -1
+*-21.887354 1545820 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+[markername] AA
+[markername] BB
+[markername] CC
+[markername] DD
+[markername] EE
+[markername] FF
+[markername] GG
+[markername] HH
+[markername] II
+[markername] JJ
+[markername] KK
+[markername] LL
+[markername] MM
+[markername] NN
+[markername] OO
+[markername] PP
+[markername] QQ
+[markername] RR
+[markername] SS
+[markername] TT
+[markername] UU
+[markername] VV
+[markername] WW
+[markername] XX
+[markername] YY
+[markername] ZZ
+[treeopen] pcfx_render_tb.
+[treeopen] pcfx_render_tb.memif_sdram.
+[treeopen] pcfx_render_tb.mmc.
+[treeopen] pcfx_render_tb.mmc.video.
+[treeopen] pcfx_render_tb.mmc.video.vfeb.
+[treeopen] pcfx_render_tb.sdrb.
+[sst_width] 255
+[signals_width] 290
+[sst_expanded] 1
+[sst_vpaned_height] 145
+@800200
+-sdram
+@29
+pcfx_render_tb.sdram.ch1_req
+@28
+pcfx_render_tb.sdram.ch1_ready
+@22
+pcfx_render_tb.sdram.ch2_addr[26:0]
+pcfx_render_tb.sdram.ch2_dout[31:0]
+@28
+pcfx_render_tb.sdram.ch2_req
+pcfx_render_tb.sdram.ch2_ready
+@22
+pcfx_render_tb.sdram.ch3_addr[26:0]
+pcfx_render_tb.sdram.ch3_dout[31:0]
+@28
+pcfx_render_tb.sdram.ch3_req
+pcfx_render_tb.sdram.ch3_ready
+@22
+pcfx_render_tb.sdram.refresh_wait[3:0]
+@1000200
+-sdram
+@c00200
+-u1a
+@28
+pcfx_render_tb.sdrb.u1a.nRAS
+pcfx_render_tb.sdrb.u1a.nCAS
+pcfx_render_tb.sdrb.u1a.nWE
+pcfx_render_tb.sdrb.u1a.BA[1:0]
+@22
+pcfx_render_tb.sdrb.u1a.A[12:0]
+pcfx_render_tb.sdrb.u1a.DQ[15:0]
+@28
+pcfx_render_tb.sdrb.u1a.DQMH
+pcfx_render_tb.sdrb.u1a.DQML
+@22
+pcfx_render_tb.sdrb.u1a.cmd[3:0]
+@1401200
+-u1a
+@c00200
+-memif_sdram
+@28
+pcfx_render_tb.memif_sdram.SRAM_CEn
+pcfx_render_tb.memif_sdram.SRAM_WEn
+pcfx_render_tb.memif_sdram.BMP_CEn
+pcfx_render_tb.memif_sdram.BMP_WEn
+pcfx_render_tb.memif_sdram.mem_start_req
+pcfx_render_tb.memif_sdram.mem_pend_req
+pcfx_render_tb.memif_sdram.mem_rdy
+@22
+pcfx_render_tb.memif_sdram.KRAMA_DI[15:0]
+pcfx_render_tb.memif_sdram.KRAMA_DO[15:0]
+@28
+pcfx_render_tb.memif_sdram.KRAMA_WR
+pcfx_render_tb.memif_sdram.KRAMA_REQ
+pcfx_render_tb.memif_sdram.KRAMA_ACK
+pcfx_render_tb.memif_sdram.ch3_req
+pcfx_render_tb.memif_sdram.SDRAM_CH3_REQ
+pcfx_render_tb.memif_sdram.ch3_act
+pcfx_render_tb.memif_sdram.SDRAM_CH3_READY
+pcfx_render_tb.memif_sdram.ch3_ready
+pcfx_render_tb.memif_sdram.ch3_ready_d
+@22
+pcfx_render_tb.memif_sdram.KRAMB_DI[15:0]
+@28
+pcfx_render_tb.memif_sdram.KRAMB_WR
+pcfx_render_tb.memif_sdram.KRAMB_REQ
+pcfx_render_tb.memif_sdram.KRAMB_ACK
+@1401200
+-memif_sdram
+@800200
+-mmc
+@28
+pcfx_render_tb.mmc.CSn
+pcfx_render_tb.mmc.A[2:1]
+@22
+pcfx_render_tb.mmc.DI[15:0]
+pcfx_render_tb.mmc.DO[15:0]
+@28
+pcfx_render_tb.mmc.RDn
+pcfx_render_tb.mmc.WRn
+pcfx_render_tb.mmc.BUSYn
+pcfx_render_tb.mmc.IRQn
+@22
+pcfx_render_tb.mmc.cpuif.rsel[6:0]
+@800200
+-vfea
+@28
+pcfx_render_tb.mmc.video.vfea.mtrg
+pcfx_render_tb.mmc.video.vfea.mtrg2
+pcfx_render_tb.mmc.video.vfea.mreq0
+pcfx_render_tb.mmc.video.vfea.mreq
+@22
+pcfx_render_tb.mmc.video.vfea.M_A[17:0]
+pcfx_render_tb.mmc.video.vfea.M_DI[15:0]
+@28
+pcfx_render_tb.mmc.video.vfea.M_REQ
+pcfx_render_tb.mmc.video.vfea.M_ACK
+@1000200
+-vfea
+@800200
+-vfeb
+@28
+pcfx_render_tb.mmc.video.vfeb.mtrg
+pcfx_render_tb.mmc.video.vfeb.mtrg2
+pcfx_render_tb.mmc.video.vfeb.mreq0
+pcfx_render_tb.mmc.video.vfeb.mreq
+@22
+pcfx_render_tb.mmc.video.vfeb.M_A[17:0]
+pcfx_render_tb.mmc.video.vfeb.M_DI[15:0]
+@28
+pcfx_render_tb.mmc.video.vfeb.M_REQ
+pcfx_render_tb.mmc.video.vfeb.M_ACK
+@1000200
+-vfeb
+@22
+pcfx_render_tb.mmc.video.bg0.md[15:0]
+@28
+pcfx_render_tb.mmc.video.bg0.mdl[1:0]
+@22
+pcfx_render_tb.mmc.video.bg0.cgrd[31:0]
+pcfx_render_tb.mmc.VD[23:0]
+@28
+pcfx_render_tb.mmc.fabric.c71xfer_m_req
+pcfx_render_tb.mmc.fabric.c30xfer_m_req
+pcfx_render_tb.mmc.fabric.cpuif_m_req
+pcfx_render_tb.mmc.fabric.vid_ma_req
+pcfx_render_tb.mmc.fabric.vid_mb_req
+@1000200
+-mmc
+@c00200
+-vdc0
+@28
+pcfx_render_tb.vdc0.IRQ_N
+pcfx_render_tb.vdc0.CS_N
+pcfx_render_tb.vdc0.BUSY_N
+@22
+pcfx_render_tb.vdc0.AR[4:0]
+pcfx_render_tb.vdc0.VD[8:0]
+@1401200
+-vdc0
+@c00200
+-vdc1
+@28
+pcfx_render_tb.vdc1.CPU_CE
+pcfx_render_tb.vdc1.CS_N
+pcfx_render_tb.vdc1.A[1:0]
+pcfx_render_tb.vdc1.BUSY_N
+@22
+pcfx_render_tb.vdc1.AR[4:0]
+@28
+pcfx_render_tb.vdc1.RD_N
+pcfx_render_tb.vdc1.WR_N
+@22
+pcfx_render_tb.vdc1.VD[8:0]
+@28
+pcfx_render_tb.vdc1.CPU_BUSY
+pcfx_render_tb.vdc1.CPURD_PEND
+pcfx_render_tb.vdc1.CPURD_PEND2
+pcfx_render_tb.vdc1.CPURD_EXEC
+@1401200
+-vdc1
+@800200
+-vce
+@28
+pcfx_render_tb.vce.CSn
+@22
+pcfx_render_tb.vce.ar[4:0]
+pcfx_render_tb.vce.cpa[8:0]
+pcfx_render_tb.vce.cpdin[15:0]
+@28
+pcfx_render_tb.vce.cpd_wr
+@24
+pcfx_render_tb.vce.h_cnt[11:0]
+pcfx_render_tb.vce.v_cnt[8:0]
+@22
+pcfx_render_tb.vce.vdc_vd[8:0]
+pcfx_render_tb.vce.vpu_vd[23:0]
+pcfx_render_tb.vce.MMC_VD[23:0]
+@c00200
+-ccdp
+@22
+pcfx_render_tb.vce.prio_out[1:0]
+@28
+pcfx_render_tb.vce.prio_sel[1:0]
+@22
+pcfx_render_tb.vce.mix[30:0]
+@24
+pcfx_render_tb.vce.ccdp_phase[1:0]
+@22
+pcfx_render_tb.vce.ccdp_m[11:0]
+@28
+pcfx_render_tb.vce.ccdp_front
+@22
+pcfx_render_tb.vce.ccdp_n[11:0]
+@28
+pcfx_render_tb.vce.ccdp_sel1_ccr
+@22
+pcfx_render_tb.vce.ccdp_sel1[23:0]
+@28
+pcfx_render_tb.vce.ccdp_sel2_cc
+@22
+pcfx_render_tb.vce.ccdp_sel2[23:0]
+@28
+pcfx_render_tb.vce.ccdp_reg1_en
+@22
+pcfx_render_tb.vce.ccdp_reg1[23:0]
+pcfx_render_tb.vce.cpa_out[8:0]
+@1401200
+-ccdp
+@28
+pcfx_render_tb.vce.DCK70
+@22
+pcfx_render_tb.vce.Y[7:0]
+pcfx_render_tb.vce.U[7:0]
+pcfx_render_tb.vce.V[7:0]
+@28
+pcfx_render_tb.vce.VSn
+pcfx_render_tb.vce.HSn
+@1000200
+-vce
+@800200
+-vpu
+@22
+pcfx_render_tb.vpu.v_cnt[3:0]
+@28
+pcfx_render_tb.vpu.rbsel
+pcfx_render_tb.vpu.dec_act
+pcfx_render_tb.vpu.dec_valid[1:0]
+@22
+pcfx_render_tb.vpu.KBUS_DI[7:0]
+@28
+pcfx_render_tb.vpu.KBUS_REQ
+pcfx_render_tb.vpu.KBUS_ACK
+@100000028
+pcfx_render_tb.vpu.sist[2:0]
+@28
+pcfx_render_tb.vpu.si_end
+@100000028
+pcfx_render_tb.vpu.dcts[3:0]
+pcfx_render_tb.vpu.dctps[2:0]
+pcfx_render_tb.vpu.dctds[2:0]
+@28
+pcfx_render_tb.vpu.idct_done
+@24
+pcfx_render_tb.vpu.dct_idy[2:0]
+pcfx_render_tb.vpu.dct_idx[2:0]
+@22
+pcfx_render_tb.vpu.dec_raddr[12:0]
+pcfx_render_tb.vpu.dec_rdata[7:0]
+@1000200
+-vpu
+[pattern_trace] 1
+[pattern_trace] 0

@@ -664,6 +664,14 @@ initial if (1) begin
     hmi.jp1.b[1] = '1;
     #(20e3) hmi.jp1.b[1] = '0;
     #(20e3);
+
+    // RTZ: Skip the bonus credits
+    repeat (3) #(1000e3) ;
+
+    $display("Pressing JP1.B1....");
+    hmi.jp1.b[1] = '1;
+    #(20e3) hmi.jp1.b[1] = '0;
+    #(20e3);
 end
 
 endmodule

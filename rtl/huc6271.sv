@@ -72,17 +72,19 @@ logic [1:0]     dec_vdmode;
 logic           dec_vend;
 
 always @(posedge CLK) begin
-    dec_vend <= '0;
-
     if (~RESn) begin
         h_cnt <= '0;
         v_cnt <= '0;
         rbsel <= '0;
         dec_act <= '0;
+        dec_vend <= '0;
         dec_valid <= '0;
         dec_vdmode <= '0;
     end
     else begin
+        if (CE)
+            dec_vend <= '0;
+
         if (DCK) begin
             h_cnt <= h_cnt + 1'd1;
         end
@@ -944,7 +946,7 @@ assign dct_sync_store = ~idct_act & ~dct_store_act;
 `ifdef TB_VPU
 task dump_ictbl;
     $display("IDCT col=%1d plane=%1d", dct_col, 
-             3'(dcts - DCTS_Y00 + 1));
+             3'(dcts - DCTS_Y00 + 4'd1));
 /* -----\/----- EXCLUDED -----\/-----
     for (int i = 0; i < 8; i ++) begin
         $display("%02x: %05x %05x %05x %05x %05x %05x %05x %05x", i[5:0],
