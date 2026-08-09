@@ -36,6 +36,7 @@ localparam PN = $clog2(CN);
 
 logic           dck_d;
 logic           req, ack;
+logic           ack_d, ack_pend, ack_pend_d;
 
 logic [PN-1:0]  prio_hi, prio_sel, prio_sel_d;
 logic           prio_hi_valid;
@@ -59,9 +60,10 @@ always @* begin
         prio_sel = prio_hi;
 end
 
+// Force request and completion to be DCK-aligned
 assign req = dck_d & cm_req[prio_sel];
-// Ignore incoming dmc_m_ack; force completion to be DCK-aligned
-assign ack = prio_act_d & DCK;
+assign ack = (ack_d | ack_pend) & DCK;
+assign ack_pend = (ack_pend_d | dmc_m_ack) & ~ack_d;
 
 assign prio_act_clr = ack;
 assign prio_act_set = req;
@@ -71,10 +73,14 @@ always @(posedge CLK) begin
     if (~RESn) begin
         prio_sel_d <= '0;
         prio_act_d <= '0;
+        ack_d <= '0;
+        ack_pend_d <= '0;
     end
     else begin
         prio_sel_d <= prio_sel;
         prio_act_d <= prio_act;
+        ack_d <= ack;
+        ack_pend_d <= ack_pend;
     end
     dck_d <= DCK;
 end
