@@ -135,8 +135,12 @@ always @* begin
         end
         BAST_R:
             if (wcnt == 0) begin
-                stn = BAST_PRE;
-                wcntn = 4'(TRP_MIN-(BURST_LENGTH-1)) - 2;
+                if (TRP_MIN-(BURST_LENGTH-1) >= 2) begin
+                    stn = BAST_PRE;
+                    wcntn = 4'(TRP_MIN-(BURST_LENGTH-1) - 2);
+                end
+                else
+                    stn = BAST_IDLE;
             end
         BAST_W_CMD: begin
             stn = BAST_W_CMD_2;

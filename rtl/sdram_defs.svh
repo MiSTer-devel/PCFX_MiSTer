@@ -17,7 +17,8 @@ wire [2:0] CMD_LOAD_MODE       = 3'b000;
 // All times in ns are for AS4C32M16SB-7: tCK3 (clk cycle) = 7 ns (143 MHz)
 // Parameters are in whole cycles, and assume clk cycle = 1 / CLK_MHZ
 function int ns_to_cyc(int ns);
-    ns_to_cyc = int'(((CLK_MHZ * ns + 999.0) / 1000.0));
+    // ns_to_cyc = int'($ceil(CLK_MHZ * ns / 1000.0));
+    ns_to_cyc = int'(((CLK_MHZ * ns + 500.0) / 1000.0));
 endfunction
 
 localparam TRC_MIN  = ns_to_cyc(63);
