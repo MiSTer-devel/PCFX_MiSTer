@@ -45,7 +45,7 @@ logic [16:0]    addr;
 logic           rm_int;
 logic           kbus_ack;
 logic [15:0]    m_di;
-logic           m_req, m_a0, m_ready;
+logic           m_req, m_a0, m_ready, m_ready_d;
 logic [15:0]    mbuf;
 logic           mbuf_req, mbuf_ack;
 `ifdef HUC6272_DUMP_C71XFER
@@ -104,32 +104,41 @@ end
 
 wire mbuf_empty = ~(mbuf_req ^ mbuf_ack);
 
+always @* begin
+    m_ready = m_ready_d;
+    if (~m_ready & m_req & M_ACK)
+        m_ready = '1;
+    else if (m_ready & m_req)
+        m_ready = '0;
+end
+
 always @(posedge CLK) begin
     if (~RESn) begin
         addr <= '0;
         m_di <= '0;
         m_req <= '0;
-        m_ready <= '0;
+        m_ready_d <= '0;
         mbuf_req <= '0;
     end
     else begin
+        m_ready_d <= m_ready;
+
         if (CE & start & rf_c71xfer.ren)
             addr <= rf_c71xfer.ka;
         else if (act & m_req & M_ACK)
             addr <= addr + 1'd1;
 
-        if (act & ~m_ready & ~m_req)
+        if (act & mbuf_empty & ~m_req)
             m_req <= '1;
-        else if (m_req & M_ACK) begin
-            m_req <= '0;
-            m_di <= M_DI;
-            m_ready <= '1;
-        end
-
-        if (m_ready & mbuf_empty) begin
-            mbuf <= m_di;
-            mbuf_req <= ~mbuf_req;
-            m_ready <= '0;
+        if (m_ready) begin
+            if (M_ACK)
+                m_di <= M_DI;
+            if (act & mbuf_empty) begin
+                mbuf <= M_ACK ? M_DI : m_di;
+                mbuf_req <= ~mbuf_req;
+            end
+            else
+                m_req <= '0;
         end
         if (~act)
             mbuf_req <= '0;

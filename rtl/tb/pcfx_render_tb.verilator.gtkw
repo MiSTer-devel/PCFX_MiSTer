@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v4.0.0-prealpha (8ba24ab+) (w)1999-2022 BSI
-[*] Mon Aug  3 04:24:28 2026
+[*] Sun Aug  9 18:12:44 2026
 [*]
 [dumpfile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/pcfx_render_tb.verilator.fst"
-[dumpfile_mtime] "Mon Aug  3 04:05:53 2026"
-[dumpfile_size] 17658810
+[dumpfile_mtime] "Sun Aug  9 18:07:44 2026"
+[dumpfile_size] 15933530
 [savefile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/pcfx_render_tb.verilator.gtkw"
-[timestart] 1765724
+[timestart] 0
 [size] 1334 601
 [pos] -1 -1
-*-7.887355 1766020 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+*-21.887354 1806820 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 [markername] AA
 [markername] BB
 [markername] CC
@@ -103,11 +103,8 @@ pcfx_render_tb.memif_sdram.KRAMA_WR
 pcfx_render_tb.memif_sdram.KRAMA_REQ
 pcfx_render_tb.memif_sdram.KRAMA_ACK
 pcfx_render_tb.memif_sdram.ch3_req
-pcfx_render_tb.memif_sdram.ch3_act
 pcfx_render_tb.memif_sdram.SDRAM_CH3_REQ
 pcfx_render_tb.memif_sdram.SDRAM_CH3_READY
-pcfx_render_tb.memif_sdram.ch3_ready
-pcfx_render_tb.memif_sdram.ch3_ready_d
 @22
 pcfx_render_tb.memif_sdram.KRAMB_DI[15:0]
 @28
@@ -131,12 +128,12 @@ pcfx_render_tb.mmc.BUSYn
 pcfx_render_tb.mmc.IRQn
 @22
 pcfx_render_tb.mmc.cpuif.rsel[6:0]
+@c00200
+-video
 @800200
 -vfea
 @28
 pcfx_render_tb.mmc.video.vfea.mtrg
-pcfx_render_tb.mmc.video.vfea.mtrg2
-pcfx_render_tb.mmc.video.vfea.mreq0
 pcfx_render_tb.mmc.video.vfea.mreq
 @22
 pcfx_render_tb.mmc.video.vfea.M_A[17:0]
@@ -150,8 +147,6 @@ pcfx_render_tb.mmc.video.vfea.M_ACK
 -vfeb
 @28
 pcfx_render_tb.mmc.video.vfeb.mtrg
-pcfx_render_tb.mmc.video.vfeb.mtrg2
-pcfx_render_tb.mmc.video.vfeb.mreq0
 pcfx_render_tb.mmc.video.vfeb.mreq
 @22
 pcfx_render_tb.mmc.video.vfeb.M_A[17:0]
@@ -163,15 +158,41 @@ pcfx_render_tb.mmc.video.vfeb.M_ACK
 -vfeb
 @22
 pcfx_render_tb.mmc.video.bg0.md[15:0]
-@23
 pcfx_render_tb.mmc.video.mdbatd[15:0]
 @28
 pcfx_render_tb.mmc.video.bg0.mdl[1:0]
 @22
 pcfx_render_tb.mmc.video.bg0.cgrd[31:0]
 pcfx_render_tb.mmc.VD[23:0]
+@1401200
+-video
+@c00200
+-c71xfer
 @28
+pcfx_render_tb.mmc.c71xfer.M_REQ
+pcfx_render_tb.mmc.c71xfer.M_ACK
+@22
+pcfx_render_tb.mmc.c71xfer.M_DI[15:0]
+@28
+pcfx_render_tb.mmc.c71xfer.m_req
+pcfx_render_tb.mmc.c71xfer.m_ready
+@22
+pcfx_render_tb.mmc.c71xfer.m_di[15:0]
+pcfx_render_tb.mmc.c71xfer.mbuf[15:0]
+@28
+pcfx_render_tb.mmc.c71xfer.mbuf_empty
+pcfx_render_tb.mmc.c71xfer.mbuf_req
+pcfx_render_tb.mmc.c71xfer.mbuf_ack
+pcfx_render_tb.mmc.c71xfer.KBUS_REQ
+pcfx_render_tb.mmc.c71xfer.KBUS_ACK
+pcfx_render_tb.mmc.c71xfer.act
+@1401200
+-c71xfer
+@800200
+-fabric
+@29
 pcfx_render_tb.mmc.fabric.c71xfer_m_req
+@28
 pcfx_render_tb.mmc.fabric.c30xfer_m_req
 pcfx_render_tb.mmc.fabric.cpuif_m_req
 pcfx_render_tb.mmc.fabric.vid_ma_req
@@ -202,6 +223,7 @@ pcfx_render_tb.mmc.fabric.fbb.dmc_m_req
 pcfx_render_tb.mmc.fabric.fbb.dmc_m_ack
 @1000200
 -fbb
+-fabric
 -mmc
 @c00200
 -vdc0
