@@ -74,15 +74,17 @@ localparam startup_mode_cnt    = startup_refresh_max - 7;
 localparam startup_ref2_cnt    = 14'(startup_mode_cnt - TRC_MIN);
 localparam startup_ref1_cnt    = 14'(startup_ref2_cnt - TRC_MIN);
 localparam startup_pchg_cnt    = 14'(startup_ref1_cnt - TRP_MIN);
-localparam refresh_per_hbl     = 4'd7; // assumes hblank every 54 us
-localparam refresh_sys_wcnt_cnt = 8'(ns_to_cyc(int'(11e3 / (refresh_per_hbl - 1)))); // assumes hblank lasts 11us
+localparam cycles_per_row      = 5460; // HuC6261 LINE_CLOCKS * 2
+localparam cycles_per_hbl      = 1140; // HuC6261 (LINE_CLOCKS - DISP_CLOCKS) * 2
+localparam refresh_per_hbl     = 5'(cycles_per_row / int'(cycles_per_refresh) + 1);
+localparam refresh_sys_wcnt_cnt = 9'(cycles_per_hbl / (int'(refresh_per_hbl) - 1));
 reg [13:0] refresh_count = startup_refresh_max - sdram_startup_cycles;
 reg        refresh_due = '0;
 reg [3:0]  refresh_credit = '0;
 reg  [3:0] refresh_wait;
-reg [3:0]  refresh_sys_cnt = '0;
+reg [4:0]  refresh_sys_cnt = '0;
 reg        refresh_sys = '0;
-reg [7:0]  refresh_sys_wcnt = '0;
+reg [8:0]  refresh_sys_wcnt = '0;
 logic      refresh_start;
 reg  [2:0] command;
 

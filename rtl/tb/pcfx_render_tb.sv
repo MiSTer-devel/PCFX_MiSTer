@@ -69,7 +69,7 @@ wire        SDRAM_nCAS;
 wire        SDRAM_nRAS;
 wire        SDRAM_nWE;
 
-localparam CLK_RAM_MHZ = 100.0;
+localparam CLK_RAM_MHZ = 85.909090; // actual core clock rate
 
 assign SDRAM_CLK = clk_ram;
 assign SDRAM_CKE = 1'b1;
