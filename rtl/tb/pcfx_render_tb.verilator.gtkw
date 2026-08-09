@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v4.0.0-prealpha (8ba24ab+) (w)1999-2022 BSI
-[*] Sun Aug  2 22:55:19 2026
+[*] Mon Aug  3 04:24:28 2026
 [*]
 [dumpfile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/pcfx_render_tb.verilator.fst"
-[dumpfile_mtime] "Sun Aug  2 22:52:50 2026"
-[dumpfile_size] 8630680
+[dumpfile_mtime] "Mon Aug  3 04:05:53 2026"
+[dumpfile_size] 17658810
 [savefile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/pcfx_render_tb.verilator.gtkw"
-[timestart] 0
+[timestart] 1765724
 [size] 1334 601
 [pos] -1 -1
-*-21.887354 1545820 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+*-7.887355 1766020 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 [markername] AA
 [markername] BB
 [markername] CC
@@ -39,18 +39,15 @@
 [treeopen] pcfx_render_tb.
 [treeopen] pcfx_render_tb.memif_sdram.
 [treeopen] pcfx_render_tb.mmc.
-[treeopen] pcfx_render_tb.mmc.video.
 [treeopen] pcfx_render_tb.mmc.video.vfeb.
-[treeopen] pcfx_render_tb.sdrb.
 [sst_width] 255
 [signals_width] 290
 [sst_expanded] 1
 [sst_vpaned_height] 145
 @800200
 -sdram
-@29
-pcfx_render_tb.sdram.ch1_req
 @28
+pcfx_render_tb.sdram.ch1_req
 pcfx_render_tb.sdram.ch1_ready
 @22
 pcfx_render_tb.sdram.ch2_addr[26:0]
@@ -85,7 +82,7 @@ pcfx_render_tb.sdrb.u1a.DQML
 pcfx_render_tb.sdrb.u1a.cmd[3:0]
 @1401200
 -u1a
-@c00200
+@800200
 -memif_sdram
 @28
 pcfx_render_tb.memif_sdram.SRAM_CEn
@@ -99,12 +96,15 @@ pcfx_render_tb.memif_sdram.mem_rdy
 pcfx_render_tb.memif_sdram.KRAMA_DI[15:0]
 pcfx_render_tb.memif_sdram.KRAMA_DO[15:0]
 @28
+pcfx_render_tb.memif_sdram.ch2_req
+pcfx_render_tb.memif_sdram.SDRAM_CH2_REQ
+pcfx_render_tb.memif_sdram.SDRAM_CH2_READY
 pcfx_render_tb.memif_sdram.KRAMA_WR
 pcfx_render_tb.memif_sdram.KRAMA_REQ
 pcfx_render_tb.memif_sdram.KRAMA_ACK
 pcfx_render_tb.memif_sdram.ch3_req
-pcfx_render_tb.memif_sdram.SDRAM_CH3_REQ
 pcfx_render_tb.memif_sdram.ch3_act
+pcfx_render_tb.memif_sdram.SDRAM_CH3_REQ
 pcfx_render_tb.memif_sdram.SDRAM_CH3_READY
 pcfx_render_tb.memif_sdram.ch3_ready
 pcfx_render_tb.memif_sdram.ch3_ready_d
@@ -114,7 +114,7 @@ pcfx_render_tb.memif_sdram.KRAMB_DI[15:0]
 pcfx_render_tb.memif_sdram.KRAMB_WR
 pcfx_render_tb.memif_sdram.KRAMB_REQ
 pcfx_render_tb.memif_sdram.KRAMB_ACK
-@1401200
+@1000200
 -memif_sdram
 @800200
 -mmc
@@ -163,6 +163,8 @@ pcfx_render_tb.mmc.video.vfeb.M_ACK
 -vfeb
 @22
 pcfx_render_tb.mmc.video.bg0.md[15:0]
+@23
+pcfx_render_tb.mmc.video.mdbatd[15:0]
 @28
 pcfx_render_tb.mmc.video.bg0.mdl[1:0]
 @22
@@ -174,7 +176,32 @@ pcfx_render_tb.mmc.fabric.c30xfer_m_req
 pcfx_render_tb.mmc.fabric.cpuif_m_req
 pcfx_render_tb.mmc.fabric.vid_ma_req
 pcfx_render_tb.mmc.fabric.vid_mb_req
+@800200
+-fba
+@28
+pcfx_render_tb.mmc.fabric.fba.DCK
+@22
+#{pcfx_render_tb.mmc.fabric.fba.cm_req[0:4]} pcfx_render_tb.mmc.fabric.fba.cm_req[0] pcfx_render_tb.mmc.fabric.fba.cm_req[1] pcfx_render_tb.mmc.fabric.fba.cm_req[2] pcfx_render_tb.mmc.fabric.fba.cm_req[3] pcfx_render_tb.mmc.fabric.fba.cm_req[4]
+@24
+pcfx_render_tb.mmc.fabric.fba.prio_sel[2:0]
+@28
+pcfx_render_tb.mmc.fabric.fba.prio_act
+pcfx_render_tb.mmc.fabric.fba.dmc_m_req
+pcfx_render_tb.mmc.fabric.fba.dmc_m_ack
 @1000200
+-fba
+@800200
+-fbb
+@22
+#{pcfx_render_tb.mmc.fabric.fbb.cm_req[0:4]} pcfx_render_tb.mmc.fabric.fbb.cm_req[0] pcfx_render_tb.mmc.fabric.fbb.cm_req[1] pcfx_render_tb.mmc.fabric.fbb.cm_req[2] pcfx_render_tb.mmc.fabric.fbb.cm_req[3] pcfx_render_tb.mmc.fabric.fbb.cm_req[4]
+@24
+pcfx_render_tb.mmc.fabric.fbb.prio_sel[2:0]
+@28
+pcfx_render_tb.mmc.fabric.fbb.prio_act
+pcfx_render_tb.mmc.fabric.fbb.dmc_m_req
+pcfx_render_tb.mmc.fabric.fbb.dmc_m_ack
+@1000200
+-fbb
 -mmc
 @c00200
 -vdc0
@@ -208,7 +235,7 @@ pcfx_render_tb.vdc1.CPURD_PEND2
 pcfx_render_tb.vdc1.CPURD_EXEC
 @1401200
 -vdc1
-@800200
+@c00200
 -vce
 @28
 pcfx_render_tb.vce.CSn
@@ -225,6 +252,8 @@ pcfx_render_tb.vce.v_cnt[8:0]
 pcfx_render_tb.vce.vdc_vd[8:0]
 pcfx_render_tb.vce.vpu_vd[23:0]
 pcfx_render_tb.vce.MMC_VD[23:0]
+@28
+pcfx_render_tb.vce.DCKKR
 @c00200
 -ccdp
 @22
@@ -265,10 +294,14 @@ pcfx_render_tb.vce.V[7:0]
 @28
 pcfx_render_tb.vce.VSn
 pcfx_render_tb.vce.HSn
-@1000200
+@1401200
 -vce
 @800200
 -vpu
+@28
+pcfx_render_tb.vpu.CLK
+pcfx_render_tb.vpu.CE
+pcfx_render_tb.vpu.DCK
 @22
 pcfx_render_tb.vpu.v_cnt[3:0]
 @28

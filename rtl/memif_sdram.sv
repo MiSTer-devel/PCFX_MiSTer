@@ -261,62 +261,46 @@ assign SDRAM_CH1_REQ = ch1_ready_d & ch1_req;
 
 //////////////////////////////////////////////////////////////////////
 
-logic           ch2_req, ch2_act;
-logic           ch2_ready, ch2_ready_d = '1;
-logic           krama_ack = '0;
+logic           ch2_req;
+logic           krama_req_d;
+logic           krama_ack;
+logic           krama_ack_d = '0;
 
-assign ch2_req = ~ch2_act & KRAMA_REQ & ~krama_ack;
-assign ch2_ready = ch2_ready_d & ~(~ch2_act & ch2_req) | SDRAM_CH2_READY;
+assign ch2_req = ~krama_req_d & KRAMA_REQ;
+assign krama_ack = SDRAM_CH2_READY;
 
 always @(posedge SDRAM_CLK) begin
-    ch2_ready_d <= ch2_ready;
-
-    if (~ch2_act & SDRAM_CH2_REQ)
-        ch2_act <= '1;
-
-    if (ch2_act & (ch2_ready & krama_ack))
-        ch2_act <= '0;
-end
-
-always @(posedge CPU_CLK) begin
-    krama_ack <= ch2_act & ch2_ready;
+    krama_req_d <= KRAMA_REQ;
+    krama_ack_d <= krama_ack;
 end
 
 assign SDRAM_CH2_ADDR = KRAMA_BASE_A + 27'({KRAMA_A, 1'b0});
 assign SDRAM_CH2_DIN = {2{KRAMA_DO}};
-assign SDRAM_CH2_REQ = ch2_ready_d & ch2_req;
+assign SDRAM_CH2_REQ = ch2_req;
 assign SDRAM_CH2_RNW = ~KRAMA_WR;
 assign KRAMA_DI = SDRAM_CH2_DOUT[15:0];
-assign KRAMA_ACK = krama_ack;
+assign KRAMA_ACK = krama_ack | krama_ack_d;  // double for CPU_CLK
 
 //////////////////////////////////////////////////////////////////////
 
-logic           ch3_req, ch3_act;
-logic           ch3_ready, ch3_ready_d = '1;
-logic           kramb_ack = '0;
+logic           ch3_req;
+logic           kramb_req_d;
+logic           kramb_ack;
+logic           kramb_ack_d = '0;
 
-assign ch3_req = ~ch3_act & KRAMB_REQ & ~kramb_ack;
-assign ch3_ready = ch3_ready_d & ~(~ch3_act & ch3_req) | SDRAM_CH3_READY;
+assign ch3_req = ~kramb_req_d & KRAMB_REQ;
+assign kramb_ack = SDRAM_CH3_READY;
 
 always @(posedge SDRAM_CLK) begin
-    ch3_ready_d <= ch3_ready;
-
-    if (~ch3_act & SDRAM_CH3_REQ)
-        ch3_act <= '1;
-
-    if (ch3_act & (ch3_ready & kramb_ack))
-        ch3_act <= '0;
-end
-
-always @(posedge CPU_CLK) begin
-    kramb_ack <= ch3_act & ch3_ready;
+    kramb_req_d <= KRAMB_REQ;
+    kramb_ack_d <= kramb_ack;
 end
 
 assign SDRAM_CH3_ADDR = KRAMB_BASE_A + 27'({KRAMB_A, 1'b0});
 assign SDRAM_CH3_DIN = {2{KRAMB_DO}};
-assign SDRAM_CH3_REQ = ch3_ready_d & ch3_req;
+assign SDRAM_CH3_REQ = ch3_req;
 assign SDRAM_CH3_RNW = ~KRAMB_WR;
 assign KRAMB_DI = SDRAM_CH3_DOUT[15:0];
-assign KRAMB_ACK = kramb_ack;
+assign KRAMB_ACK = kramb_ack | kramb_ack_d;  // double for CPU_CLK
 
 endmodule

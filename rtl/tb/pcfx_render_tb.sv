@@ -339,8 +339,3 @@ initial #0 begin
 end
 
 endmodule
-
-
-// Local Variables:
-// compile-command: "iverilog -g2012 -grelative-include -s pcfx_render_tb -DTB_VDC -DTB_VPU -o pcfx_render_tb.vvp ../fifo/fifo1.v ../huc6272.sv ../huc6261.sv ../huc6270.sv ../huc6271.sv dpram.sv ../memif_sdram.sv ../sdram.sv sdram_xsds.sv as4c32m16sb.sv pcfx_render_tb.sv && ./pcfx_render_tb.vvp && python3 yuv_render2png.py pcfx_render.hex pcfx_render.png 360 242"
-// End:
