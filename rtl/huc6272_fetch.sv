@@ -178,12 +178,10 @@ assign mpe_layer = mpe_d.layer;
 assign mpe_bnc = mpe_d.bat;
 
 always @(posedge CLK) begin
-    mpe_rs <= MPRS;
-    if (MPRS) begin
+    if (DCK) begin
         // Silicon probably allocates a full DCK cycle to compute the
         // fetch address -- half of the 2x DCK cycles allocated to
-        // complete data fetch.  We need more time to compensate for
-        // SDRAM delays, and so we keep compute time to a minimum.
+        // complete data fetch.
         mpe_ra <= mpe_addr(mpe_d);
         mpe_cgcol <= sag_col[2:0];
     end
@@ -192,67 +190,32 @@ end
 //////////////////////////////////////////////////////////////////////
 // Bank A/B memory client interface
 
-logic               mrcke;
 logic               fetch;
-logic               mtrg, mtrg2, mreq0, mreq, mack;
-logic               mdspp, mdsp, mds;
-logic [1:0]         mdlp, mdl;
-logic               mdbncp, mdbnc;
-logic [2:0]         mdcgcolp, mdcgcol;
-logic [17:0]        ma;
-logic [15:0]        mdp, md;
+logic               mtrg, mreq;
+logic               mds;
+logic [1:0]         mdl;
+logic               mdbnc;
 
-assign mrcke = mpe_rs;
 assign fetch = mpe_bnc ? FETCH_BAT : FETCH_CG;
-assign mtrg = mpe_ren & fetch & mrcke;
-assign mreq0 = (~mreq | mack) & (mtrg | mtrg2);
-assign mack = M_REQ & M_ACK;
-// This strobe aligns with the 2nd DCK after the start of the
-// microprogram data (mpe_d) that drove it.
-assign mds = DCK & mdsp;
+assign mtrg = DCK & mpe_ren & fetch;
+// This strobe aligns with the DCK after the fetch started.
+// Note we ignore M_ACK; it's not guaranteed to be DCK-aligned.
+assign mds = DCK & mreq;
 
 always @(posedge CLK) begin
     if (~RESn) begin
-        mtrg2 <= '0;
-        ma <= '0;
-        mdlp <= '0;
-        mdl <= '0;
-        mdbncp <= '0;
-        mdbnc <= '0;
-        mdspp <= '0;
-        mdsp <= '0;
-        mdp <= '0;
-        md <= '0;
         mreq <= '0;
     end
     else begin
-        if (mreq0) begin
-            mreq <= '1;
-            mtrg2 <= '0;
-            ma <= mpe_ra;
-            mdlp <= mpe_layer;
-            mdbncp <= mpe_bnc;
-            mdcgcolp <= mpe_cgcol;
-        end
-        else if (mreq) begin
-            mtrg2 <= mtrg;
-        end
-
-        if (mack) begin
-            mreq <= mreq0;
-            md <= M_DI;
-            mdl <= mdlp;
-            mdbnc <= mdbncp;
-            mdcgcol <= mdcgcolp;
-        end
-        if (mrcke) begin
-            mdspp <= mtrg;
-            mdsp <= mdspp;
+        if (DCK) begin
+            mreq <= mtrg;
+            mdl <= mpe_layer;
+            mdbnc <= mpe_bnc;
         end
     end
 end
 
-assign M_A = ma;
+assign M_A = mpe_ra;
 assign M_BE = '1;
 assign M_WR = '0;
 assign M_REQ = mreq;
@@ -260,7 +223,7 @@ assign M_REQ = mreq;
 assign MDS = mds;
 assign MDL = mdl;
 assign MDBnC = mdbnc;
-assign MDCC = mdcgcol;
-assign MD = md;
+assign MDCC = mpe_cgcol;
+assign MD = M_DI;
 
 endmodule

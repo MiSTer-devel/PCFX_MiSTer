@@ -7,8 +7,8 @@
 module huc6272_fabric
    (
     input         CLK,
-    input         CE,
     input         RESn,
+    input         DCK,
 
     input         cpuif_m_ba,
     input [17:0]  cpuif_m_a,

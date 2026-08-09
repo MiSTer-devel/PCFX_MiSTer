@@ -7,7 +7,6 @@
 module huc6272_dmc
    (
     input         CLK,
-    input         CE,
     input         RESn,
 
     // Client interface
@@ -33,10 +32,11 @@ module huc6272_dmc
 logic               act, trg, rend;
 logic [17:0]        a;
 logic [8:0]         ao;
+logic               cc;
 logic               ras, cas, io;
 
 assign trg = REQ;
-assign rend = CE & io;
+assign rend = cc & io;
 
 always @(posedge CLK) begin
     if (~RESn) begin
@@ -57,28 +57,33 @@ end
 
 always @(posedge CLK) begin
     if (~RESn) begin
+        cc <= '0;
         ao <= '0;
         ras <= 0;
         cas <= 0;
         io <= 0;
     end
-    else if (CE & act) begin
-        if (~ras) begin
-            ras <= '1;
-            ao <= a[17:9];
-        end
-        else if (~cas) begin
-            cas <= '1;
-            ao <= a[8:0];
-        end
-        else if (~io) begin
-            io <= '1;
-        end
-        else begin
-            ras <= '0;
-            cas <= '0;
-            io <= '0;
-            ao <= '0;
+    else begin
+        if (act) begin
+            cc <= ~cc;
+            if (~ras) begin
+                ras <= '1;
+                ao <= a[17:9];
+                cc <= '0;
+            end
+            else if (cc & ~cas) begin
+                cas <= '1;
+                ao <= a[8:0];
+            end
+            else if (cc & ~io) begin
+                io <= '1;
+            end
+            else if (cc) begin
+                ras <= '0;
+                cas <= '0;
+                io <= '0;
+                ao <= '0;
+            end
         end
     end
 end
