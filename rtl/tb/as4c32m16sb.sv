@@ -247,6 +247,8 @@ always @(posedge CLK) if (cke) begin
     end
 
     if (~cmd[3]) begin
+        if (cmd[2:0] != CMD_NOP)
+            assert(~|prechg); // interrupting AP is ILLEGAL
         case (cmd[2:0])
             CMD_ACTIVE: begin
                 assert(trc_cnt[ba] == 0);
@@ -268,7 +270,6 @@ always @(posedge CLK) if (cke) begin
                 for (int b = 0; b < 4; b++) begin
                     if ((~a[10] && b[1:0] == ba) || a[10]) begin
                         assert(trcd_cnt[b] == 0);
-                        assert(~prechg[b]);
                         assert(a[10] || active[b]);
                         if (active[b]) begin
                             assert(tras_cnt[b] >= tras_min - trp_min);
@@ -307,6 +308,10 @@ end
 
 assign rden = (cas_cnt == 0) & (rd_cnt != 0);
 assign {dqhoe, dqloe} = {2{rden}} & dqmn;
+
+always @* begin
+    assert(~(|{dqhoe, dqloe} & ~nWE)); // likely DQ I/O contention
+end
 
 assign DQ[15:8] = dqhoe ? dout[15:8] : 'Z;
 assign DQ[7:0]  = dqloe ? dout[7:0]  : 'Z;
