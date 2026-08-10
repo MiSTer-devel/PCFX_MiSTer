@@ -309,7 +309,7 @@ hps_io #(.CONF_STR(CONF_STR), .WIDE(1), .VDNUM(3)) hps_io
 
 ///////////////////////   CLOCKS   ///////////////////////////////
 
-localparam CLK_RAM_MHZ = 100.0;
+localparam CLK_RAM_MHZ = 85.909090; // matches pll.output_clock_frequency1
 
 wire clk_sys, clk_ram;
 wire pll_locked;
