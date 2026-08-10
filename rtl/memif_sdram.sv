@@ -74,14 +74,14 @@ module memif_sdram
     output [3:0]  SDRAM_CH1_BE,
     input         SDRAM_CH1_READY,
     output [26:0] SDRAM_CH2_ADDR,
-    input [31:0]  SDRAM_CH2_DOUT,
-    output [31:0] SDRAM_CH2_DIN,
+    input [15:0]  SDRAM_CH2_DOUT,
+    output [15:0] SDRAM_CH2_DIN,
     output        SDRAM_CH2_REQ,
     output        SDRAM_CH2_RNW,
     input         SDRAM_CH2_READY,
     output [26:0] SDRAM_CH3_ADDR,
-    input [31:0]  SDRAM_CH3_DOUT,
-    output [31:0] SDRAM_CH3_DIN,
+    input [15:0]  SDRAM_CH3_DOUT,
+    output [15:0] SDRAM_CH3_DIN,
     output        SDRAM_CH3_REQ,
     output        SDRAM_CH3_RNW,
     input         SDRAM_CH3_READY
@@ -275,10 +275,10 @@ always @(posedge SDRAM_CLK) begin
 end
 
 assign SDRAM_CH2_ADDR = KRAMA_BASE_A + 27'({KRAMA_A, 1'b0});
-assign SDRAM_CH2_DIN = {2{KRAMA_DO}};
+assign SDRAM_CH2_DIN = KRAMA_DO;
 assign SDRAM_CH2_REQ = ch2_req;
 assign SDRAM_CH2_RNW = ~KRAMA_WR;
-assign KRAMA_DI = SDRAM_CH2_DOUT[15:0];
+assign KRAMA_DI = SDRAM_CH2_DOUT;
 assign KRAMA_ACK = krama_ack | krama_ack_d;  // double for CPU_CLK
 
 //////////////////////////////////////////////////////////////////////
@@ -297,10 +297,10 @@ always @(posedge SDRAM_CLK) begin
 end
 
 assign SDRAM_CH3_ADDR = KRAMB_BASE_A + 27'({KRAMB_A, 1'b0});
-assign SDRAM_CH3_DIN = {2{KRAMB_DO}};
+assign SDRAM_CH3_DIN = KRAMB_DO;
 assign SDRAM_CH3_REQ = ch3_req;
 assign SDRAM_CH3_RNW = ~KRAMB_WR;
-assign KRAMB_DI = SDRAM_CH3_DOUT[15:0];
+assign KRAMB_DI = SDRAM_CH3_DOUT;
 assign KRAMB_ACK = kramb_ack | kramb_ack_d;  // double for CPU_CLK
 
 endmodule

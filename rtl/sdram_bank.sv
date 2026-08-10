@@ -6,7 +6,8 @@
 // This program is GPL licensed. See COPYING for the full license.
 
 module sdram_bank
-    #(parameter CLK_MHZ = 142.8571428)
+    #(parameter CLK_MHZ = 142.8571428,
+      parameter DM = 31)
 (
     input         clk,
     input         init,
@@ -14,8 +15,8 @@ module sdram_bank
     output        READY,
     input         RNW,
     input [26:0]  ADDR,
-    input [31:0]  DIN,
-    output [31:0] DOUT,
+    input [DM:0]  DIN,
+    output [DM:0] DOUT,
     input [3:0]   BE,
     output [3:0]  CREQ,
     output [3:0]  DREQ,
@@ -43,6 +44,9 @@ localparam BAST_W_CMD_2  = 7;
 localparam BAST_W_REC    = 8;
 localparam BAST_PRE      = 9;
 
+// Number of active read/write beats for this bank
+localparam BEATS = (DM == 31) ? 2 : 1;
+
 reg         rq, rqc; // access request
 reg         rnw; // read / not write
 reg [12:0]  row; // row address
@@ -59,14 +63,14 @@ reg [2:0]   r_cmd;
 reg [15:0]  dqout;
 reg         dqoe;
 
-reg [CAS_LATENCY+BURST_LENGTH:0] data_ready_delay = 0;
+reg [CAS_LATENCY+BEATS:0] data_ready_delay = 0;
 reg         ready = 0;
 
 always @(posedge clk) begin
     rnw <= RNW;
     row <= addr_to_row(ADDR);
     col <= addr_to_col(ADDR);
-    din <= DIN;
+    din <= 32'(DIN);
     be <= BE;
 end
 
@@ -97,7 +101,10 @@ always @* begin
         BAST_ACT_WAIT:
             if (wcnt == 0) begin
                 creq = (1<<BURST_LENGTH)-1;
-                dreq = (1<<BURST_LENGTH)-1 << (rnw ? 2 : 0);
+                if (rnw)
+                    dreq = (1<<BURST_LENGTH)-1 << 2;
+                else
+                    dreq = (1<<BEATS)-1;
             end
         default: ;
     endcase
@@ -143,7 +150,12 @@ always @* begin
                     stn = BAST_IDLE;
             end
         BAST_W_CMD: begin
-            stn = BAST_W_CMD_2;
+            if (BEATS == 2)
+                stn = BAST_W_CMD_2;
+            else begin
+                stn = BAST_W_REC;
+                wcntn = 4'(TWR_MIN - 1);
+            end
         end
         BAST_W_CMD_2: begin
             stn = BAST_W_REC;
@@ -193,13 +205,13 @@ always @(posedge clk) begin
         end
         BAST_W_CMD: begin
             r_a[12:11] <= ~be[1:0]; // DQM for 1st beat
-            r_a[10]    <= 0; // no auto-precharge
+            r_a[10]    <= (BEATS == 1); // auto-precharge on last beat
             r_a[9:0]   <= col;
             r_cmd      <= CMD_WRITE;
         end
         BAST_W_CMD_2: begin
             r_a[12:11] <= ~be[3:2]; // DQM for 2nd beat
-            r_a[10]    <= 1; // auto-precharge
+            r_a[10]    <= (BEATS == 2); // auto-precharge on last beat
             r_a[9:0]   <= col;
             r_a[0]     <= 1;
             r_cmd      <= CMD_WRITE;
@@ -215,14 +227,15 @@ always @(posedge clk) begin
 
     data_ready_delay <= data_ready_delay >> 1;
 
-    if (data_ready_delay[1]) dout[15:00] <= R_DQI;
-    if (data_ready_delay[0]) dout[31:16] <= R_DQI;
+    if (data_ready_delay[BEATS-1]) dout[15:00] <= R_DQI;
+    if (BEATS == 2)
+        if (data_ready_delay[BEATS-2]) dout[31:16] <= R_DQI;
     if (data_ready_delay[0]) ready <= 1;
 
     if (BBSSEL) begin
         case (st)
             BAST_R_CMD:
-                data_ready_delay[CAS_LATENCY+BURST_LENGTH] <= 1;
+                data_ready_delay[CAS_LATENCY+BEATS] <= 1;
             default: ;
         endcase
 
@@ -230,11 +243,14 @@ always @(posedge clk) begin
             BAST_W_CMD: begin
                 dqout <= din[15:0];
                 dqoe  <= 1;
+                if (BEATS == 1)
+                    ready <= 1;
             end
             BAST_W_CMD_2: begin
                 dqout <= din[31:16];
                 dqoe  <= 1;
-                ready <= 1;
+                if (BEATS == 2)
+                    ready <= 1;
             end
             default: ;
         endcase
@@ -248,7 +264,7 @@ assign R_DQO = dqout;
 assign R_DQOE = dqoe;
 assign R_A = r_a;
 assign R_CMD = r_cmd;
-assign DOUT = dout;
+assign DOUT = dout[DM:0];
 assign READY = ready;
 
 endmodule

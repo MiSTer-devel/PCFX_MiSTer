@@ -48,15 +48,15 @@ module sdram
     output            ch1_ready,
 
     input      [26:0] ch2_addr,    // 25 bit address for 8bit mode. addr[0] = 0 for 16bit mode for correct operations.
-    output reg [31:0] ch2_dout,    // data output to cpu
-    input      [31:0] ch2_din,     // data input from cpu
+    output reg [15:0] ch2_dout,    // data output to cpu
+    input      [15:0] ch2_din,     // data input from cpu
     input             ch2_req,     // request
     input             ch2_rnw,     // 1 - read, 0 - write
     output            ch2_ready,
 
     input      [26:0] ch3_addr,
-    output reg [31:0] ch3_dout,
-    input      [31:0] ch3_din,
+    output reg [15:0] ch3_dout,
+    input      [15:0] ch3_din,
     input             ch3_req,
     input             ch3_rnw,
     output            ch3_ready
@@ -152,7 +152,7 @@ always @(posedge clk) begin
 end
 
 // Bank submodules
-sdram_bank #(CLK_MHZ) ba0
+sdram_bank #(CLK_MHZ, 31) ba0
    (
     .clk(clk),
     .init(init),
@@ -175,7 +175,7 @@ sdram_bank #(CLK_MHZ) ba0
     .R_CMD(bar_cmd[0])
     );
 
-sdram_bank #(CLK_MHZ) ba1
+sdram_bank #(CLK_MHZ, 15) ba1
    (
     .clk(clk),
     .init(init),
@@ -198,7 +198,7 @@ sdram_bank #(CLK_MHZ) ba1
     .R_CMD(bar_cmd[1])
     );
 
-sdram_bank #(CLK_MHZ) ba2
+sdram_bank #(CLK_MHZ, 15) ba2
    (
     .clk(clk),
     .init(init),
@@ -221,7 +221,7 @@ sdram_bank #(CLK_MHZ) ba2
     .R_CMD(bar_cmd[2])
     );
 
-sdram_bank #(CLK_MHZ) ba3
+sdram_bank #(CLK_MHZ, 15) ba3
    (
     .clk(clk),
     .init(init),

@@ -251,6 +251,7 @@ always @(posedge CLK) if (cke) begin
             assert(~|prechg); // interrupting AP is ILLEGAL
         case (cmd[2:0])
             CMD_ACTIVE: begin
+                assert(~row_open[ba]);
                 assert(trc_cnt[ba] == 0);
                 trc_cnt[ba] <= trc_min - 1;
                 assert(trrd_cnt == 0);

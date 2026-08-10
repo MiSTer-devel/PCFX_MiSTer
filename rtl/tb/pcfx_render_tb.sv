@@ -84,10 +84,10 @@ wire [31:0] sdram_ch1_din, sdram_ch1_dout;
 wire [3:0]  sdram_ch1_be;
 wire        sdram_ch1_rnw, sdram_ch1_req, sdram_ch1_ready;
 wire [26:0] sdram_ch2_addr;
-wire [31:0] sdram_ch2_din, sdram_ch2_dout;
+wire [15:0] sdram_ch2_din, sdram_ch2_dout;
 wire        sdram_ch2_rnw, sdram_ch2_req, sdram_ch2_ready;
 wire [26:0] sdram_ch3_addr;
-wire [31:0] sdram_ch3_din, sdram_ch3_dout;
+wire [15:0] sdram_ch3_din, sdram_ch3_dout;
 wire        sdram_ch3_rnw, sdram_ch3_req, sdram_ch3_ready;
 
 sdram #(.CLK_MHZ(CLK_RAM_MHZ)) sdram

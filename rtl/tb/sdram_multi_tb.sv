@@ -65,8 +65,10 @@ endtask
 logic           sdram_init;
 logic           hblank = '0;
 logic [26:0]    ch1_addr, ch2_addr, ch3_addr;
-logic [31:0]    ch1_dout, ch2_dout, ch3_dout;
-logic [31:0]    ch1_din, ch2_din, ch3_din;
+logic [31:0]    ch1_dout;
+logic [15:0]    ch2_dout, ch3_dout;
+logic [31:0]    ch1_din;
+logic [15:0]    ch2_din, ch3_din;
 logic           ch1_req, ch2_req, ch3_req;
 logic           ch1_rnw, ch2_rnw, ch3_rnw;
 logic [3:0]     ch1_be;
@@ -157,7 +159,7 @@ reg [15:0] d;
     @(posedge clk_ram) ch2_req <= 0;
     @(negedge ch2_ready) ;
     sdram_read(ch2_addr, d);
-    assert(ch2_dout[15:0] == d);
+    assert(ch2_dout == d);
 end
 
 always @(kramb_read) begin :kramb_read_blk
@@ -168,7 +170,7 @@ reg [15:0] d;
     @(posedge clk_ram) ch3_req <= 0;
     @(negedge ch3_ready) ;
     sdram_read(ch3_addr, d);
-    assert(ch3_dout[15:0] == d);
+    assert(ch3_dout == d);
 end
 
 bit cpu_busy_read, cpu_busy_write = 0;

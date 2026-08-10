@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v4.0.0-prealpha (8ba24ab+) (w)1999-2022 BSI
-[*] Sun Aug  9 18:12:44 2026
+[*] Mon Aug 10 00:11:20 2026
 [*]
 [dumpfile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/pcfx_render_tb.verilator.fst"
-[dumpfile_mtime] "Sun Aug  9 18:07:44 2026"
-[dumpfile_size] 15933530
+[dumpfile_mtime] "Mon Aug 10 00:10:33 2026"
+[dumpfile_size] 9042905
 [savefile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/pcfx_render_tb.verilator.gtkw"
-[timestart] 0
+[timestart] 1711479
 [size] 1334 601
 [pos] -1 -1
-*-21.887354 1806820 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+*-6.764179 1711890 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 [markername] AA
 [markername] BB
 [markername] CC
@@ -39,6 +39,7 @@
 [treeopen] pcfx_render_tb.
 [treeopen] pcfx_render_tb.memif_sdram.
 [treeopen] pcfx_render_tb.mmc.
+[treeopen] pcfx_render_tb.mmc.video.
 [treeopen] pcfx_render_tb.mmc.video.vfeb.
 [sst_width] 255
 [signals_width] 290
@@ -48,24 +49,27 @@
 -sdram
 @28
 pcfx_render_tb.sdram.ch1_req
+@29
 pcfx_render_tb.sdram.ch1_ready
 @22
 pcfx_render_tb.sdram.ch2_addr[26:0]
-pcfx_render_tb.sdram.ch2_dout[31:0]
+pcfx_render_tb.sdram.ch2_dout[15:0]
 @28
 pcfx_render_tb.sdram.ch2_req
 pcfx_render_tb.sdram.ch2_ready
 @22
 pcfx_render_tb.sdram.ch3_addr[26:0]
-pcfx_render_tb.sdram.ch3_dout[31:0]
+pcfx_render_tb.sdram.ch3_dout[15:0]
 @28
 pcfx_render_tb.sdram.ch3_req
 pcfx_render_tb.sdram.ch3_ready
 @22
 pcfx_render_tb.sdram.refresh_wait[3:0]
+@28
+pcfx_render_tb.sdram.hblank
 @1000200
 -sdram
-@c00200
+@800200
 -u1a
 @28
 pcfx_render_tb.sdrb.u1a.nRAS
@@ -80,7 +84,7 @@ pcfx_render_tb.sdrb.u1a.DQMH
 pcfx_render_tb.sdrb.u1a.DQML
 @22
 pcfx_render_tb.sdrb.u1a.cmd[3:0]
-@1401200
+@1000200
 -u1a
 @800200
 -memif_sdram
@@ -128,9 +132,8 @@ pcfx_render_tb.mmc.BUSYn
 pcfx_render_tb.mmc.IRQn
 @22
 pcfx_render_tb.mmc.cpuif.rsel[6:0]
-@c00200
--video
 @800200
+-video
 -vfea
 @28
 pcfx_render_tb.mmc.video.vfea.mtrg
@@ -164,7 +167,7 @@ pcfx_render_tb.mmc.video.bg0.mdl[1:0]
 @22
 pcfx_render_tb.mmc.video.bg0.cgrd[31:0]
 pcfx_render_tb.mmc.VD[23:0]
-@1401200
+@1000200
 -video
 @c00200
 -c71xfer
@@ -190,9 +193,8 @@ pcfx_render_tb.mmc.c71xfer.act
 -c71xfer
 @800200
 -fabric
-@29
-pcfx_render_tb.mmc.fabric.c71xfer_m_req
 @28
+pcfx_render_tb.mmc.fabric.c71xfer_m_req
 pcfx_render_tb.mmc.fabric.c30xfer_m_req
 pcfx_render_tb.mmc.fabric.cpuif_m_req
 pcfx_render_tb.mmc.fabric.vid_ma_req
