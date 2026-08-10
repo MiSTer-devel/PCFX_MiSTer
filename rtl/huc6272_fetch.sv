@@ -199,7 +199,7 @@ logic               mdbnc;
 assign fetch = mpe_bnc ? FETCH_BAT : FETCH_CG;
 assign mtrg = DCK & mpe_ren & fetch;
 // This strobe aligns with the DCK after the fetch started.
-// Note we ignore M_ACK; it's not guaranteed to be DCK-aligned.
+// Note we ignore M_ACK, in case it's late.
 assign mds = DCK & mreq;
 
 always @(posedge CLK) begin
@@ -211,6 +211,8 @@ always @(posedge CLK) begin
             mreq <= mtrg;
             mdl <= mpe_layer;
             mdbnc <= mpe_bnc;
+            if (mreq)
+                assert(M_ACK) else $error("late M_ACK");
         end
     end
 end
