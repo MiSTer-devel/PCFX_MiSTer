@@ -786,6 +786,8 @@ always @(posedge CLK) if (1 && CE) begin
         if (~cpu_bcystn & ~cpu_mrqn &
             ((cpu_a == 32'hFFFFFF90) | (cpu_a == 32'hFFFFFFD0)))
             ERROR <= '1;
+        if (~cpu_dan & ~cpu_readyn & cpu_mrqn & cpu_st[0]) // HALT
+            ERROR <= '1;
     end
 end
 
