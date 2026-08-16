@@ -104,10 +104,10 @@ always @(posedge CLK) begin
             dma_rxbuf_rd <= '0;
             dma_next_word <= '0;
 
-            if (~rf_scsi.dma_en) begin
+            if (~rf_scsi.dma_en | dma_end) begin
                 dma_a0 <= '0;
             end
-            else if (rf_scsi.dma_en & dma_req_set) begin
+            else if (dma_req_set) begin
                 if (rf_scsi.start_dma_rx | rf_scsi.start_dma_tx)
                     $display("huc6272_scsi: rf_scsi.dma_kba=%x, .dma_ka=%x, .dma_byte_cnt=%x, .dma_int_en=%x", 
                              rf_scsi.dma_kba, rf_scsi.dma_ka, rf_scsi.dma_byte_cnt, rf_scsi.dma_int_en);
