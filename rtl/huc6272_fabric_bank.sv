@@ -91,7 +91,7 @@ assign dmc_m_a = cm_a[prio_sel];
 assign dmc_m_do = cm_do[prio_sel];
 assign dmc_m_be = cm_be[prio_sel];
 assign dmc_m_wr = cm_wr[prio_sel];
-assign dmc_m_req = dck_d & prio_act; // ctlr watches rising edge
+assign dmc_m_req = prio_act & ~prio_act_d; // ctlr watches rising edge
 
 genvar          g;
 generate

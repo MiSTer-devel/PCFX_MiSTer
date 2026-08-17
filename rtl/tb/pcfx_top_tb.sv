@@ -614,6 +614,14 @@ initial #0 begin
     // RTZ: Skip the startup splash screens: replace "JAL 000141CE" with NOPs
     sdram_write(pcfx_top.memif_sdram.RAM_BASE_A + 27'h00013ce2, 0);
     sdram_write(pcfx_top.memif_sdram.RAM_BASE_A + 27'h00013ce4, 0);
+
+    // RTZ: Skip to the intro movie
+    // 142B0: MOVEA #32, R0, R28
+    sdram_write(pcfx_top.memif_sdram.RAM_BASE_A + 27'h000142b0, 'hA380);
+    sdram_write(pcfx_top.memif_sdram.RAM_BASE_A + 27'h000142b2, 'h0032);
+    // 142B4: JR 141FA
+    sdram_write(pcfx_top.memif_sdram.RAM_BASE_A + 27'h000142b4, 'hABFF);
+    sdram_write(pcfx_top.memif_sdram.RAM_BASE_A + 27'h000142b6, 'hFF46);
  -----/\----- EXCLUDED -----/\----- */
 
 `ifdef LOAD_SRAMS
