@@ -84,8 +84,9 @@ assign cgfce = mds & (mdl == LAYER);
 // To align BG layers, all 8 pixels are buffered.
 // For rotated BG0, words arrive every pixel clock.
 // CG column (valid for rotated) is paired with the pixel data.
+// Zero output when MPSW=0, matching Mednafen
 //
-dpram #(.addr_width(3), .data_width(19)) pdram
+dpram #(.addr_width(3), .data_width(19), .disable_value('0)) pdram
    (
     .clock(CLK),
     .address_a(pdwa),
@@ -100,7 +101,7 @@ dpram #(.addr_width(3), .data_width(19)) pdram
     .enable_b(1'b1),
     .wren_b('0),
     .q_b(pdrout),
-    .cs_b(1'b1)
+    .cs_b(rf_bgm.mpsw)
     );
 
 always @(posedge CLK) begin
