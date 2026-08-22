@@ -627,7 +627,7 @@ logic           sdbuf_wren = 0;
 logic           sdbuf_rden = 0;
 
 assign sd_blk_cnt_bk = 6'(1-1); // 1x 512 block
-assign sd_blk_cnt_cd = 6'(8-1); // 8x 512 block = 4096B
+assign sd_blk_cnt_cd = 6'(1-1); // 1x (PCFX_BUFFER_SIZE) block
 
 assign bk_sdrd_base_a = sd_vd ? BMP_BASE_A : SRAM_BASE_A;
 

@@ -7,7 +7,7 @@
 #ifdef PCFX_TOP_TB_CD
 #include "svdpi.h"
 #include "Vpcfx_top_tb__Dpi.h"
-#include "mister_main/support/cdi/cdi.h"
+#include "mister_main/support/pcfx/pcfx.h"
 #include "libchdr/chd.h"
 #endif
 
@@ -49,15 +49,15 @@ int main(int argc, char** argv, char**) {
 extern "C" {
 svBit pcfx_mount_cd()
 {
-    cdi_mount_cd(3, "cd.chd");
-    return (cdi_get_img_size() == 0) ? sv_0 : sv_1;
+    pcfx_mount_cd(3, "cd.chd");
+    return (pcfx_get_img_size() == 0) ? sv_0 : sv_1;
 }
 
 int pcfx_read_cd(const svOpenArrayHandle buffer, int lba, int cnt)
 {
     VL_PRINTF("pcfx_read_cd(lba=%d, cnt=%d)\n", lba, cnt);
     void *aptr = svGetArrayPtr(buffer);
-    cdi_read_cd(reinterpret_cast<uint8_t*>(aptr), lba, cnt);
+    pcfx_read_cd(reinterpret_cast<uint8_t*>(aptr), lba, cnt);
     return 1;
 }
 

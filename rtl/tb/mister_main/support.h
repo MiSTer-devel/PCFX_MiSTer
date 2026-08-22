@@ -56,7 +56,7 @@
 // #include "support/psx/psx.h"
 
 // CD-i support
-#include "support/cdi/cdi.h"
+//#include "support/cdi/cdi.h"
 
 // // UEF support
 // #include "support/uef/uef_reader.h"
@@ -70,3 +70,6 @@
 
 // // 3DO  support
 // #include "support/3do/3do.h"
+
+// PCFX support
+#include "support/pcfx/pcfx.h"

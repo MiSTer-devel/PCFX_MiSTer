@@ -289,11 +289,10 @@ endtask
 
 `ifdef PCFX_TOP_TB_CD
 
-localparam CDI_SECTOR_LEN = 2352;
-localparam CDI_SUBCHANNEL_LEN = ((12+96)*2);
-localparam CDI_CDIC_BUFFER_SIZE = (CDI_SECTOR_LEN + CDI_SUBCHANNEL_LEN);
+localparam PCFX_SECTOR_LEN = 2352;
+localparam PCFX_BUFFER_SIZE = PCFX_SECTOR_LEN;
 
-bit [7:0]       cd_rbuf [CDI_CDIC_BUFFER_SIZE];
+bit [7:0]       cd_rbuf [PCFX_BUFFER_SIZE];
 event           mount_cd;
 
 task load_cd;
@@ -320,8 +319,8 @@ endtask
 
 task get_cd_rbuf(input int off, output [15:0] data, output last);
     data = '0;
-    last = off == CDI_CDIC_BUFFER_SIZE/2-1;
-    if (off*2 < CDI_CDIC_BUFFER_SIZE) begin
+    last = off == PCFX_BUFFER_SIZE/2-1;
+    if (off*2 < PCFX_BUFFER_SIZE) begin
         data[0+:8] = cd_rbuf[off*2+0];
         data[8+:8] = cd_rbuf[off*2+1];
     end
@@ -361,7 +360,7 @@ logic [15:0] data;
         end
         else begin
 `ifdef PCFX_TOP_TB_CD
-            assert(sd_blk_cnt_cd >= 6'(8-1));
+            assert(sd_blk_cnt_cd == 6'(1-1));
             read_cd(sd_lba_cd);
 `endif
         end
