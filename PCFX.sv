@@ -210,7 +210,7 @@ assign VIDEO_ARY = (!ar) ? 12'd3 : 12'd0;
 // 0         1         2         3          4         5         6
 // 01234567890123456789012345678901 23456789012345678901234567890123
 // 0123456789ABCDEFGHIJKLMNOPQRSTUV 0123456789ABCDEFGHIJKLMNOPQRSTUV
-// X      XXX           XX
+// X      XXXXX         XX
 
 `include "build_id.v" 
 localparam CONF_STR = {
@@ -220,8 +220,10 @@ localparam CONF_STR = {
 	"-;",
     "S2,CUECHD,Load CD;",
 	"-;",
+	"O[10],Save backup RAM,On Open OSD,Manual;",
     "D0S0,SAVBIN,Mount int. backup RAM;",
     "D1S1,FXBBIN,Mount FX-BMP backup RAM;",
+	"O[11],Automount int. backup RAM,Yes,No;",
     "D2R7,Load backup RAM;",
     "D2R8,Save backup RAM;",
 	"-;",
@@ -388,6 +390,9 @@ pcfx_top #(.CLK_RAM_MHZ(CLK_RAM_MHZ))  pcfx_top
     .bk_ena(bk_ena),
     .bk_load(status[7]),
     .bk_save(status[8]),
+    .bk_autoload_en(~status[11]),
+    .bk_autosave_en(~status[10]),
+    .bk_autosave_trg(OSD_STATUS),
     .bmp_rom_inserted(bmp_rom_inserted),
     .bmp_eject_rom(status[9]),
 

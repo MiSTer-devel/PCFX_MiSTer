@@ -42,6 +42,9 @@ module pcfx_top
     output            bk_ena,
     input             bk_load,
     input             bk_save,
+    input             bk_autoload_en,
+    input             bk_autosave_en,
+    input             bk_autosave_trg,
     output reg        bmp_rom_inserted = 0,
     input             bmp_eject_rom,
 
@@ -84,7 +87,7 @@ logic [31:0]    bk_sdrd_din, bk_sdrd_dout;
 logic           bk_sdrd_we_req = 0, bk_sdrd_rd_req = 0;
 logic           bk_sdrd_we_ack, bk_sdrd_rd_ack;
 logic [31:0]    bk_sd_blk_cnt [2];
-logic [1:0]     bk_mounted;
+logic [1:0]     bk_mounted = 0, bk_mounted_d = 0;
 logic           cd_mounted = 0;
 
 //////////////////////////////////////////////////////////////////////
@@ -507,6 +510,8 @@ logic           bk_saving = 0;
 logic           sd_vd; // volume select
 logic           bk_sdrd_copy_req = 0;
 logic           bk_sdrd_copy_ack = 0;
+logic           bk_autoload_go, bk_autosave_go;
+logic           bk_autosave_trg_d;
 
 logic [1:0]     sd_rd_bk = '0, sd_wr_bk = '0;
 wire [1:0]      sd_ack_bk = sd_ack[1:0];
@@ -518,7 +523,12 @@ assign sd_wr[1:0] = sd_wr_bk;
 assign bk_ena_img_mount[0] = '1; // SRAM
 assign bk_ena_img_mount[1] = ~bmp_rom_inserted; // BMP
 
+assign bk_autoload_go = bk_autoload_en & (bk_mounted[0] & ~bk_mounted_d[0]);
+assign bk_autosave_go = bk_autosave_en & (bk_autosave_trg & ~bk_autosave_trg_d);
+
 always @(posedge clk_sys) begin
+    bk_mounted_d <= bk_mounted;
+    bk_autosave_trg_d <= bk_autosave_trg;
     if (img_mounted[1:0] != 0) begin
         bk_mounted[img_mounted[1]] <= |img_size;
         bk_sd_blk_cnt[img_mounted[1]] <= img_size[9+:32];
@@ -537,12 +547,12 @@ always @(posedge clk_sys) begin
 
     case (bk_state)
         BKST_IDLE: begin
-            if (bk_load) begin
+            if (bk_load | bk_autoload_go) begin
                 bk_loading <= 1;
                 sd_vd <= 0;
                 bk_state <= BKST_SELECT_VD;
             end
-            else if (bk_save) begin
+            else if (bk_save | bk_autosave_go) begin
                 bk_saving <= 1;
                 sd_vd <= 0;
                 bk_state <= BKST_SELECT_VD;

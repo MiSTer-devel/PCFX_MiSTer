@@ -129,6 +129,9 @@ pcfx_top #(.CLK_RAM_MHZ(CLK_RAM_MHZ)) pcfx_top
     .bk_ena(bk_ena),
     .bk_load(bk_load),
     .bk_save(bk_save),
+    .bk_autoload_en('0),
+    .bk_autosave_en('0),
+    .bk_autosave_trg('0),
     .bmp_rom_inserted(),
     .bmp_eject_rom(bmp_eject_rom),
 
