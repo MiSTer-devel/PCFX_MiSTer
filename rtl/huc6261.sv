@@ -485,9 +485,18 @@ logic             vdc_cce;
 
 wire vdc0_key = VDC0_VD[7:0] != '0;
 wire vdc1_key = VDC1_VD[7:0] != '0;
+wire vdc1_spbg = VDC1_VD[8];
 
-// "Upper" 6270 has priority over "lower".
-assign vdc_vd = ~vdc1_key ? VDC0_VD : VDC1_VD;
+always @* begin
+    if ((vdc1_spbg ? cr.sp256 : cr.bg256) & VDC1_VD[7]) begin
+        vdc_vd = {vdc1_spbg, VDC0_VD[3:0], VDC1_VD[3:0]};
+    end
+    else begin
+        // "Upper" 6270 has priority over "lower".
+        vdc_vd = ~vdc1_key ? VDC0_VD : VDC1_VD;
+    end
+end
+
 assign vdc_spbg = vdc_vd[8];
 assign vdc_en = vdc_spbg ? cr.sp : cr.bg;
 assign vdc_key = vdc_en & (vdc0_key | vdc1_key);
