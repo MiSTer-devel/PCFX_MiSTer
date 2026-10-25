@@ -169,6 +169,7 @@ end
 logic [6:0]     isr;
 logic [6:0]     imr;
 logic [2:0]     ilr [7];
+logic [3:0]     ahr0, ahr1;
 
 logic [15:0]    dout;
 
@@ -205,6 +206,8 @@ always @* begin
             dout = kpc1_do;
         else
             case (A[11:4])
+                8'hC0: dout[3:0] = ahr0;
+                8'hC4: dout[3:0] = ahr1;
                 8'hE0: dout[6:0] = isr;
                 8'hE4: dout[6:0] = imr;
                 8'hE8: dout[11:0] = {ilr[3], ilr[2], ilr[1], ilr[0]};
@@ -216,6 +219,23 @@ end
 
 assign DO = dout;
 
+//////////////////////////////////////////////////////////////////////
+// HuC6270 AR write snooper
+
+always @(posedge CLK) if (CE) begin
+    if (~RESn) begin
+        ahr0 <= '0;
+        ahr1 <= '0;
+    end
+    else begin
+        if ((A[2] == 1'b0) & ~WRn & ~io_readyn) begin
+            if (~VDC0_CSn)
+                ahr0 <= DI[3:0];
+            if (~VDC1_CSn)
+                ahr1 <= DI[3:0];
+        end
+    end
+end
 
 //////////////////////////////////////////////////////////////////////
 // TMC: Timer Control Unit
