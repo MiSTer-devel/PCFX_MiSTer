@@ -867,14 +867,24 @@ end
 //////////////////////////////////////////////////////////////////////
 // Final output
 
+localparam [23:0] PD_BLACK = {8'd0, 8'd128, 8'd128};
+
+yuv888_t pdo;
+
+always @* begin
+    pdo = PD_BLACK;
+    if (cr.bg71 | |cr.bmg | cr.sp | cr.bg)
+        pdo = ccdp_reg2;
+end
+
 always @(posedge CLK) if (DCK70) begin
     VBL <= vbl_ff;
     HBL <= hbl_ff;
     SDRAM_HBLANK <= sdram_hbl_ff;
 
-    Y <= ccdp_reg2.y;
-    U <= ccdp_reg2.u;
-    V <= ccdp_reg2.v;
+    Y <= pdo.y;
+    U <= pdo.u;
+    V <= pdo.v;
 end
 
 endmodule
