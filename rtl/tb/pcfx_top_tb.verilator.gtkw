@@ -331,12 +331,11 @@ pcfx_top_tb.pcfx_top.mach.mmc.video.vfeb.M_ACK
 @1401200
 -vfeb
 @22
-pcfx_top_tb.pcfx_top.mach.mmc.video.bg0.md[15:0]
+pcfx_top_tb.pcfx_top.mach.mmc.video.bg[0].bgm.md[15:0]
 @28
-pcfx_top_tb.pcfx_top.mach.mmc.video.bg0.mdl[1:0]
+pcfx_top_tb.pcfx_top.mach.mmc.video.bg[0].bgm.mdl[1:0]
 @22
-pcfx_top_tb.pcfx_top.mach.mmc.video.bg0.cgrd[31:0]
-pcfx_top_tb.pcfx_top.mach.mmc.video.bg0.rf_bgm[255:0]
+pcfx_top_tb.pcfx_top.mach.mmc.video.bg[0].bgm.cgrd[31:0]
 pcfx_top_tb.pcfx_top.mach.mmc.VD[23:0]
 @28
 pcfx_top_tb.pcfx_top.mach.mmc.fabric.c71xfer_m_req

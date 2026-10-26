@@ -32,6 +32,7 @@ module huc6272_bgm
 
     output        PDMODE,
     output [23:0] PD,
+    output        PDKEY,
     output        PDE
     );
 
@@ -73,6 +74,7 @@ logic               cgra;
 logic               render_d, render_dd;
 logic               cgpdm, cgpdmo;
 logic [23:0]        cgpd, cgpdo; // {Y,U,V}
+logic               cgpdkey, cgpdkeyo;
 logic               cgpdeo;
 
 wire cgrce = DCK;
@@ -155,7 +157,7 @@ assign cgra = pdcc[0];
 // Use U/V=128, because yuv2rgb converts all zeros to green.
 localparam [23:0] PD_BLACK = {8'd0, 8'd128, 8'd128};
 
-assign cgpdm = format_clr_16m; // 0=palette, 1=YUV
+assign cgpdm = format_clr_64k | format_clr_16m; // 0=palette, 1=YUV
 
 always @(posedge CLK) begin
     if (~RESn | HSYNC_NEGEDGE) begin
@@ -185,20 +187,25 @@ always @* begin
     end
 end
 
+assign cgpdkey = cgpdm ? |cgpd[16+:8] : |cgpd[0+:8];
+
 always @(posedge CLK) begin
     if (~RESn) begin
         cgpdmo <= '1;
+        cgpdkeyo <= '0;
         cgpdo <= PD_BLACK;
         cgpdeo <= '0;
     end
     else if (cgrce) begin
         cgpdmo <= cgpdm;
+        cgpdkeyo <= cgpdkey;
         cgpdo <= cgpd;
         cgpdeo <= render_dd;
     end
 end
 
 assign PDMODE = cgpdmo;
+assign PDKEY = cgpdkeyo;
 assign PD = cgpdo;
 assign PDE = cgpdeo;
 

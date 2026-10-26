@@ -514,6 +514,7 @@ assign layers[0].cpe = ble_cpe_t'(vdc_spbg ? (ble.vdc_sp & {2{vdc_cce}})
 
 //////////////////////////////////////////////////////////////////////
 // MMC (KING) video input
+// TODO: Output and use front priority layer # from MMC
 
 logic [8:0]     mmc_cpa;
 logic [23:0]    mmc_vd;

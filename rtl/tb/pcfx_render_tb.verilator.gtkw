@@ -160,12 +160,12 @@ pcfx_render_tb.mmc.video.vfeb.M_ACK
 @1000200
 -vfeb
 @22
-pcfx_render_tb.mmc.video.bg0.md[15:0]
+pcfx_render_tb.mmc.video.bg[0].bgm.md[15:0]
 pcfx_render_tb.mmc.video.mdbatd[15:0]
 @28
-pcfx_render_tb.mmc.video.bg0.mdl[1:0]
+pcfx_render_tb.mmc.video.bg[0].bgm.mdl[1:0]
 @22
-pcfx_render_tb.mmc.video.bg0.cgrd[31:0]
+pcfx_render_tb.mmc.video.bg[0].bgm.cgrd[31:0]
 pcfx_render_tb.mmc.VD[23:0]
 @1000200
 -video

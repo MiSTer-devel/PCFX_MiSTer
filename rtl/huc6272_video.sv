@@ -274,11 +274,16 @@ end
 //////////////////////////////////////////////////////////////////////
 // BG pipelines
 
-logic               bg0_pdmode;
-logic [23:0]        bg0_pd;
-logic               bg0_pde;
+logic               bg_pdmode [4];
+logic               bg_pdkey [4];
+logic [23:0]        bg_pd [4];
+logic               bg_pde [4];
 
-huc6272_bgm #(0) bg0
+genvar i;
+generate
+for (i = 0; i < 4; i++) begin :bg
+
+huc6272_bgm #(i) bgm
    (
     .CLK(CLK),
     .CE(CE),
@@ -301,16 +306,50 @@ huc6272_bgm #(0) bg0
     .MDCCB(mdccb),
     .MDB(mdb),
 
-    .PDMODE(bg0_pdmode),
-    .PD(bg0_pd),
-    .PDE(bg0_pde)
+    .PDMODE(bg_pdmode[i]),
+    .PDKEY(bg_pdkey[i]),
+    .PD(bg_pd[i]),
+    .PDE(bg_pde[i])
     );
+
+end
+endgenerate
+
+//////////////////////////////////////////////////////////////////////
+// BG plane priority selector
+
+logic [1:0]         bgp_sel;
+logic [2:0]         bgp_pri;
+logic               bgp_pdmode;
+logic [23:0]        bgp_pd;
+logic               bgp_pde;
+
+always @* begin
+    rf_bgp_t bgp;
+
+    bgp_sel = '0;
+    bgp_pri = '0;
+    for (int i = 0; i < 4; i++) begin :bgp_loop
+    logic [1:0] layer;
+        layer = i[1:0];
+        bgp = get_bgp(layer);
+        if (bg_pdkey[i] && bgp.prio > bgp_pri) begin
+            bgp_sel = layer;
+            bgp_pri = bgp.prio;
+        end
+    end
+end
+
+assign bgp_pdmode = bg_pdmode[bgp_sel];
+assign bgp_pd = bg_pd[bgp_sel];
+assign bgp_pde = bg_pde[bgp_sel];
+
 
 //////////////////////////////////////////////////////////////////////
 // Final video output
 
-assign VDMODE = bg0_pdmode;
-assign VD = bg0_pd;
-assign VDE = bg0_pde;
+assign VDMODE = bgp_pdmode;
+assign VD = bgp_pd;
+assign VDE = bgp_pde;
 
 endmodule

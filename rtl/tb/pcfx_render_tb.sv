@@ -23,7 +23,7 @@ end
 /* verilator lint_off PINMISSING */
 /* verilator lint_off INITIALDLY */
 `include "mmc_kram_vce.svh"
-`include "video_rtz5.svh"
+`include "video_rtz6.svh"
 
 //////////////////////////////////////////////////////////////////////
 
