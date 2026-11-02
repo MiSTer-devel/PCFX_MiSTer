@@ -66,7 +66,7 @@ task load_kreg();
     reg_write(7'h22, 16'h0000); // SubBAT
     reg_write(7'h23, 16'h0000); // SubCG
     reg_write(7'h30, 16'h0000); // XScr
-    reg_write(7'h31, 16'h0000); // YScr
+    reg_write(7'h31, 16'h0100); // YScr
     // KBG1
     reg_write(7'h2d, 16'h0088); // Size
     reg_write(7'h24, 16'h0000); // BAT

@@ -49,6 +49,7 @@ module huc6272_fetch
     );
 
 mpd_t               mpe_d;
+rf_bgp_t            mpe_bgp;
 
 function rf_bgp_t get_bgp(input [1:0] layer);
     case (layer)
@@ -63,9 +64,15 @@ endfunction
 //////////////////////////////////////////////////////////////////////
 // Screen address generator
 
-logic [9:0]         sag_row, sag_col;
+logic signed [10:0] sag_bsx, sag_bsy;
+logic [10:0]        sag_row, sag_col;
 logic [9:0]         sag_bat_bg0_rot_row_d, sag_bat_bg0_rot_col_d;
 logic [9:0]         sag_cg_bg0_rot_row, sag_cg_bg0_rot_col;
+
+always @* begin
+    sag_bsx = mpe_bgp.bsx;
+    sag_bsy = mpe_bgp.bsy;
+end
 
 always @(posedge CLK) begin
     if (~RESn) begin
@@ -83,18 +90,23 @@ always @(posedge CLK) begin
 end
 
 always @* begin
-    sag_row = FETCH_BG_ROW;
-    sag_col = mpe_d.bat ? FETCH_BAT_BG_COL : FETCH_CG_BG_COL;
+    sag_row = '0;
+    sag_col = '0;
     if (mpe_d.rotate) begin
-        sag_row = mpe_d.bat ? FETCH_BAT_BG0_ROT_ROW : sag_cg_bg0_rot_row;
-        sag_col = mpe_d.bat ? FETCH_BAT_BG0_ROT_COL : sag_cg_bg0_rot_col;
+        sag_row[9:0] = mpe_d.bat ? FETCH_BAT_BG0_ROT_ROW : sag_cg_bg0_rot_row;
+        sag_col[9:0] = mpe_d.bat ? FETCH_BAT_BG0_ROT_COL : sag_cg_bg0_rot_col;
+    end
+    else begin
+        sag_row[9:0] = FETCH_BG_ROW;
+        sag_col[9:0] = mpe_d.bat ? FETCH_BAT_BG_COL : FETCH_CG_BG_COL;
+        sag_row = $unsigned($signed(sag_row) + sag_bsy);
+        sag_col = $unsigned($signed(sag_col) + sag_bsx);
     end
 end
 
 //////////////////////////////////////////////////////////////////////
 // Microprogram engine
 
-rf_bgp_t            mpe_bgp;
 logic [17:0]        mpe_ra;
 logic               mpe_rs;
 logic               mpe_ren;
@@ -106,18 +118,18 @@ assign mpe_d = (rf_bgm.mpsw & FETCH) ? MPR : 9'h100;
 always @*
     mpe_bgp = get_bgp(mpe_d.layer);
 
-function [17:0] bg_size_off(input [9:0] row, input [9:0] col);
+function [17:0] bg_size_off(input [10:0] row, input [10:0] col);
 logic [3:0] xw, yw;
 logic [17:0] xoff, yoff;
     xw = mpe_bgp.size_n;
     yw = mpe_bgp.size_m;
-    xoff = 18'(col[9:0] & ((1 << xw) - 1));
-    yoff = 18'(row[9:0] & ((1 << yw) - 1)) << xw;
+    xoff = 18'(col & ((1 << xw) - 1));
+    yoff = 18'(row & ((1 << yw) - 1)) << xw;
     bg_size_off = xoff | yoff;
 endfunction
 
 function [16:0] mpe_bataddr(mpd_t mpd);
-logic [9:0]  row, col;
+logic [10:0] row, col;
 logic [17:0] size_off;
     row = sag_row >> 3;
     col = sag_col;
@@ -127,7 +139,7 @@ logic [17:0] size_off;
 endfunction
 
 function [16:0] mpe_cgaddr(mpd_t mpd);
-logic [9:0]  row, col;
+logic [10:0] row, col;
 logic [2:0]  cgoff;
 logic [17:0] size_off;
     row = sag_row;

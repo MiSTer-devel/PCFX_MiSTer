@@ -191,12 +191,12 @@ always @(posedge CLK) begin
                             end
                             7'h30: rf_bgm.bgp[0].bsx <= DI[10:0];
                             7'h31: rf_bgm.bgp[0].bsy <= DI[10:0];
-                            7'h32: rf_bgm.bgp[1].bsx <= {1'b0, DI[9:0]};
-                            7'h33: rf_bgm.bgp[1].bsy <= {1'b0, DI[9:0]};
-                            7'h34: rf_bgm.bgp[2].bsx <= {1'b0, DI[9:0]};
-                            7'h35: rf_bgm.bgp[2].bsy <= {1'b0, DI[9:0]};
-                            7'h36: rf_bgm.bgp[3].bsx <= {1'b0, DI[9:0]};
-                            7'h37: rf_bgm.bgp[3].bsy <= {1'b0, DI[9:0]};
+                            7'h32: rf_bgm.bgp[1].bsx <= {DI[9], DI[9:0]};
+                            7'h33: rf_bgm.bgp[1].bsy <= {DI[9], DI[9:0]};
+                            7'h34: rf_bgm.bgp[2].bsx <= {DI[9], DI[9:0]};
+                            7'h35: rf_bgm.bgp[2].bsy <= {DI[9], DI[9:0]};
+                            7'h36: rf_bgm.bgp[3].bsx <= {DI[9], DI[9:0]};
+                            7'h37: rf_bgm.bgp[3].bsy <= {DI[9], DI[9:0]};
                             7'h38: rf_bgm.bg0at.a <= DI[15:0];
                             7'h39: rf_bgm.bg0at.b <= DI[15:0];
                             7'h3a: rf_bgm.bg0at.c <= DI[15:0];

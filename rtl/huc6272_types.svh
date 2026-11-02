@@ -70,7 +70,7 @@ typedef struct packed {
     logic [2:0]     prio;
     logic [7:0]     bat, cg;
     logic [3:0]     size_m, size_n;
-    logic [10:0]    bsx, bsy;
+    logic signed [10:0] bsx, bsy;
 } rf_bgp_t;
 
 typedef struct packed {

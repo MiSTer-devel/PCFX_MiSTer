@@ -49,6 +49,9 @@ always @* begin
 
     x2 = $signed(16'(FETCH_RSAG_BG0_COL));
     y2 = $signed(16'(FETCH_BG_ROW));
+
+    x2 += 16'($signed(rf_bgm.bgp[0].bsx));
+    y2 += 16'($signed(rf_bgm.bgp[0].bsy));
 end
 
 always @(posedge CLK) begin
