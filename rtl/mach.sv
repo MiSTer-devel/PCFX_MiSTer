@@ -123,8 +123,9 @@ logic           mcp_readyn;
 logic           a1_16;
 logic [31:0]    mem16_a;
 
-logic           io_cen;
-logic [15:0]    io_do;
+logic [5:1]     io_a;
+logic [15:0]    io_di, io_do;
+wire            io_wrn, io_rdn;
 wire [3:0]      io_int;
 
 logic           unk_cen;
@@ -152,7 +153,6 @@ wire [15:0]     vram1_a;
 wire [15:0]     vram1_di, vram1_do;
 wire            vram1_we;
 
-logic           ga_wrn, ga_rdn;
 logic           ga_csn;
 logic [15:0]    ga_do;
 logic           vdc_cpu_ce;
@@ -267,9 +267,19 @@ fx_ga ga
      .RAM_CEn(ram_cen),
      .SRAM_CEn(sram_cen),
      .MCP_CSn(mcp_csn),
-     .IO_CEn(io_cen),
-
      .FX_GA_CSn(ga_csn),
+
+     .ROM_READYn(rom_readyn),
+     .RAM_READYn(ram_readyn),
+     .SRAM_READYn(sram_readyn),
+     .MCP_READYn(mcp_readyn),
+
+     .IO_A(io_a),
+     .IO_DI(io_di),
+     .IO_DO(io_do),
+     .IO_WRn(io_wrn),
+     .IO_RDn(io_rdn),
+
      .APU_CSn(apu_csn),
      .VPU_CSn(vpu_csn),
      .VCE_CSn(vce_csn),
@@ -277,13 +287,6 @@ fx_ga ga
      .VDC1_CSn(vdc1_csn),
      .MMC_CSn(mmc_csn),
 
-     .ROM_READYn(rom_readyn),
-     .RAM_READYn(ram_readyn),
-     .SRAM_READYn(sram_readyn),
-     .MCP_READYn(mcp_readyn),
-
-     .WRn(ga_wrn),
-     .RDn(ga_rdn),
      .VDC_CPU_CE(vdc_cpu_ce),
      .VDC0_BUSYn(vdc0_busyn),
      .VDC1_BUSYn(vdc1_busyn),
@@ -309,10 +312,10 @@ huc6261 vce
      .CE(CE),            // TODO: Divide .CE by 5 for 5MHz pixel clock
 
      .CSn(vce_csn),
-     .WRn(ga_wrn),
-     .RDn(ga_rdn),
-     .A2(mem16_a[2]),
-     .DI(cpu_d_o[15:0]),
+     .WRn(io_wrn),
+     .RDn(io_rdn),
+     .A2(io_a[2]),
+     .DI(io_do),
      .DO(vce_do),
 
      .SDRAM_HBLANK(SDRAM_HBLANK),
@@ -351,12 +354,12 @@ huc6270 vdc0
      .CPU_CE(vdc_cpu_ce),
 
      .BYTEWORD('0),
-     .A({mem16_a[2], 1'b0}),
-     .DI(cpu_d_o[15:0]),
+     .A({io_a[2], 1'b0}),
+     .DI(io_do),
      .DO(vdc0_do),
      .CS_N(vdc0_csn),
-     .WR_N(ga_wrn),
-     .RD_N(ga_rdn),
+     .WR_N(io_wrn),
+     .RD_N(io_rdn),
      .BUSY_N(vdc0_busyn),
      .IRQ_N(vdc0_irqn),
 
@@ -405,12 +408,12 @@ huc6270 vdc1
      .CPU_CE(vdc_cpu_ce),
 
      .BYTEWORD('0),
-     .A({mem16_a[2], 1'b0}),
-     .DI(cpu_d_o[15:0]),
+     .A({io_a[2], 1'b0}),
+     .DI(io_do),
      .DO(vdc1_do),
      .CS_N(vdc1_csn),
-     .WR_N(ga_wrn),
-     .RD_N(ga_rdn),
+     .WR_N(io_wrn),
+     .RD_N(io_rdn),
      .BUSY_N(vdc1_busyn),
      .IRQ_N(vdc1_irqn),
 
@@ -457,12 +460,12 @@ huc6271 vpu
     .CE(CE),
     .RESn(RESn),
     
-    .A(mem16_a[4:2]),
-    .DI(cpu_d_o[15:0]),
+    .A(io_a[4:2]),
+    .DI(io_do),
     .DO(vpu_do),
     .CSn(vpu_csn),
-    .WRn(ga_wrn),
-    .RDn(ga_rdn),
+    .WRn(io_wrn),
+    .RDn(io_rdn),
 
     .KBUS_DI(kbus_di),
     .KBUS_REQ(kbus_req_vpu),
@@ -526,12 +529,12 @@ huc6272 mmc
      .RESn(RESn),
      .CE(CE),
 
-     .A(mem16_a[2:1]),
-     .DI(cpu_d_o[15:0]),
+     .A(io_a[2:1]),
+     .DI(io_do),
      .DO(mmc_do),
      .CSn(mmc_csn),
-     .WRn(ga_wrn),
-     .RDn(ga_rdn),
+     .WRn(io_wrn),
+     .RDn(io_rdn),
      .BUSYn(mmc_busyn),
      .IRQn(mmc_irqn),
 
@@ -587,10 +590,10 @@ huc6230 apu
     .RESn(RESn),
     .CE(CE),
 
-    .A(mem16_a[5:1]),
-    .DI(cpu_d_o[7:0]),
+    .A(io_a[5:1]),
+    .DI(io_do[7:0]),
     .CSn(apu_csn),
-    .WRn(ga_wrn),
+    .WRn(io_wrn),
 
     .KBUS_DI(kbus_di),
     .KBUS_RHnL(kbus_rhnl),
@@ -650,27 +653,10 @@ always @* begin
         cpu_d_i = {24'b0, sram_do};
     else if (~mcp_csn)
         cpu_d_i = {24'b0, mcp_do};
-    else if (~io_cen)
-        cpu_d_i = {16'b0, io_do};
+    else if (~ga_csn)
+        cpu_d_i = {16'b0, ga_do};
     else
         cpu_d_i = '0;
-end
-
-always @* begin
-    if (~vce_csn)
-        io_do = vce_do;
-    else if (~vdc0_csn)
-        io_do = vdc0_do;
-    else if (~vdc1_csn)
-        io_do = vdc1_do;
-    else if (~ga_csn)
-        io_do = ga_do;
-    else if (~vpu_csn)
-        io_do = vpu_do;
-    else if (~mmc_csn)
-        io_do = mmc_do;
-    else
-        io_do = '0;
 end
 
 assign rom_do = ROM_DO;
@@ -711,6 +697,24 @@ assign MCP_A = mem16_a[26:1];
 assign MCP_DI = cpu_d_o[7:0];
 assign MCP_RDn = mcp_csn | ~cpu_rw;
 assign MCP_WRn = mcp_csn | cpu_rw;
+
+//////////////////////////////////////////////////////////////////////
+// I/O device bus
+
+always @* begin
+    if (~vce_csn)
+        io_di = vce_do;
+    else if (~vdc0_csn)
+        io_di = vdc0_do;
+    else if (~vdc1_csn)
+        io_di = vdc1_do;
+    else if (~vpu_csn)
+        io_di = vpu_do;
+    else if (~mmc_csn)
+        io_di = mmc_do;
+    else
+        io_di = '0;
+end
 
 //////////////////////////////////////////////////////////////////////
 // SCSI interface
@@ -773,7 +777,7 @@ assign AUD_SROUT = apu_srout;
 //////////////////////////////////////////////////////////////////////
 
 always @(posedge CLK) if (0 && CE) begin
-    if (~io_cen & ~cpu_dan & ~cpu_readyn)
+    if (~ga_csn & ~cpu_dan & ~cpu_readyn)
         $display("%t: %x %s %x", $realtime,A, (cpu_rw ? "R" : "w"), 
                  (cpu_rw ? cpu_d_i[15:0] : cpu_d_o[15:0]));
 end

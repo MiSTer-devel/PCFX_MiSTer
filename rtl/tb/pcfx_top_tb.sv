@@ -641,9 +641,8 @@ end
 initial begin
     @(running) ;
     
-    //repeat (3) #(1000e3) ;
-    //#(762e3) ;
-    #(689e3) ;
+    repeat (3) #(1000e3) ;
+    #(762e3) ;
     $dumpvars();
     #(15e3) ;
 
