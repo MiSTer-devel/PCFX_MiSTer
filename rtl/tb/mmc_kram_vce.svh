@@ -31,6 +31,7 @@ logic [1:0]     kramb_be;
 logic           kramb_wr, kramb_req, kramb_ack;
 `endif //HUC6272_DMC_ENABLE
 logic           mmc_vdmode, vpu_vdmode;
+wire [1:0]      mmc_vdl;
 logic [23:0]    mmc_vd, vce_vd, vpu_vd;
 logic [8:0]     vdc0_vd, vdc1_vd;
 logic           mmc_vde;
@@ -109,6 +110,7 @@ huc6272 mmc
     .VSYNC_POSEDGE(vsync_posedge),
     .VSYNC_NEGEDGE(vsync_negedge),
     .VDMODE(mmc_vdmode),
+    .VDL(mmc_vdl),
     .VD(mmc_vd),
     .VDE(mmc_vde),
 
@@ -176,6 +178,7 @@ huc6261 vce
     .DCKKR(dck),
     .DCKKR_NEGEDGE(dck_negedge),
     .MMC_VDMODE(mmc_vdmode),
+    .MMC_VDL(mmc_vdl),
     .MMC_VD(mmc_vd),
     .VPU_VDMODE(vpu_vdmode),
     .VPU_VD(vpu_vd),

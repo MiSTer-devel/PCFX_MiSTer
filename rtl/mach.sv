@@ -187,6 +187,7 @@ wire [7:0]      mmc_scsi_do;
 wire            mmc_scsi_doe;
 
 wire            mmc_vdmode;
+wire [1:0]      mmc_vdl;
 logic [23:0]    mmc_vd;
 logic           mmc_vde;
 
@@ -333,6 +334,7 @@ huc6261 vce
      .DCKKR(dckkr),
      .DCKKR_NEGEDGE(dckkr_negedge),
      .MMC_VDMODE(mmc_vdmode),
+     .MMC_VDL(mmc_vdl),
      .MMC_VD(mmc_vd),
      .VPU_VDMODE(vpu_vdmode),
      .VPU_VD(vpu_vd),
@@ -561,6 +563,7 @@ huc6272 mmc
      .VSYNC_POSEDGE(vs_posedge),
      .VSYNC_NEGEDGE(vs_negedge),
      .VDMODE(mmc_vdmode),
+     .VDL(mmc_vdl),
      .VD(mmc_vd),
      .VDE(mmc_vde),
 

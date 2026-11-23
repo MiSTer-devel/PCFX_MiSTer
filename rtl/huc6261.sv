@@ -40,6 +40,7 @@ module huc6261
      output           DCKKR, // pixel clock enable
      output           DCKKR_NEGEDGE,
      input            MMC_VDMODE,
+     input [1:0]      MMC_VDL,
      input [23:0]     MMC_VD,
      input            VPU_VDMODE,
      input [23:0]     VPU_VD,
@@ -514,15 +515,30 @@ assign layers[0].cpe = ble_cpe_t'(vdc_spbg ? (ble.vdc_sp & {2{vdc_cce}})
 
 //////////////////////////////////////////////////////////////////////
 // MMC (KING) video input
-// TODO: Output and use front priority layer # from MMC
 
+logic [7:0]     mmc_bgn_cpao;
+logic [2:0]     pri_mmc_bgn;
+ble_cpe_t       ble_mmc_bgn;
 logic [8:0]     mmc_cpa;
 logic [23:0]    mmc_vd;
 logic           mmc_en, mmc_key;
 
-assign mmc_en = cr.bmg[0];
+always @* begin
+    mmc_bgn_cpao = 'X;
+    pri_mmc_bgn = 'X;
+    ble_mmc_bgn = ble_cpe_t'('X);
+    case (MMC_VDL)
+        2'd0: {mmc_bgn_cpao, pri_mmc_bgn, ble_mmc_bgn} = {mmc_bg0_cpao, pri_mmc_bg0, ble.mmc_bg0};
+        2'd1: {mmc_bgn_cpao, pri_mmc_bgn, ble_mmc_bgn} = {mmc_bg1_cpao, pri_mmc_bg1, ble.mmc_bg1};
+        2'd2: {mmc_bgn_cpao, pri_mmc_bgn, ble_mmc_bgn} = {mmc_bg2_cpao, pri_mmc_bg2, ble.mmc_bg2};
+        2'd3: {mmc_bgn_cpao, pri_mmc_bgn, ble_mmc_bgn} = {mmc_bg3_cpao, pri_mmc_bg3, ble.mmc_bg3};
+        default: ;
+    endcase
+end
 
-assign mmc_cpa = {mmc_bg0_cpao, 1'b0} + {1'b0, MMC_VD[7:0]};
+assign mmc_en = cr.bmg[MMC_VDL];
+
+assign mmc_cpa = {mmc_bgn_cpao, 1'b0} + {1'b0, MMC_VD[7:0]};
 
 always @* begin
     if (~MMC_VDMODE) begin // palette
@@ -535,12 +551,12 @@ always @* begin
     end
 end
 
-// MMC BG0
-assign layers[1].pri = pri_mmc_bg0;
+// MMC BGn
+assign layers[1].pri = pri_mmc_bgn;
 assign layers[1].key = mmc_key;
 assign layers[1].vd  = mmc_vd;
 assign layers[1].pal = ~MMC_VDMODE;
-assign layers[1].cpe = ble.mmc_bg0;
+assign layers[1].cpe = ble_mmc_bgn;
 
 //////////////////////////////////////////////////////////////////////
 // VPU (RAINBOW) video input

@@ -74,6 +74,7 @@ module huc6272
      input         VSYNC_POSEDGE,
      input         VSYNC_NEGEDGE,
      output        VDMODE, // 0=palette, 1=YUV
+     output [1:0]  VDL, // BG layer
      output [23:0] VD, // [7:0] = palette data / [23:0] = {Y,U,V}
      output        VDE, // data enable (not in blanking)
 
