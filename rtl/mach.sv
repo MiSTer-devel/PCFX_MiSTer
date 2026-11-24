@@ -161,6 +161,7 @@ logic           dck70, dck70_negedge;
 logic           dckkr, dckkr_negedge;
 logic           hs_posedge, hs_negedge;
 logic           vs_posedge, vs_negedge;
+logic           hs_negedge_dckkr, vs_negedge_dckkr;
 
 wire            apu_csn;
 wire [15:0]     apu_slout, apu_srout;
@@ -333,6 +334,8 @@ huc6261 vce
 
      .DCKKR(dckkr),
      .DCKKR_NEGEDGE(dckkr_negedge),
+     .HSYNC_NEGEDGE_DCKKR(hs_negedge_dckkr),
+     .VSYNC_NEGEDGE_DCKKR(vs_negedge_dckkr),
      .MMC_VDMODE(mmc_vdmode),
      .MMC_VDL(mmc_vdl),
      .MMC_VD(mmc_vd),
@@ -558,10 +561,8 @@ huc6272 mmc
 
      .DCK(dckkr),
      .DCK_NEGEDGE(dckkr_negedge),
-     .HSYNC_POSEDGE(hs_posedge),
-     .HSYNC_NEGEDGE(hs_negedge),
-     .VSYNC_POSEDGE(vs_posedge),
-     .VSYNC_NEGEDGE(vs_negedge),
+     .HSYNC_NEGEDGE(hs_negedge_dckkr),
+     .VSYNC_NEGEDGE(vs_negedge_dckkr),
      .VDMODE(mmc_vdmode),
      .VDL(mmc_vdl),
      .VD(mmc_vd),
@@ -603,7 +604,7 @@ huc6230 apu
     .KBUS_CSn(kbus_csn_c30),
 
     .DCK(dckkr),
-    .HSYNC_NEGEDGE(hs_negedge),
+    .HSYNC_NEGEDGE(hs_negedge_dckkr),
 
     .SLOUT(apu_slout),
     .SROUT(apu_srout)

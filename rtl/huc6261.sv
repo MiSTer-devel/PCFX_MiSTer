@@ -39,6 +39,8 @@ module huc6261
      // MMC (HuC6272 KING) and VPU (HuC6271 RAINBOW) video interface
      output           DCKKR, // pixel clock enable
      output           DCKKR_NEGEDGE,
+     output reg       HSYNC_NEGEDGE_DCKKR, // DCKKR-aligned
+     output           VSYNC_NEGEDGE_DCKKR,
      input            MMC_VDMODE,
      input [1:0]      MMC_VDL,
      input [23:0]     MMC_VD,
@@ -57,6 +59,8 @@ module huc6261
 
 localparam [11:0] LEFT_BL_CLOCKS = 12'd457;
 localparam [11:0] DISP_CLOCKS = 12'd2160;
+localparam [11:0] LEFT_ACT_CLOCKS = 12'd529;
+localparam [11:0] ACT_CLOCKS = 12'd2048;
 localparam [11:0] LINE_CLOCKS = 12'd2730;
 localparam [11:0] HS_CLOCKS = 12'd192;
 localparam [11:0] HS_OFF = 12'd47;
@@ -64,11 +68,10 @@ localparam [11:0] SDRAM_HBL_OFF = 12'd100; // passes the eyeball test
 
 localparam [8:0] TOTAL_LINES = 9'd263;
 localparam [8:0] VS_LINES = 9'd3;
-localparam [8:0] TOP_BL_LINES_E = 9'd19;
-localparam [8:0] DISP_LINES_E = 9'd242;
-
-localparam [8:0] TOP_BL_LINES = TOP_BL_LINES_E;
-localparam [8:0] DISP_LINES = DISP_LINES_E;
+localparam [8:0] TOP_BL_LINES = 9'd19;
+localparam [8:0] DISP_LINES = 9'd242;
+localparam [8:0] TOP_ACT_LINES = 9'd25;
+localparam [8:0] ACT_LINES = 9'd232;
 
 typedef struct packed {
     logic [7:0] y, u, v;
@@ -114,9 +117,9 @@ typedef struct packed {
 typedef struct packed {
     logic [2:0]     pri;
     logic           key;
-    logic [23:0]    vd;
     logic           pal;
     ble_cpe_t       cpe;
+    logic [23:0]    vd;
 } layer_t;
 
 logic [4:0]     ar;
@@ -380,33 +383,6 @@ task dump_regs();
     $display("  10=%x 11=%x 12=%x 13=%x 14=%x 15=%x",
              bl1a, bl1b, bl2a, bl2b, bl3a, bl3b);
 endtask
-
-//////////////////////////////////////////////////////////////////////
-// "Fast" (dot processing) clock generator
-//
-// Rate is 4x the 256 pixel clock
-
-logic           ckenf_cnt;
-logic           ckenfp, ckenf;
-
-always @(posedge CLK) begin
-    ckenfp <= '0;
-
-    if (~RESn) begin
-        ckenf_cnt <= '0;
-    end
-    else begin
-        ckenf_cnt <= ~ckenf_cnt;
-
-        if ((ckenf_cnt && h_cnt < (LINE_CLOCKS - 12'(2+1))) | 
-            h_wrap) begin
-            ckenf_cnt <= '0;
-            ckenfp <= '1;
-        end
-    end
-
-    ckenf <= ckenfp;
-end
 
 //////////////////////////////////////////////////////////////////////
 // VDC (HuC6270) Pixel clock generator
@@ -688,7 +664,9 @@ assign mix.cpe = vmux.cpe;
 //////////////////////////////////////////////////////////////////////
 // Chroma key and Cellophane Dot Processing
 
-yuv888_t        ccdp_sel1, ccdp_sel2, ccdp_reg1, ccdp_reg2;
+logic           ckenf;
+logic [1:0]     ccdp_phase;
+yuv888_t        ccdp_sel1, ccdp_sel2, ccdp_reg1, ccdp_reg1_d, ccdp_reg2;
 logic           ccdp_sel1_ccr;
 logic           ccdp_sel2_cc;
 blxx_t          ccdp_m, ccdp_n;
@@ -697,8 +675,12 @@ logic           ccdp_reg1_en;
 logic           ccdp_low_chroma;
 logic           ccdp_front, ccdp_back;
 
-// There are four processing phases per dot clock.
-wire [1:0] ccdp_phase = ckenkr_cnt[2:1];
+always @(posedge CLK) begin
+    // "Fast" (dot processing) clock: 4x the 256 pixel clock (DCKKR)
+    ckenf <= ckenkr_cnt[0];
+    // There are four processing phases per dot clock.
+    ccdp_phase <= ckenkr_cnt[2:1];
+end
 
 // One dot requires three processing phases, plus one if front/back
 // cellphane is enabled.
@@ -759,9 +741,9 @@ always @* begin
 end
 
 always @* begin
-    ccdp_ccout.y = ccdp_cc(ccdp_sel1.y, ccdp_reg1.y, ccdp_m.y, ccdp_n.y, 0);
-    ccdp_ccout.u = ccdp_cc(ccdp_sel1.u, ccdp_reg1.u, ccdp_m.u, ccdp_n.u, 1);
-    ccdp_ccout.v = ccdp_cc(ccdp_sel1.v, ccdp_reg1.v, ccdp_m.v, ccdp_n.v, 1);
+    ccdp_ccout.y = ccdp_cc(ccdp_sel1.y, ccdp_reg1_d.y, ccdp_m.y, ccdp_n.y, 0);
+    ccdp_ccout.u = ccdp_cc(ccdp_sel1.u, ccdp_reg1_d.u, ccdp_m.u, ccdp_n.u, 1);
+    ccdp_ccout.v = ccdp_cc(ccdp_sel1.v, ccdp_reg1_d.v, ccdp_m.v, ccdp_n.v, 1);
 end
 
 // Selector 1: Fixed color -or- selected priority layer
@@ -777,10 +759,15 @@ end
 // Selector 2: Selector 1 -or- cellophane calculation
 assign ccdp_sel2 = ccdp_sel2_cc ? ccdp_ccout : ccdp_sel1;
 
-// Register 1: Latches selector 2 at fast clock rate
+// Register 1: Latches selector 2
 always @(posedge CLK) if (ckenf) begin
+    ccdp_reg1_d <= ccdp_reg1;
+end
+
+always @* begin
+    ccdp_reg1 = ccdp_reg1_d;
     if (ccdp_reg1_en)
-        ccdp_reg1 <= ccdp_sel2;
+        ccdp_reg1 = ccdp_sel2;
 end
 
 // Register 2: Latches register 1 at output dot clock rate
@@ -819,6 +806,7 @@ always @* begin
                 ccdp_reg1_en = '1;
             end
         end
+        ccdp_reg1_en &= ckenf; // ccdp_reg1 input is valid on ckenf=1
     end
 end
 
@@ -828,13 +816,16 @@ assign vmux_low_chroma = ccdp_low_chroma;
 // Sync generators
 
 logic [11:0]    hsync_start_pos, hsync_end_pos;
+logic [11:0]    hsync_start_pos_dckkr;
 logic           hbl_ff = '1, vbl_ff = '1;
 logic           sdram_hbl_ff = '1;
 
 always @* begin
-    hsync_start_pos = (cr.dc7 ? (LINE_CLOCKS - 12'd6) : 12'd8) - 1'd1;
-    hsync_end_pos = (cr.dc7 ? (12'd468 - 12'd6) : (12'd8 + 12'd464)) - 1'd1;
+    hsync_start_pos = (cr.dc7 ? 12'd48 : 12'd8) - 1'd1;
+    hsync_end_pos = (cr.dc7 ? 12'd48 : 12'd8) + 12'd464 - 1'd1;
 end
+
+assign hsync_start_pos_dckkr = 12'd8 - 1'd1;
 
 // These syncs are for the VDCs.
 always @(posedge CLK) begin
@@ -843,6 +834,13 @@ always @(posedge CLK) begin
     VSYNC_NEGEDGE <= ((v_cnt == VS_LINES - 1'd1) & h_wrap);
     VSYNC_POSEDGE <= (v_wrap & h_wrap);
 end
+
+// These syncs are for the MMC (KING).
+always @(posedge CLK) begin
+    HSYNC_NEGEDGE_DCKKR <= (h_cnt == hsync_start_pos_dckkr);
+end
+
+assign VSYNC_NEGEDGE_DCKKR = VSYNC_NEGEDGE;
 
 // These syncs are for the actual video output.
 always @(posedge CLK) begin
@@ -886,10 +884,27 @@ end
 localparam [23:0] PD_BLACK = {8'd0, 8'd128, 8'd128};
 
 yuv888_t pdo;
+logic           hact = '0, vact = '0;
+
+// Active periods
+always @(posedge CLK) begin
+    if (h_cnt == LEFT_ACT_CLOCKS)
+        hact <= '1;
+    else if (h_cnt == LEFT_ACT_CLOCKS + ACT_CLOCKS)
+        hact <= '0;
+
+    if (v_cnt == TOP_ACT_LINES)
+        vact <= '1;
+    else if (v_cnt == TOP_ACT_LINES + ACT_LINES)
+        vact <= '0;
+end
+
+wire active = hact & vact;
+wire any_layers_en = cr.bg71 | |cr.bmg | cr.sp | cr.bg;
 
 always @* begin
     pdo = PD_BLACK;
-    if (cr.bg71 | |cr.bmg | cr.sp | cr.bg)
+    if (active & any_layers_en)
         pdo = ccdp_reg2;
 end
 

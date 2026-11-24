@@ -69,9 +69,7 @@ module huc6272
      // Video interface
      input         DCK, // pixel clock enable
      input         DCK_NEGEDGE,
-     input         HSYNC_POSEDGE,
      input         HSYNC_NEGEDGE,
-     input         VSYNC_POSEDGE,
      input         VSYNC_NEGEDGE,
      output        VDMODE, // 0=palette, 1=YUV
      output [1:0]  VDL, // BG layer

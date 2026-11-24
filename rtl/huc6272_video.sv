@@ -38,9 +38,7 @@ module huc6272_video
     // Video interface
     input         DCK, // pixel clock enable
     input         DCK_NEGEDGE,
-    input         HSYNC_POSEDGE,
     input         HSYNC_NEGEDGE,
-    input         VSYNC_POSEDGE,
     input         VSYNC_NEGEDGE,
     output        VDMODE, // 0=palette, 1=YUV
     output [1:0]  VDL, // BG layer
@@ -97,7 +95,7 @@ logic           fetch;
 
 localparam [9:0] RENDER_ROW_START = 10'd21;
 localparam [9:0] RENDER_ROW_END = RENDER_ROW_START + 10'd240 - 10'd1;
-localparam [9:0] RENDER_COL_START = 10'd61;
+localparam [9:0] RENDER_COL_START = 10'd60;
 localparam [9:0] RENDER_COL_END = RENDER_COL_START + 10'd256 - 10'd1;
 
 localparam [9:0] FETCH_CG_COL_START = RENDER_COL_START - 10'd8;
@@ -349,9 +347,21 @@ assign bgp_pde = bg_pde[bgp_sel];
 //////////////////////////////////////////////////////////////////////
 // Final video output
 
-assign VDMODE = bgp_pdmode;
-assign VDL = bgp_sel;
-assign VD = bgp_pd;
-assign VDE = bgp_pde;
+logic               vo_vdmode;
+logic [1:0]         vo_vdl;
+logic [23:0]        vo_vd;
+logic               vo_vde;
+
+always @(posedge CLK) if (DCK) begin
+    vo_vdmode <= bgp_pdmode;
+    vo_vdl <= bgp_sel;
+    vo_vd <= bgp_pd;
+    vo_vde <= bgp_pde;
+end
+
+assign VDMODE = vo_vdmode;
+assign VDL = vo_vdl;
+assign VD = vo_vd;
+assign VDE = vo_vde;
 
 endmodule

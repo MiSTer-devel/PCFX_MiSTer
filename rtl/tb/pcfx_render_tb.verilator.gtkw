@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v4.0.0-prealpha (8ba24ab+) (w)1999-2022 BSI
-[*] Mon Aug 10 00:11:20 2026
+[*] Tue Nov 24 00:47:55 2026
 [*]
 [dumpfile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/pcfx_render_tb.verilator.fst"
-[dumpfile_mtime] "Mon Aug 10 00:10:33 2026"
-[dumpfile_size] 9042905
+[dumpfile_mtime] "Tue Nov 24 00:42:02 2026"
+[dumpfile_size] 6274256
 [savefile] "/Users/dhunter/src/mister/PCFX_MiSTer/rtl/tb/pcfx_render_tb.verilator.gtkw"
-[timestart] 1711479
+[timestart] 6080493
 [size] 1334 601
 [pos] -1 -1
-*-6.764179 1711890 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+*-8.087354 6081180 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 [markername] AA
 [markername] BB
 [markername] CC
@@ -41,6 +41,7 @@
 [treeopen] pcfx_render_tb.mmc.
 [treeopen] pcfx_render_tb.mmc.video.
 [treeopen] pcfx_render_tb.mmc.video.vfeb.
+[treeopen] pcfx_render_tb.vce.
 [sst_width] 255
 [signals_width] 290
 [sst_expanded] 1
@@ -49,7 +50,6 @@
 -sdram
 @28
 pcfx_render_tb.sdram.ch1_req
-@29
 pcfx_render_tb.sdram.ch1_ready
 @22
 pcfx_render_tb.sdram.ch2_addr[26:0]
@@ -117,7 +117,7 @@ pcfx_render_tb.memif_sdram.KRAMB_REQ
 pcfx_render_tb.memif_sdram.KRAMB_ACK
 @1000200
 -memif_sdram
-@800200
+@c00200
 -mmc
 @28
 pcfx_render_tb.mmc.CSn
@@ -132,8 +132,9 @@ pcfx_render_tb.mmc.BUSYn
 pcfx_render_tb.mmc.IRQn
 @22
 pcfx_render_tb.mmc.cpuif.rsel[6:0]
-@800200
+@c00200
 -video
+@800200
 -vfea
 @28
 pcfx_render_tb.mmc.video.vfea.mtrg
@@ -167,7 +168,7 @@ pcfx_render_tb.mmc.video.bg[0].bgm.mdl[1:0]
 @22
 pcfx_render_tb.mmc.video.bg[0].bgm.cgrd[31:0]
 pcfx_render_tb.mmc.VD[23:0]
-@1000200
+@1401200
 -video
 @c00200
 -c71xfer
@@ -226,6 +227,7 @@ pcfx_render_tb.mmc.fabric.fbb.dmc_m_ack
 @1000200
 -fbb
 -fabric
+@1401200
 -mmc
 @c00200
 -vdc0
@@ -259,7 +261,7 @@ pcfx_render_tb.vdc1.CPURD_PEND2
 pcfx_render_tb.vdc1.CPURD_EXEC
 @1401200
 -vdc1
-@c00200
+@800200
 -vce
 @28
 pcfx_render_tb.vce.CSn
@@ -277,14 +279,20 @@ pcfx_render_tb.vce.vdc_vd[8:0]
 pcfx_render_tb.vce.vpu_vd[23:0]
 pcfx_render_tb.vce.MMC_VD[23:0]
 @28
+pcfx_render_tb.vce.MMC_VDMODE
+pcfx_render_tb.vce.mmc_key
 pcfx_render_tb.vce.DCKKR
-@c00200
+@800200
 -ccdp
 @22
+pcfx_render_tb.vce.cpa_out[8:0]
 pcfx_render_tb.vce.prio_out[1:0]
 @28
 pcfx_render_tb.vce.prio_sel[1:0]
+pcfx_render_tb.vce.vmux_low_chroma
 @22
+pcfx_render_tb.vce.vmux[30:0]
+pcfx_render_tb.vce.mix_out[23:0]
 pcfx_render_tb.vce.mix[30:0]
 @24
 pcfx_render_tb.vce.ccdp_phase[1:0]
@@ -292,6 +300,7 @@ pcfx_render_tb.vce.ccdp_phase[1:0]
 pcfx_render_tb.vce.ccdp_m[11:0]
 @28
 pcfx_render_tb.vce.ccdp_front
+pcfx_render_tb.vce.ccdp_back
 @22
 pcfx_render_tb.vce.ccdp_n[11:0]
 @28
@@ -304,10 +313,12 @@ pcfx_render_tb.vce.ccdp_sel2_cc
 pcfx_render_tb.vce.ccdp_sel2[23:0]
 @28
 pcfx_render_tb.vce.ccdp_reg1_en
+pcfx_render_tb.vce.ckenf
 @22
 pcfx_render_tb.vce.ccdp_reg1[23:0]
-pcfx_render_tb.vce.cpa_out[8:0]
-@1401200
+@23
+pcfx_render_tb.vce.ccdp_reg2[23:0]
+@1000200
 -ccdp
 @28
 pcfx_render_tb.vce.DCK70
@@ -318,9 +329,9 @@ pcfx_render_tb.vce.V[7:0]
 @28
 pcfx_render_tb.vce.VSn
 pcfx_render_tb.vce.HSn
-@1401200
+@1000200
 -vce
-@800200
+@c00200
 -vpu
 @28
 pcfx_render_tb.vpu.CLK
@@ -353,7 +364,7 @@ pcfx_render_tb.vpu.dct_idx[2:0]
 @22
 pcfx_render_tb.vpu.dec_raddr[12:0]
 pcfx_render_tb.vpu.dec_rdata[7:0]
-@1000200
+@1401200
 -vpu
 [pattern_trace] 1
 [pattern_trace] 0

@@ -10,6 +10,7 @@ logic           mmc_csn, vce_csn, vdc0_csn, vdc1_csn, vpu_csn;
 logic           dck, dck_negedge, dck70, dck70_negedge;
 logic           hsync_posedge, hsync_negedge;
 logic           vsync_posedge, vsync_negedge;
+logic           hs_negedge_dckkr, vs_negedge_dckkr;
 logic           sdram_hblank;
 `ifdef HUC6272_DMC_ENABLE
 logic [15:0]    ra_di, ra_do;
@@ -105,10 +106,8 @@ huc6272 mmc
 
     .DCK(dck),
     .DCK_NEGEDGE(dck_negedge),
-    .HSYNC_POSEDGE(hsync_posedge),
-    .HSYNC_NEGEDGE(hsync_negedge),
-    .VSYNC_POSEDGE(vsync_posedge),
-    .VSYNC_NEGEDGE(vsync_negedge),
+    .HSYNC_NEGEDGE(hs_negedge_dckkr),
+    .VSYNC_NEGEDGE(vs_negedge_dckkr),
     .VDMODE(mmc_vdmode),
     .VDL(mmc_vdl),
     .VD(mmc_vd),
@@ -177,6 +176,8 @@ huc6261 vce
 
     .DCKKR(dck),
     .DCKKR_NEGEDGE(dck_negedge),
+    .HSYNC_NEGEDGE_DCKKR(hs_negedge_dckkr),
+    .VSYNC_NEGEDGE_DCKKR(vs_negedge_dckkr),
     .MMC_VDMODE(mmc_vdmode),
     .MMC_VDL(mmc_vdl),
     .MMC_VD(mmc_vd),
