@@ -162,12 +162,12 @@ end
 assign phase_match = (~SCSI_IOn == rf_scsi.assert_io) &
                      (~SCSI_CDn == rf_scsi.assert_cd) &
                      (~SCSI_MSGn == rf_scsi.assert_msg);
-wire phase_mismatch = req_posedge & (~phase_match & phase_match_d);
+wire phase_mismatch = req_posedge & ~phase_match;
 
 always @(posedge CLK) if (CE) begin
     phase_match_d <= phase_match;
 
-    if (~RESn) begin
+    if (~RESn | ~rf_scsi.dma_en) begin
         block_int <= '0;
     end
     else begin
