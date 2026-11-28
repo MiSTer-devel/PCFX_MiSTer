@@ -58,12 +58,9 @@ Where documentation for major subsystems was lacking (e.g., HuC6271 RAINBOW), th
 
 - Video
    - HuC6261 (NEW Iron Guanyin)
-      - Mask border pixels
       - YUV chroma key
    - Huc6272 (KING)
-      - BG1-BG3
       - BG subscreens
-      - Scrolling
       - Some color formats
    - Analog output, direct video output
 - Audio (SOUNDBOX)
